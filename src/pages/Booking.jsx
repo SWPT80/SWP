@@ -1,7 +1,9 @@
 import { Container, Row, Col, Card, Badge, Button, Table } from "react-bootstrap";
 import { Calendar, Home, Clock } from "lucide-react";
+import { BookingsTable } from "../components/host/BookingsTable";
 
-export default function CheckInOut() {
+
+export default function Booking() {
   const scheduleData = [
     { guest: "John Smith", room: "101", type: "Check-in", time: "2:00 PM", status: "Pending" },
     { guest: "Sarah Johnson", room: "205", type: "Check-out", time: "11:00 AM", status: "Completed" },
@@ -51,56 +53,7 @@ export default function CheckInOut() {
           </Card>
         </Col>
       </Row>
-
-      <Card>
-        <Card.Header>
-          <h5 className="mb-0">Today's Schedule</h5>
-        </Card.Header>
-        <Card.Body className="p-0">
-          <div className="table-responsive">
-            <Table hover className="mb-0">
-              <thead>
-                <tr>
-                  <th className="p-3">GUEST NAME</th>
-                  <th className="p-3">ROOM</th>
-                  <th className="p-3">TYPE</th>
-                  <th className="p-3">TIME</th>
-                  <th className="p-3">STATUS</th>
-                  <th className="p-3">ACTIONS</th>
-                </tr>
-              </thead>
-              <tbody>
-                {scheduleData.map((item, index) => (
-                  <tr key={index}>
-                    <td className="p-3">{item.guest}</td>
-                    <td className="p-3">{item.room}</td>
-                    <td className="p-3">{item.type}</td>
-                    <td className="p-3">{item.time}</td>
-                    <td className="p-3">
-                      <Badge
-                        bg={
-                          item.status === "Completed"
-                            ? "success"
-                            : item.status === "Pending"
-                            ? "warning"
-                            : "secondary"
-                        }
-                      >
-                        {item.status}
-                      </Badge>
-                    </td>
-                    <td className="p-3">
-                      <Button variant="primary" size="sm">
-                        {item.type === "Check-in" ? "Check In" : "Check Out"}
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          </div>
-        </Card.Body>
-      </Card>
+      <BookingsTable/>
     </Container>
   );
 }

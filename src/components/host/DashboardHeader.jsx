@@ -8,8 +8,7 @@ const location = useLocation();
   // Xác định tiêu đề dựa trên đường dẫn hiện tại
   const getTitle = () => {
     switch (location.pathname) {
-      case '/checkinout':
-        return 'Check In-Out';
+      
       case '/rooms':
         return 'Rooms';
       case '/messages':
@@ -21,6 +20,19 @@ const location = useLocation();
       case '/hostservice':
         return 'Service';
       case '/hostdashboard':
+        return 'Dashboard';
+      case '/occupancy':
+        return 'Occupancy';
+      case '/booking':
+        return 'Booking';
+      case'/rooms/allroom':
+        return 'All Room';
+      case'/rooms/addroom':
+        return 'Add Room';
+      case'/rooms/editroom':
+        return 'Edit Room';
+      case'/rooms/roompricing':
+        return 'Room Pricing';
       default:
         return 'Dashboard';
     }

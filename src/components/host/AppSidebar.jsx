@@ -13,26 +13,20 @@ import { Link, useLocation } from 'react-router-dom';
 
 const items = [
   { title: 'Dashboard', url: '/hostdashboard', icon: BarChart3 },
-  { title: 'Check In-Out', url: '/checkinout', icon: Calendar },
+  
   {
     title: 'Rooms',
     icon: Home,
     submenu: [
-      { title: 'Room Book', url: '/rooms/book' },
-      { title: 'Booking List', url: '/rooms/bookinglist' },
-      { title: 'Room Checkout', url: '/rooms/checkout' },
-      { title: 'Room Status', url: '/rooms/status' },
+      { title: 'All Rooms', url: '/rooms/allroom' },
+      { title: 'Add Room', url: '/rooms/addroom' },
+      { title: 'Edit Room', url: '/rooms/editroom' },
+      { title: 'Room Pricing', url: '/rooms/roompricing' },
     ],
   },
-  {
-     title: 'Amenity',
-    icon: Utensils,
-    submenu: [
-      { title: 'Items Destroyed', url: '/items/destroyed' },
-      { title: 'Items Category', url: '/items/category' },
-      { title: 'Items Suppliers', url: '/items/suppliers' },
-    ],
-  },
+  { title: 'Room Facilites', url: '/roomfacilites', icon: Utensils },
+  { title: 'Occupancy', url: '/occupancy', icon: Home},
+  { title: 'Booking', url: '/booking', icon: MessageCircle },
   { title: 'Messages', url: '/messages', icon: MessageCircle },
   { title: 'Customer Report', url: '/customerreport', icon: Star },
   { title: 'Billing System', url: '/billingsystem', icon: CreditCard },

@@ -2,20 +2,23 @@ import { useState } from "react";
 import {
   Card,
   Button,
-  Form,
   Table,
-  Row,
-  Col,
+  Modal,
+  Badge,
 } from "react-bootstrap";
-import { Search } from "lucide-react";
 
 const bookingData = [
   {
     id: 1,
     name: "Sally Graham",
+    email: "sally@example.com",
+    phone: "0123456789",
     roomType: "Queen",
-    checkIn: "12/03/2024",
-    checkOut: "17/03/2024",
+    roomNumber: "R01",
+    status: "Check In",
+    services: ["Breakfast", "Spa"],
+    checkIn: "12/06/2025",
+    checkOut: "17/06/2025",
     paidAmount: "$1550",
     dueAmount: "$0",
     paymentStatus: "Success",
@@ -23,215 +26,186 @@ const bookingData = [
   {
     id: 2,
     name: "Frank Baker",
+    email: "frank@example.com",
+    phone: "0987654321",
     roomType: "Single",
-    checkIn: "12/03/2024",
-    checkOut: "13/03/2024",
+    roomNumber: "R02",
+    status: "Booked",
+    services: ["Airport Pickup"],
+    checkIn: "10/06/2025",
+    checkOut: "20/06/2025",
     paidAmount: "$0",
     dueAmount: "$230",
-    paymentStatus: "Pending",
-  },
-  {
-    id: 3,
-    name: "Phil Glover",
-    roomType: "Studio",
-    checkIn: "12/03/2024",
-    checkOut: "21/03/2024",
-    paidAmount: "$0",
-    dueAmount: "$450",
-    paymentStatus: "Pending",
-  },
-  {
-    id: 4,
-    name: "Rya Randall",
-    roomType: "Deluxe",
-    checkIn: "12/03/2024",
-    checkOut: "24/03/2024",
-    paidAmount: "$0",
-    dueAmount: "$430",
-    paymentStatus: "Pending",
-  },
-  {
-    id: 5,
-    name: "Victor Rampling",
-    roomType: "Junior Suite",
-    checkIn: "12/03/2024",
-    checkOut: "16/03/2024",
-    paidAmount: "$0",
-    dueAmount: "$530",
     paymentStatus: "Pending",
   },
 ];
 
 export function BookingsTable() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [entriesPerPage, setEntriesPerPage] = useState(10);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: "ascending" });
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [showInvoice, setShowInvoice] = useState(false);
+  const [data, setData] = useState(bookingData);
 
-  // Lọc dữ liệu dựa trên từ khóa tìm kiếm
-  const filteredData = bookingData.filter((booking) =>
-    booking.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    booking.roomType.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Sắp xếp dữ liệu
-  const sortedData = [...filteredData].sort((a, b) => {
-    if (!sortConfig.key) return 0;
-    let aValue = a[sortConfig.key];
-    let bValue = b[sortConfig.key];
-
-    // Chuyển đổi số tiền thành số để sắp xếp
-    if (sortConfig.key === "paidAmount" || sortConfig.key === "dueAmount") {
-      aValue = parseFloat(aValue.replace("$", "").replace(",", ""));
-      bValue = parseFloat(bValue.replace("$", "").replace(",", ""));
-    }
-
-    // Sắp xếp ngày
-    if (sortConfig.key === "checkIn" || sortConfig.key === "checkOut") {
-      aValue = new Date(aValue.split("/").reverse().join("-"));
-      bValue = new Date(bValue.split("/").reverse().join("-"));
-    }
-
-    if (aValue < bValue) {
-      return sortConfig.direction === "ascending" ? -1 : 1;
-    }
-    if (aValue > bValue) {
-      return sortConfig.direction === "ascending" ? 1 : -1;
-    }
-    return 0;
-  });
-
-  // Phân trang
-  const totalEntries = sortedData.length;
-  const totalPages = Math.ceil(totalEntries / entriesPerPage);
-  const startIndex = (currentPage - 1) * entriesPerPage;
-  const endIndex = startIndex + entriesPerPage;
-  const currentData = sortedData.slice(startIndex, endIndex);
-
-  // Xử lý sắp xếp
-  const requestSort = (key) => {
-    let direction = "ascending";
-    if (sortConfig.key === key && sortConfig.direction === "ascending") {
-      direction = "descending";
-    }
-    setSortConfig({ key, direction });
+  const handleRowClick = (booking) => {
+    setSelectedBooking(booking);
+    setShowModal(true);
   };
 
-  // Xử lý thay đổi trang
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
+  const updateStatus = (newStatus) => {
+    const updated = data.map((item) =>
+      item.id === selectedBooking.id ? { ...item, status: newStatus } : item
+    );
+    setData(updated);
+    setSelectedBooking({ ...selectedBooking, status: newStatus });
   };
+
+  const autoUpdateCheckOut = () => {
+    const today = new Date();
+    const updated = data.map((item) => {
+      const checkOutDate = new Date(item.checkOut.split("/").reverse().join("-"));
+      if (item.status === "Booked" && today > checkOutDate) {
+        return { ...item, status: "Check Out" };
+      }
+      return item;
+    });
+    setData(updated);
+  };
+
+  useState(() => {
+    autoUpdateCheckOut();
+  }, []);
 
   return (
-    <Card className="mb-4">
-      <Card.Header as="h5" className="d-flex justify-content-between align-items-center">
-        <div>
-          Today's Booking List <small className="text-muted">(5 entries today)</small>
-        </div>
-      </Card.Header>
-      <Card.Body>
-        <Row className="mb-3">
-          <Col md={3}>
-            <Form.Control
-              as="select"
-              value={entriesPerPage}
-              onChange={(e) => setEntriesPerPage(parseInt(e.target.value))}
-            >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={25}>25</option>
-              <option value={50}>50</option>
-            </Form.Control>
-            <span className="ms-2">entries</span>
-          </Col>
-          <Col md={6}></Col>
-          <Col md={3}>
-            <Form.Control
-              type="text"
-              placeholder="Search:"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="me-3"
-            />
-          </Col>
-        </Row>
-        <div className="table-responsive">
-          <Table hover bordered>
+    <>
+      <Card className="mb-4">
+        <Card.Header as="h5">Booking List</Card.Header>
+        <Card.Body>
+          <Table hover bordered responsive>
             <thead>
               <tr>
-                <th onClick={() => requestSort("name")}>
-                  NAME 
-                </th>
-                <th onClick={() => requestSort("roomType")}>
-                  ROOM TYPE 
-                </th>
-                <th onClick={() => requestSort("checkIn")}>
-                  CHECK IN 
-                </th>
-                <th onClick={() => requestSort("checkOut")}>
-                  CHECK OUT 
-                </th>
-                <th onClick={() => requestSort("paidAmount")}>
-                  PAID AMOUNT 
-                </th>
-                <th onClick={() => requestSort("dueAmount")}>
-                  DUE AMOUNT 
-                </th>
-                <th onClick={() => requestSort("paymentStatus")}>
-                  PAYMENT STATUS 
-                </th>
+                <th>Name</th>
+                <th>Room Type</th>
+                <th>Room No</th>
+                <th>Status</th>
+                <th>Check In</th>
+                <th>Check Out</th>
+                <th>Paid</th>
+                <th>Due</th>
+                <th>Payment</th>
               </tr>
             </thead>
             <tbody>
-              {currentData.map((booking) => (
-                <tr key={booking.id}>
+              {data.map((booking) => (
+                <tr
+                  key={booking.id}
+                  onClick={() => handleRowClick(booking)}
+                  style={{ cursor: "pointer" }}
+                >
                   <td>{booking.name}</td>
                   <td>{booking.roomType}</td>
+                  <td>{booking.roomNumber}</td>
+                  <td>
+                    <Badge
+                      bg={
+                        booking.status === "Check In"
+                          ? "warning"
+                          : booking.status === "Booked"
+                          ? "primary"
+                          : booking.status === "Check Out"
+                          ? "secondary"
+                          : "danger"
+                      }
+                    >
+                      {booking.status}
+                    </Badge>
+                  </td>
                   <td>{booking.checkIn}</td>
                   <td>{booking.checkOut}</td>
                   <td>{booking.paidAmount}</td>
                   <td>{booking.dueAmount}</td>
                   <td>
-                    <Button
-                      variant={booking.paymentStatus === "Success" ? "success" : "warning"}
-                      size="sm"
-                      disabled
+                    <Badge
+                      bg={
+                        booking.paymentStatus === "Success" ? "success" : "warning"
+                      }
                     >
                       {booking.paymentStatus}
-                    </Button>
+                    </Badge>
                   </td>
                 </tr>
               ))}
             </tbody>
           </Table>
-        </div>
-        <Row className="mt-3">
-          <Col md={6}>
-            <span>
-              Showing {startIndex + 1} to {Math.min(endIndex, totalEntries)} of {totalEntries} entries
-            </span>
-          </Col>
-          <Col md={6} className="text-end">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              Previous
+        </Card.Body>
+      </Card>
+
+      <Modal show={showModal} onHide={() => setShowModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>{selectedBooking?.name}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p><strong>Email:</strong> {selectedBooking?.email}</p>
+          <p><strong>Mobile:</strong> {selectedBooking?.phone}</p>
+          <p><strong>Room:</strong> {selectedBooking?.roomType} - {selectedBooking?.roomNumber}</p>
+          <p><strong>Check In:</strong> {selectedBooking?.checkIn}</p>
+          <p><strong>Check Out:</strong> {selectedBooking?.checkOut}</p>
+          <p><strong>Paid:</strong> {selectedBooking?.paidAmount}</p>
+          <p><strong>Due:</strong> {selectedBooking?.dueAmount}</p>
+          <p><strong>Services:</strong> {selectedBooking?.services.join(", ")}</p>
+          <p><strong>Status:</strong> <Badge bg="info">{selectedBooking?.status}</Badge></p>
+
+          <div className="d-flex gap-2 mt-3">
+            {selectedBooking?.status === "Check In" && (
+              <>
+                <Button variant="primary" onClick={() => updateStatus("Booked")}>Chấp nhận (Booked)</Button>
+                <Button variant="danger" onClick={() => updateStatus("Cancelled")}>Từ chối</Button>
+              </>
+            )}
+            {selectedBooking?.status === "Booked" && (
+              <Button variant="secondary" disabled>Booked</Button>
+            )}
+            {selectedBooking?.status === "Check Out" && (
+              <Button variant="success" disabled>Đã hoàn tất</Button>
+            )}
+          </div>
+
+          <Button
+            variant="info"
+            className="mt-3"
+            onClick={() => {
+              setShowModal(false);
+              setShowInvoice(true);
+            }}
+          >
+            Xem hóa đơn
+          </Button>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>Đóng</Button>
+        </Modal.Footer>
+      </Modal>
+
+      {showInvoice && selectedBooking && (
+        <Card className="mt-4">
+          <Card.Header>
+            <h5>Hóa đơn của {selectedBooking.name}</h5>
+          </Card.Header>
+          <Card.Body>
+            <p><strong>Email:</strong> {selectedBooking.email}</p>
+            <p><strong>Phone:</strong> {selectedBooking.phone}</p>
+            <p><strong>Room:</strong> {selectedBooking.roomType} - {selectedBooking.roomNumber}</p>
+            <p><strong>Check In:</strong> {selectedBooking.checkIn}</p>
+            <p><strong>Check Out:</strong> {selectedBooking.checkOut}</p>
+            <p><strong>Paid:</strong> {selectedBooking.paidAmount}</p>
+            <p><strong>Due:</strong> {selectedBooking.dueAmount}</p>
+            <p><strong>Payment Status:</strong> {selectedBooking.paymentStatus}</p>
+            <p><strong>Services:</strong> {selectedBooking.services.join(", ")}</p>
+            <Button variant="secondary" onClick={() => setShowInvoice(false)}>
+              Đóng hóa đơn
             </Button>
-            <span className="mx-2">{currentPage} of {totalPages}</span>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </Button>
-          </Col>
-        </Row>
-      </Card.Body>
-    </Card>
+          </Card.Body>
+        </Card>
+      )}
+    </>
   );
 }

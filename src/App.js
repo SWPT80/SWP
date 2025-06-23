@@ -5,14 +5,19 @@ import Experience from './pages/Experience';
 import Service from './pages/Service';
 import HomeLayout from './layouts/HomeLayout';
 import HostLayout from './layouts/HostLayout';
-import CheckInOut from './pages/CheckInOut';
-import Rooms from './pages/Rooms';
 import Messages from './pages/Messages';
 import CustomerReport from './pages/CustomerReport';
 import BillingSystem from './pages/BillingSystem';
 import Dashboard from './pages/Dashboard';
 import HostService from './pages/HostService';
-
+import Occupancy from './components/host/Occupancy';
+import Booking from './pages/Booking';
+import AllRoom from './pages/room/AllRoom';
+import EditRoom from './pages/room/EditRoom';
+import AddRoom from './pages/room/AddRoom';
+import Room from './pages/room/Room';
+import RoomPricing from './pages/room/RoomPricing';
+import FacilitiesList from './pages/amenity/FacilitiesList';
 function App() {
   return (
     <Router>
@@ -24,12 +29,20 @@ function App() {
         </Route>
         <Route element={<HostLayout />}>
           <Route path="/hostdashboard" element={<Dashboard />} />
-          <Route path="/checkinout" element={<CheckInOut />} />
-          <Route path="/rooms" element={<Rooms />} />
+          
+        <Route path="/rooms" element={<Room />}>
+          <Route path="/rooms/allroom" element={<AllRoom />} />
+          <Route path="/rooms/addroom" element={<AddRoom />} />
+          <Route path="/rooms/editroom" element={<EditRoom />} />
+          <Route path="/rooms/roompricing" element={<RoomPricing />} />
+        </Route>
           <Route path="/messages" element={<Messages />} />
           <Route path="/customerreport" element={<CustomerReport />} />
           <Route path="/billingsystem" element={<BillingSystem />} />
           <Route path="/hostservice" element={<HostService />} />
+          <Route path="/occupancy" element={<Occupancy />}/>
+          <Route path="/booking" element={<Booking />}/>
+          <Route path="/roomfacilites" element={<FacilitiesList />}/>
         </Route>
       </Routes>
     </Router>
