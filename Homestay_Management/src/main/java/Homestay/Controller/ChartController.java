@@ -32,6 +32,19 @@ public class ChartController {
         return result;
     }
 
+    @GetMapping("/revenue/filter")
+    public List<RevenueDTO> getFilteredRevenue(@RequestParam(required = false) Integer year,
+                                               @RequestParam(required = false) Integer month) {
+        List<Object[]> data = bookingRepo.getFilteredRevenue(year, month);
+        List<RevenueDTO> result = new ArrayList<>();
+        for (Object[] row : data) {
+            Integer m = (Integer) row[0];
+            Double total = ((Number) row[1]).doubleValue();
+            result.add(new RevenueDTO("T" + m, total));
+        }
+        return result;
+    }
+
     @GetMapping("/room-types")
     public List<RoomTypeDTO> getRoomTypeCount() {
         List<Object[]> data = roomRepo.getRoomTypeCount();

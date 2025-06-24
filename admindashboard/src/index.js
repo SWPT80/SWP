@@ -7,6 +7,8 @@ import reportWebVitals from "./reportWebVitals";
 import Dashboard from "./pages/dashboard";
 import AllBooking from "./pages/all-booking";
 import EditBooking from "./pages/edit-booking";
+import AllHost from "./pages/all-hosts";
+import EditHost from "./pages/edit-hosts";
 import AllCustomer from "./pages/all-customer";
 import EditCustomer from "./pages/edit-customer";
 import AllService from "./pages/all-service";
@@ -43,6 +45,8 @@ root.render(
         <Route path="edit-booking" element={<EditBooking />} />
         <Route path="all-customer" element={<AllCustomer />} />
         <Route path="edit-customer" element={<EditCustomer />} />
+        <Route path="all-hosts" element={<AllHost />} />
+        <Route path="edit-host" element={<EditHost />} />
         <Route path="all-rooms" element={<AllRoom />} />
         <Route path="edit-room" element={<EditRoom />} />
         <Route path="add-room" element={<AddRoom />} />

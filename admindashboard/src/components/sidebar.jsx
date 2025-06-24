@@ -45,6 +45,17 @@ const Sidebar = ({ isOpen }) => {
               </ul>
             </li>
 
+            {/* Host */}
+            <li className={`submenu ${openMenus.hosts ? 'open' : ''}`}>
+              <a href='#' onClick={() => toggleMenu('hosts')}>
+                <i className="fas fa-user-shield"></i> <span>Hosts</span> <span className="menu-arrow"></span>
+              </a>
+              <ul className="submenu_class" style={{ display: openMenus.hosts ? 'block' : 'none' }}>
+                <li><Link to="/all-hosts">All Hosts</Link></li>
+                <li><Link to="/edit-host">Edit Host</Link></li>
+              </ul>
+            </li>
+
             {/* Rooms */}
             <li className={`submenu ${openMenus.rooms ? 'open' : ''}`}>
               <a href='#' onClick={() => toggleMenu('rooms')}>
@@ -60,7 +71,7 @@ const Sidebar = ({ isOpen }) => {
             {/* Service */}
             <li className={`submenu ${openMenus.service ? 'open' : ''}`}>
               <a href='#' onClick={() => toggleMenu('service')}>
-                <i className="fas fa-user"></i> <span>Service</span> <span className="menu-arrow"></span>
+                <i className="fas fa-concierge-bell"></i> <span>Service</span> <span className="menu-arrow"></span>
               </a>
               <ul className="submenu_class" style={{ display: openMenus.service ? 'block' : 'none' }}>
                 <li><Link to="/all-service">All Service</Link></li>
@@ -69,6 +80,7 @@ const Sidebar = ({ isOpen }) => {
                 <li><Link to="/pendingServices">Pending Services</Link></li>
               </ul>
             </li>
+
 
             {/* Accounts */}
             <li className={`submenu ${openMenus.accounts ? 'open' : ''}`}>

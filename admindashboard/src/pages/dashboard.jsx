@@ -62,7 +62,7 @@ const Dashboard = () => {
             <div className="col-md-12 col-lg-6">
               <div className="card card-chart">
                 <div className="card-header">
-                  <h4 className="card-title">VISITORS</h4>
+                  <h4 className="card-title">Revenue</h4>
                 </div>
                 <div className="card-body">
                   <LineChartDashboard />

@@ -9,4 +9,5 @@ import java.util.List;
 public interface ServiceRepository extends JpaRepository<HomestayService, Integer> {
     List<HomestayService> findByType_TypeId(Integer typeId); // Lấy tất cả dịch vụ theo loại (ẩm thực, tour...)
     List<HomestayService> findByStatus(Boolean status);
+    List<HomestayService> findByHomestay_HomestayId(Integer homestayId);
 }
