@@ -1,9 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
-/**
- * AllHost.jsx – danh sách host với phân trang, icon & màu sắc
- */
 const PAGE_SIZE = 10;
 
 const AllHost = () => {

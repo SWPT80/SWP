@@ -56,18 +56,6 @@ const Sidebar = ({ isOpen }) => {
               </ul>
             </li>
 
-            {/* Rooms */}
-            <li className={`submenu ${openMenus.rooms ? 'open' : ''}`}>
-              <a href='#' onClick={() => toggleMenu('rooms')}>
-                <i className="fas fa-key"></i> <span>Rooms</span> <span className="menu-arrow"></span>
-              </a>
-              <ul className="submenu_class" style={{ display: openMenus.rooms ? 'block' : 'none' }}>
-                <li><Link to="/all-rooms">All Rooms</Link></li>
-                <li><Link to="/edit-room">Edit Rooms</Link></li>
-                <li><Link to="/add-room">Add Rooms</Link></li>
-              </ul>
-            </li>
-
             {/* Service */}
             <li className={`submenu ${openMenus.service ? 'open' : ''}`}>
               <a href='#' onClick={() => toggleMenu('service')}>

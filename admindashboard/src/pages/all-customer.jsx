@@ -1,9 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-/**
- * AllCustomer.jsx – liệt kê toàn bộ khách hàng với tìm kiếm, phân trang & giao diện có icon + màu sắc
- */
 const PAGE_SIZE = 10;
 
 const AllCustomer = () => {

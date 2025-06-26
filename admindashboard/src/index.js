@@ -14,9 +14,6 @@ import EditCustomer from "./pages/edit-customer";
 import AllService from "./pages/all-service";
 import EditService from "./pages/edit-service";
 import AddService from "./pages/add-service";
-import AllRoom from "./pages/all-rooms";
-import EditRoom from "./pages/edit-room";
-import AddRoom from "./pages/add-room";
 import Invoices from "./pages/invoices";
 import Expenses from "./pages/expenses";
 import Activity from "./pages/activities";
@@ -47,9 +44,6 @@ root.render(
         <Route path="edit-customer" element={<EditCustomer />} />
         <Route path="all-hosts" element={<AllHost />} />
         <Route path="edit-host" element={<EditHost />} />
-        <Route path="all-rooms" element={<AllRoom />} />
-        <Route path="edit-room" element={<EditRoom />} />
-        <Route path="add-room" element={<AddRoom />} />
         <Route path="all-service" element={<AllService />} />
         <Route path="edit-service" element={<EditService />} />
         <Route path="add-service" element={<AddService />} />
@@ -68,6 +62,7 @@ root.render(
         <Route path="gallery" element={<Gallery />} />
         <Route path="error-404" element={<Error404 />} />
         <Route path="error-500" element={<Error500 />} />
+        <Route path="*" element={<Error404 />} /> {/* Thêm route fallback */}
       </Route>
     </Routes>
   </BrowserRouter>

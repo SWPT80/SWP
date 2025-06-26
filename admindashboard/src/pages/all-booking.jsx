@@ -1,10 +1,6 @@
 ﻿import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
-/**
- * AllBooking.jsx – hiển thị danh sách booking với phân trang, xoá, v.v.
- * Bản nâng cấp: thêm icon FontAwesome & tô màu các trường để giao diện sinh động hơn
- */
 const PAGE_SIZE = 10;
 
 const AllBooking = () => {
