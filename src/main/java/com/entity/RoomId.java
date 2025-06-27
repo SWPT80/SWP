@@ -48,4 +48,5 @@ public class RoomId implements Serializable {
     public int hashCode() {
         return Objects.hash(homestayId, roomId);
     }
+
 }

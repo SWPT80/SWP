@@ -11,51 +11,141 @@ import java.util.List;
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, Integer> {
 
-    // 1. Tổng doanh thu theo tháng của từng homestay
-    @Query("""
-        SELECT MONTH(b.createdAt), b.homestayId, SUM(b.totalAmount)
-        FROM Booking b
-        JOIN Homestays h ON b.homestayId = h.homestayId
-        WHERE b.status = 'completed' AND h.hostId = :hostId
-        GROUP BY MONTH(b.createdAt), b.homestayId
-        ORDER BY MONTH(b.createdAt), b.homestayId
-    """)
+    // === 1. Tổng doanh thu theo thời gian ===
+
+    @Query(value = """
+    SELECT 
+        DAY(b.check_out_date) AS day,
+        b.homestay_id AS homestayId,
+        SUM(b.total_amount) AS totalRevenue
+    FROM Bookings b
+    JOIN Homestays h ON b.homestay_id = h.homestay_id
+    WHERE b.status = 'confirmed' AND h.host_id = :hostId
+    GROUP BY DAY(b.check_out_date), b.homestay_id
+    ORDER BY day, homestayId
+""", nativeQuery = true)
+    List<Object[]> findDailyRevenueByHomestay(@Param("hostId") int hostId);
+
+
+
+
+    // 1.2 Theo tháng
+    @Query(value = """
+        SELECT MONTH(b.check_out_date), b.homestay_id, SUM(b.total_amount)
+        FROM Bookings b
+        JOIN Homestays h ON b.homestay_id = h.homestay_id
+        WHERE b.status = 'confirmed' AND h.host_id = :hostId
+        GROUP BY MONTH(b.check_out_date), b.homestay_id
+        ORDER BY MONTH(b.check_out_date), b.homestay_id
+    """, nativeQuery = true)
     List<Object[]> findMonthlyRevenueByHomestay(@Param("hostId") int hostId);
 
-    // 2. Doanh thu theo phòng theo từng tháng
-    @Query("""
-        SELECT MONTH(b.createdAt), b.homestayId, b.roomNumber, SUM(b.totalAmount)
-        FROM Booking b
-        JOIN Homestays h ON b.homestayId = h.homestayId
-        WHERE b.status = 'completed' AND h.hostId = :hostId
-        GROUP BY MONTH(b.createdAt), b.homestayId, b.roomNumber
-        ORDER BY MONTH(b.createdAt), b.homestayId, b.roomNumber
-    """)
+    // 1.3 Theo năm
+    @Query(value = """
+        SELECT YEAR(b.check_out_date), b.homestay_id, SUM(b.total_amount)
+        FROM Bookings b
+        JOIN Homestays h ON b.homestay_id = h.homestay_id
+        WHERE b.status = 'confirmed' AND h.host_id = :hostId
+        GROUP BY YEAR(b.check_out_date), b.homestay_id
+        ORDER BY YEAR(b.check_out_date), b.homestay_id
+    """, nativeQuery = true)
+    List<Object[]> findYearlyRevenueByHomestay(@Param("hostId") int hostId);
+
+    // === 2. Doanh thu theo phòng theo ngày ===
+    @Query(value = """
+        SELECT DAY(b.check_out_date), b.homestay_id, b.room_number, SUM(b.total_amount)
+        FROM Bookings b
+        JOIN Homestays h ON b.homestay_id = h.homestay_id
+        WHERE b.status = 'confirmed' AND h.host_id = :hostId
+        GROUP BY DAY(b.check_out_date), b.homestay_id, b.room_number
+        ORDER BY DAY(b.check_out_date), b.homestay_id, b.room_number
+    """, nativeQuery = true)
+    List<Object[]> findDailyRevenueByRoom(@Param("hostId") int hostId);
+
+    // 2.2 Doanh thu theo phòng theo tháng
+    @Query(value = """
+    SELECT MONTH(b.check_out_date), b.homestay_id, b.room_number, SUM(b.total_amount)
+    FROM Bookings b
+    JOIN Homestays h ON b.homestay_id = h.homestay_id
+    WHERE b.status = 'confirmed' AND h.host_id = :hostId
+    GROUP BY MONTH(b.check_out_date), b.homestay_id, b.room_number
+    ORDER BY MONTH(b.check_out_date), b.homestay_id, b.room_number
+""", nativeQuery = true)
     List<Object[]> findMonthlyRevenueByRoom(@Param("hostId") int hostId);
 
-    // 3. Số lượt đặt theo loại phòng mỗi tháng
-    @Query("""
-        SELECT MONTH(b.createdAt), b.homestayId, r.roomType, COUNT(b)
-        FROM Booking b
-        JOIN Rooms r ON b.homestayId = r.homestayId AND b.roomNumber = r.roomId
-        JOIN Homestays h ON b.homestayId = h.homestayId
-        WHERE b.status = 'completed' AND h.hostId = :hostId
-        GROUP BY MONTH(b.createdAt), b.homestayId, r.roomType
-        ORDER BY MONTH(b.createdAt), b.homestayId, r.roomType
-    """)
+    // 2.3 Doanh thu theo phòng theo năm
+    @Query(value = """
+    SELECT YEAR(b.check_out_date), b.homestay_id, b.room_number, SUM(b.total_amount)
+    FROM Bookings b
+    JOIN Homestays h ON b.homestay_id = h.homestay_id
+    WHERE b.status = 'confirmed' AND h.host_id = :hostId
+    GROUP BY YEAR(b.check_out_date), b.homestay_id, b.room_number
+    ORDER BY YEAR(b.check_out_date), b.homestay_id, b.room_number
+""", nativeQuery = true)
+    List<Object[]> findYearlyRevenueByRoom(@Param("hostId") int hostId);
+
+
+    // === 3. Số lượt đặt theo loại phòng ===
+
+    // === 3.1 Số lượt đặt theo loại phòng theo ngày ===
+    @Query(value = """
+        SELECT DAY(b.check_out_date), b.homestay_id, r.type, COUNT_BIG(b.booking_id)
+        FROM Bookings b
+        JOIN Rooms r ON b.homestay_id = r.homestay_id AND b.room_number = r.room_number
+        JOIN Homestays h ON b.homestay_id = h.homestay_id
+        WHERE b.status = 'confirmed' AND h.host_id = :hostId
+        GROUP BY DAY(b.check_out_date), b.homestay_id, r.type
+        ORDER BY DAY(b.check_out_date), b.homestay_id, r.type
+    """, nativeQuery = true)
+    List<Object[]> countBookingsByRoomTypeDaily(@Param("hostId") int hostId);
+
+    // 3.2 Theo tháng
+    @Query(value = """
+        SELECT MONTH(b.check_out_date), b.homestay_id, r.type, COUNT_BIG(b.booking_id)
+        FROM Bookings b
+        JOIN Rooms r ON b.homestay_id = r.homestay_id AND b.room_number = r.room_number
+        JOIN Homestays h ON b.homestay_id = h.homestay_id
+        WHERE b.status = 'confirmed' AND h.host_id = :hostId
+        GROUP BY MONTH(b.check_out_date), b.homestay_id, r.type
+        ORDER BY MONTH(b.check_out_date), b.homestay_id, r.type
+    """, nativeQuery = true)
     List<Object[]> countBookingsByRoomTypeMonthly(@Param("hostId") int hostId);
 
-    // 4. Danh sách khách đã từng đặt phòng theo host (tất cả trạng thái)
-    @Query("""
-    SELECT u.id, u.fullname, u.email, b.homestayId, b.checkInDate, b.checkOutDate, b.totalAmount, b.status
-    FROM Booking b
-    JOIN Users u ON b.userId = u.id
-    JOIN Homestays h ON b.homestayId = h.homestayId
-    WHERE h.host.id = :hostId
-    ORDER BY b.createdAt DESC
-""")
-    List<Object[]> findUserBookingsByHost(@Param("hostId") int hostId);
+    // 3.3 Theo năm
+    @Query(value = """
+        SELECT YEAR(b.check_out_date), b.homestay_id, r.type, COUNT_BIG(b.booking_id)
+        FROM Bookings b
+        JOIN Rooms r ON b.homestay_id = r.homestay_id AND b.room_number = r.room_number
+        JOIN Homestays h ON b.homestay_id = h.homestay_id
+        WHERE b.status = 'confirmed' AND h.host_id = :hostId
+        GROUP BY YEAR(b.check_out_date), b.homestay_id, r.type
+        ORDER BY YEAR(b.check_out_date), b.homestay_id, r.type
+    """, nativeQuery = true)
+    List<Object[]> countBookingsByRoomTypeYearly(@Param("hostId") int hostId);
 
+
+    // 4. Danh sách khách đã từng đặt phòng theo host (tất cả trạng thái)
+    @Query(value = """
+    SELECT 
+        b.booking_id,
+        u.user_id,
+        u.fullName ,
+        u.email,
+        b.check_in_date,
+        b.check_out_date,
+        r.type AS room_type,
+        r.price AS room_price,
+        b.total_people,
+        b.total_amount,
+        b.status
+    FROM Bookings b
+    JOIN Users u ON b.user_id = u.user_id
+    JOIN Homestays h ON b.homestay_id = h.homestay_id
+    JOIN Rooms r ON b.homestay_id = r.homestay_id AND b.room_number = r.room_number
+    WHERE h.host_id = :hostId
+    ORDER BY b.created_at DESC
+""", nativeQuery = true)
+    List<Object[]> findBookingsWithRoomDetailsByHost(@Param("hostId") int hostId);
 
     // 5. Chi tiết booking và dịch vụ của 1 user đối với host
     @Query("""

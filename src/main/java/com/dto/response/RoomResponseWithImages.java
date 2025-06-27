@@ -1,15 +1,34 @@
-package com.dto.request;
-
+package com.dto.response;
 import java.math.BigDecimal;
+import java.util.List;
 
-public class RoomUpdateRequest {
+public class RoomResponseWithImages {
+    private int homestayId;
+    private String roomId;
     private String roomType;
     private int roomCapacity;
     private BigDecimal roomPrice;
     private double rating;
     private boolean status;
+    private List<String> imageUrls;
 
-    // Getters & Setters
+    // Getters and setters
+
+    public int getHomestayId() {
+        return homestayId;
+    }
+
+    public void setHomestayId(int homestayId) {
+        this.homestayId = homestayId;
+    }
+
+    public String getRoomId() {
+        return roomId;
+    }
+
+    public void setRoomId(String roomId) {
+        this.roomId = roomId;
+    }
 
     public String getRoomType() {
         return roomType;
@@ -49,5 +68,13 @@ public class RoomUpdateRequest {
 
     public void setStatus(boolean status) {
         this.status = status;
+    }
+
+    public List<String> getImageUrls() {
+        return imageUrls;
+    }
+
+    public void setImageUrls(List<String> imageUrls) {
+        this.imageUrls = imageUrls;
     }
 }

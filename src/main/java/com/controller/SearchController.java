@@ -25,9 +25,11 @@ public class SearchController {
             @RequestParam(required = false) BigDecimal maxPrice,
             @RequestParam(required = false) Double minRating,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkInDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkOutDate
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkOutDate,
+            @RequestParam(required = false) String serviceKeyword
     ) {
-        return searchService.searchRooms(keyword, minPrice, maxPrice, minRating, checkInDate, checkOutDate);
+        return searchService.searchRooms(
+                keyword, minPrice, maxPrice, minRating, checkInDate, checkOutDate, serviceKeyword
+        );
     }
 }
-

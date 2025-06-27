@@ -1,7 +1,11 @@
 package com.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @IdClass(RoomId.class)
@@ -13,12 +17,18 @@ public class Rooms {
     private int homestayId;
 
     @Id
+    @Column(name = "room_number")
     private String roomId;
     @ManyToOne
     @JoinColumn(name = "homestay_id", insertable = false, updatable = false)
+    @JsonIgnoreProperties("rooms") // chỉ ignore trường rooms trong homestay
     private Homestays homestay;
     @Column(name = "type")
     private String roomType;
+
+    @OneToMany(mappedBy = "rooms", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<RoomImage> roomImages;
+
 
     @Column(name = "capacity")
     private int roomCapacity;
@@ -33,6 +43,14 @@ public class Rooms {
     private boolean status;
 
     // === GETTERS & SETTERS ===
+    @JsonManagedReference
+    public List<RoomImage> getRoomImages() {
+        return roomImages;
+    }
+
+    public void setRoomImages(List<RoomImage> roomImages) {
+        this.roomImages = roomImages;
+    }
 
     public int getHomestayId() {
         return homestayId;

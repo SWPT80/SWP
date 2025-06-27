@@ -3,11 +3,31 @@ package com.dto.request;
 import java.math.BigDecimal;
 
 public class RoomCreateRequest {
+    private Integer hostId;       // frontend truyền vào
+    private String roomId;        // khóa chính thứ 2
     private String roomType;
     private int roomCapacity;
     private BigDecimal roomPrice;
     private double rating;
     private boolean status;
+
+    // Getters & Setters
+
+    public Integer getHostId() {
+        return hostId;
+    }
+
+    public void setHostId(Integer hostId) {
+        this.hostId = hostId;
+    }
+
+    public String getRoomId() {
+        return roomId;
+    }
+
+    public void setRoomId(String roomId) {
+        this.roomId = roomId;
+    }
 
     public String getRoomType() {
         return roomType;
@@ -49,3 +69,4 @@ public class RoomCreateRequest {
         this.status = status;
     }
 }
+

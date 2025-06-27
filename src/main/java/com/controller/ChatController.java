@@ -9,9 +9,11 @@ import com.respository.UserRepository;
 import com.services.ChatService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -27,29 +29,23 @@ public class ChatController {
     @Autowired
     private MessageRepository messageRepository;
 
-    // ✅ Lấy hoặc tạo cuộc trò chuyện
+    @Autowired
+    private UserRepository userRepository;
 
-    @PostMapping("/conversation")
+    @PostMapping(value = "/conversation", produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8")
     public ResponseEntity<ConversationDTO> startConversation(
             @RequestParam int customerId,
             @RequestParam int hostId,
             @RequestParam int homestayId) {
-
         Conversation conversation = chatService.getOrCreateConversation(customerId, hostId, homestayId);
         return ResponseEntity.ok(new ConversationDTO(conversation.getConversationId()));
     }
 
-
-    // ✅ Gửi tin nhắn
-    @Autowired
-    private UserRepository userRepository;
-
-    @PostMapping("/message")
+    @PostMapping(value = "/message", produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8")
     public ResponseEntity<?> sendMessage(
             @RequestParam Integer conversationId,
             @RequestParam Integer senderId,
             @RequestParam String content) {
-
         if (conversationId == null || senderId == null || content == null || content.trim().isEmpty()) {
             return ResponseEntity.badRequest().body("Thiếu tham số");
         }
@@ -64,51 +60,55 @@ public class ChatController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy người gửi");
         }
 
+        // Decode content để xử lý tiếng Việt
+        String decodedContent;
+        try {
+            decodedContent = java.net.URLDecoder.decode(content, StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Lỗi decode nội dung: " + e.getMessage());
+        }
+
         Message message = new Message();
         message.setConversation(conversationOpt.get());
-        message.setSender(senderOpt.get()); // ✅ Đúng cách
-        message.setContent(content);
+        message.setSender(senderOpt.get());
+        message.setContent(decodedContent);
         message.setSentAt(LocalDateTime.now());
 
         Message savedMessage = messageRepository.save(message);
         return ResponseEntity.ok(savedMessage);
     }
 
-
-    // ✅ Lấy tin nhắn
-    @GetMapping("/messages/{conversationId}")
-    public List<Message> getMessages(@PathVariable int conversationId) {
-        return chatService.getMessages(conversationId);
+    @GetMapping(value = "/messages/{conversationId}", produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8")
+    public ResponseEntity<List<Message>> getMessages(@PathVariable int conversationId) {
+        List<Message> messages = chatService.getMessages(conversationId);
+        return ResponseEntity.ok(messages);
     }
 
-    // ✅ Lấy danh sách host đã chat với user
-    @GetMapping("/hosts")
-    public List<Users> getHostsForCurrentUser(@RequestParam int userId) {
-        return chatService.getHostsForUser(userId);
+    @GetMapping(value = "/hosts", produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8")
+    public ResponseEntity<List<Users>> getHostsForCurrentUser(@RequestParam int userId) {
+        List<Users> hosts = chatService.getHostsForUser(userId);
+        return ResponseEntity.ok(hosts);
     }
-    // ✅ Lấy tin nhắn đến của người dùng cụ thể (theo conversation và receiver)
-    @GetMapping("/messages/received")
+
+    @GetMapping(value = "/messages/received", produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8")
     public ResponseEntity<?> getReceivedMessages(
             @RequestParam int conversationId,
             @RequestParam int receiverId) {
-
         Optional<Conversation> conversationOpt = chatService.getConversationById(conversationId);
         if (!conversationOpt.isPresent()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy cuộc trò chuyện");
         }
 
         List<Message> messages = chatService.getMessages(conversationId);
-
-        // ✅ Lọc ra tin nhắn mà sender khác receiver
         List<Message> receivedMessages = messages.stream()
                 .filter(m -> m.getSender().getId() != receiverId)
                 .toList();
-
         return ResponseEntity.ok(receivedMessages);
     }
-    @GetMapping("/users")
-    public List<Users> getUsersChattedWithHost(@RequestParam int hostId) {
-        return chatService.getUsersForHost(hostId); // viết hàm này trong service
-    }
 
+    @GetMapping(value = "/users", produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8")
+    public ResponseEntity<List<Users>> getUsersChattedWithHost(@RequestParam int hostId) {
+        List<Users> users = chatService.getUsersForHost(hostId);
+        return ResponseEntity.ok(users);
+    }
 }

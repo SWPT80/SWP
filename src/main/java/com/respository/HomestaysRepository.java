@@ -6,9 +6,11 @@ import com.entity.Homestays;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface HomestaysRepository extends JpaRepository<Homestays, Integer> {
-    // Bạn có thể thêm các hàm custom nếu cần, ví dụ:
-    // List<Homestay> findByHostUserId(int hostId);
+    Optional<Homestays> findByHostId(Integer hostId);
 }
+
 
