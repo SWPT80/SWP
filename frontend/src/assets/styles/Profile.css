@@ -1,0 +1,184 @@
+body {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  margin-top: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.container {
+  max-width: 1000px;
+}
+
+.ui-w-80 {
+  width: 80px !important;
+  height: auto;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.card {
+  border: none;
+  border-radius: 15px;
+  background: #ffffff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+.row-bordered {
+  overflow: hidden;
+}
+
+.account-settings-links .list-group-item {
+  background: transparent;
+  border: none;
+  color: #4a4a4a;
+  padding: 15px 20px;
+  border-left: 3px solid transparent;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: block;
+}
+
+.account-settings-links .list-group-item.active {
+  font-weight: 600;
+  color: #007bff;
+  border-left: 3px solid #007bff;
+  background: #f8f9fa;
+}
+
+.account-settings-links .list-group-item:hover {
+  background: #f1f3f5;
+  border-left: 3px solid #007bff;
+}
+
+.form-label {
+  font-weight: 500;
+  color: #333;
+}
+
+.form-control {
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  transition: border-color 0.3s ease;
+}
+
+.form-control:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+}
+
+.btn-outline-primary {
+  border-color: #007bff;
+  color: #007bff;
+  border-radius: 8px;
+  padding: 8px 15px;
+  transition: all 0.3s ease;
+}
+
+.btn-outline-primary:hover {
+  background: #007bff;
+  color: #fff;
+}
+
+.btn-outline-secondary {
+  border-color: #ddd;
+  color: #666;
+  border-radius: 8px;
+  padding: 8px 15px;
+  transition: all 0.3s ease;
+}
+
+.btn-outline-secondary:hover {
+  background: #f1f3f5;
+  color: #333;
+}
+
+.invoice-table,
+.trip-table,
+.booking-table,
+.service-table {
+  margin-top: 15px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.invoice-table th,
+.invoice-table td,
+.trip-table th,
+.trip-table td,
+.booking-table th,
+.booking-table td,
+.service-table th,
+.service-table td {
+  padding: 12px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.invoice-table th,
+.trip-table th,
+.booking-table th,
+.service-table th {
+  background: linear-gradient(90deg, #007bff, #00c6ff);
+  color: #fff;
+  font-weight: 600;
+}
+
+.booking-row {
+  margin-bottom: 15px;
+  background: #fff;
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.3s ease;
+}
+
+.booking-row:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.service-table {
+  margin-left: 20px;
+  margin-top: 10px;
+  background: #f8f9fa;
+}
+
+.collapse-header {
+  cursor: pointer;
+  font-weight: 500;
+  color: #007bff;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.collapse-header:hover {
+  color: #0056b3;
+}
+
+.pagination {
+  margin-top: 20px;
+  text-align: center;
+}
+
+h4,
+h6 {
+  color: #2c3e50;
+  font-weight: 700;
+}
+
+.text-light {
+  color: #7f8c8d !important;
+}
+
+.account-settings-fileinput {
+  position: absolute;
+  visibility: hidden;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
