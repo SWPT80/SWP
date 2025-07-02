@@ -1,8 +1,11 @@
 package com.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 
 @Entity
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Table(name = "Homestays")
 public class Homestays {
 
@@ -10,7 +13,7 @@ public class Homestays {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "homestay_id")
     private Integer homestayId;
-
+    @JsonIgnore
     @Column(name = "host_id")
     private Integer hostId;
 

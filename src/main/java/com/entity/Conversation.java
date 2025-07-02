@@ -14,7 +14,7 @@ public class Conversation {
     private Integer conversationId;
 
     @ManyToOne
-    @JoinColumn(name = "customer_id")
+    @JoinColumn(name = "user_id")
     private Users customer;
 
     @ManyToOne
