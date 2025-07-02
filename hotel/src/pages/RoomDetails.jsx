@@ -1,82 +1,123 @@
-import React, { useState } from 'react';
-import {
-  Container,
-  Row,
-  Col,
-  Card,
-  Button,
-  Form,
-  Collapse,
-  Modal,
-} from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { Container, Row, Col, Card, Button, Form, Collapse, Modal, Alert } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
+import '@fortawesome/fontawesome-free/css/all.min.css';
+import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import PaymentCheckout from './Payment-checkout';
 
 const RoomDetails = () => {
-  // Mock room data
-  const roomData = {
-    roomName: 'Phòng Deluxe View Biển',
-    name: 'Sekong Hotel Đà Nẵng',
-    star: 4,
-    description:
-      'Phòng Deluxe View Biển mang đến trải nghiệm nghỉ dưỡng sang trọng với ban công hướng biển, giường đôi thoải mái và không gian hiện đại. Chỉ cách bãi biển Mỹ Khê 2 phút đi bộ.',
-    detailImageHomestay: '/images/homestay.jpg',
-    detailImageRoom1: '/images/room1.jpg',
-    detailImageRoom2: '/images/room2.jpg',
-    detailImageRoom3: '/images/room3.jpg',
-    id: '123',
-  };
-
-  const price = '1200000';
-  const [messError, setMessError] = useState(null);
+  const { homestayId, roomNumber } = useParams();
+  const navigate = useNavigate();
+  const [roomData, setRoomData] = useState(null);
+  const [cancellationPolicies, setCancellationPolicies] = useState([]);
+  const [homestayRules, setHomestayRules] = useState([]);
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [checkInDate, setCheckInDate] = useState('');
   const [checkOutDate, setCheckOutDate] = useState('');
+  const [messError, setMessError] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-
-  const reviews = [
-    {
-      name: 'Trần Minh',
-      date: 'Tháng 3/2025',
-      rating: 4,
-      comment: 'Phòng sạch sẽ, view biển tuyệt vời!',
-    },
-    {
-      name: 'Lê Hồng Phúc',
-      date: 'Tháng 5/2025',
-      rating: 3.5,
-      comment: 'View đẹp, nhưng bữa sáng cần cải thiện.',
-    },
-  ];
-
-  const hostData = {
-    name: 'Nguyễn Văn Hùng',
-    image: '/images/host.jpg',
-    description:
-      'Chào mừng bạn đến với căn hộ của tôi! Tôi là một người yêu du lịch và luôn sẵn sàng hỗ trợ bạn trong chuyến đi.',
-  };
-
-  const amenities = [
-    { icon: 'bi-wifi', text: 'Wifi' },
-    { icon: 'bi-tv', text: 'TV' },
-    { icon: 'bi-snow', text: 'Điều hoà' },
-    { icon: 'bi-microwave', text: 'Lò vi sóng' },
-    { icon: 'bi-washing-machine', text: 'Máy giặt' },
-    { icon: 'bi-droplet', text: 'Dầu gội' },
-    { icon: 'bi-fridge', text: 'Tủ lạnh' },
-    { icon: 'bi-hair-dryer', text: 'Máy sấy' },
-    { icon: 'bi-droplet-fill', text: 'Xà phòng' },
-    { icon: 'bi-fire', text: 'BBQ' },
-  ];
-
-  // Booking form logic
-  const [showGuestOptions, setShowGuestOptions] = useState(false);
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [bookingId, setBookingId] = useState(null);
   const [guests, setGuests] = useState({
     adults: 1,
     children: 0,
     infants: 0,
     pets: 0,
   });
+  const [showGuestOptions, setShowGuestOptions] = useState(false);
+  const [selectedServices, setSelectedServices] = useState({});
+  const [showServiceModal, setShowServiceModal] = useState(false);
+  const [selectedService, setSelectedService] = useState(null);
+  // Thêm trạng thái cho thông tin khách hàng
+  const [customerInfo, setCustomerInfo] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    address: '',
+  });
+
+  useEffect(() => {
+    const fetchRoomDetails = async () => {
+      setLoading(true);
+      try {
+        if (!homestayId || !roomNumber) {
+          throw new Error('Thiếu homestayId hoặc roomNumber');
+        }
+
+        const roomDetailsResponse = await axios.get(
+          `http://localhost:8080/api/rooms/${homestayId}/${roomNumber}`
+        );
+        const roomDetails = roomDetailsResponse.data;
+
+        const reviewsResponse = await axios.get(
+          `http://localhost:8080/api/reviews/room/${homestayId}/${roomNumber}`
+        ).catch(() => ({ data: [] }));
+        const reviews = reviewsResponse.data;
+
+        const cancellationResponse = await axios.get(
+          `http://localhost:8080/api/cancellation-policies/homestay/${homestayId}`
+        ).catch(() => ({ data: [] }));
+        setCancellationPolicies(cancellationResponse.data);
+
+        const rulesResponse = await axios.get(
+          `http://localhost:8080/api/homestay-rules/homestay/${homestayId}`
+        ).catch(() => ({ data: [] }));
+        setHomestayRules(rulesResponse.data);
+
+        const servicesResponse = await axios.get(
+          `http://localhost:8080/api/services/homestay/${homestayId}`
+        ).catch(() => ({ data: [] }));
+        setServices(servicesResponse.data);
+
+        const initialServices = servicesResponse.data.reduce((acc, service) => {
+          acc[service.id] = false;
+          return acc;
+        }, {});
+        setSelectedServices(initialServices);
+
+        setRoomData({
+          roomName: roomDetails.room.type,
+          name: roomDetails.homestay.homestayName,
+          star: roomDetails.room.rating || (reviews.length > 0
+            ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+            : 0),
+          description: roomDetails.homestay.description || 'Không có mô tả',
+          address: roomDetails.homestay.address || 'Không có địa chỉ',
+          location: roomDetails.homestay.location || 'Không xác định',
+          detailImageHomestay: roomDetails.images?.[0]?.imageUrl || roomDetails.homestayImages?.[0]?.imageUrl || '/images/homestay.jpg',
+          price: roomDetails.room.price,
+          capacity: roomDetails.room.capacity,
+          status: roomDetails.room.status,
+          reviews: reviews,
+          amenities: roomDetails.amenities || [],
+        });
+
+        // Lấy thông tin khách hàng từ hệ thống xác thực (nếu có)
+        // Ví dụ: Lấy từ localStorage hoặc API
+        // const userId = localStorage.getItem('userId');
+        // if (userId) {
+        //   const userResponse = await axios.get(`http://localhost:8080/api/users/${userId}`);
+        //   setCustomerInfo({
+        //     fullName: userResponse.data.fullName || '',
+        //     email: userResponse.data.email || '',
+        //     phone: userResponse.data.phone || '',
+        //     address: userResponse.data.address || '',
+        //   });
+        // }
+      } catch (err) {
+        console.error('Lỗi khi lấy chi tiết phòng:', err);
+        setError('Không thể tải chi tiết phòng. Vui lòng thử lại sau.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRoomDetails();
+  }, [homestayId, roomNumber]);
 
   const toggleGuestOptions = () => setShowGuestOptions(!showGuestOptions);
 
@@ -85,68 +126,160 @@ const RoomDetails = () => {
       const updated = { ...prev };
       updated[type] = Math.max(0, updated[type] + delta);
       if (type === 'adults' && updated[type] === 0) updated[type] = 1;
+      const totalGuests = updated.adults + updated.children + updated.infants;
+      if (totalGuests > roomData?.capacity && delta > 0 && type !== 'pets') {
+        setMessError(`Số khách vượt quá sức chứa tối đa (${roomData.capacity} người)`);
+        return prev;
+      }
+      setMessError(null);
       return updated;
     });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!checkInDate || !checkOutDate) {
-      setMessError('Vui lòng chọn ngày nhận phòng và trả phòng');
-      return;
-    }
-    if (new Date(checkOutDate) <= new Date(checkInDate)) {
-      setMessError('Ngày trả phòng phải sau ngày nhận phòng');
-      return;
-    }
-    setShowPaymentModal(true); // Trigger payment modal
+  const handleServiceChange = (serviceId) => {
+    setSelectedServices((prev) => ({
+      ...prev,
+      [serviceId]: !prev[serviceId],
+    }));
   };
+
+  const handleServiceClick = (service) => {
+    setSelectedService(service);
+    setShowServiceModal(true);
+  };
+
+  const calculateTotalAmount = () => {
+    if (!checkInDate || !checkOutDate || !roomData) return 0;
+    const checkIn = new Date(checkInDate);
+    const checkOut = new Date(checkOutDate);
+    const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
+    let total = nights * roomData.price;
+
+    const totalGuests = guests.adults + guests.children + guests.infants;
+    services.forEach((service) => {
+      if (selectedServices[service.id]) {
+        if (service.specialNotes?.includes('per person')) {
+          total += service.price * totalGuests;
+        } else if (service.specialNotes?.includes('per day')) {
+          total += service.price * nights;
+        } else if (service.specialNotes?.includes('per person per day')) {
+          total += service.price * totalGuests * nights;
+        } else {
+          total += service.price;
+        }
+      }
+    });
+
+    return total;
+  };
+
+  const getSelectedServicesSummary = () => {
+    return services
+      .filter((service) => selectedServices[service.id])
+      .map((service) => ({
+        name: service.serviceType?.serviceName || 'Dịch vụ không xác định',
+        price: service.price,
+        specialNotes: service.specialNotes || '',
+      }));
+  };
+
+  const handleCustomerInfoChange = (field, value) => {
+    setCustomerInfo((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const validateCustomerInfo = () => {
+    if (!customerInfo.fullName) return 'Vui lòng nhập họ tên.';
+    if (!customerInfo.email || !/\S+@\S+\.\S+/.test(customerInfo.email)) return 'Vui lòng nhập email hợp lệ.';
+    if (!customerInfo.phone || !/^\d{10,11}$/.test(customerInfo.phone)) return 'Vui lòng nhập số điện thoại hợp lệ (10-11 số).';
+    return null;
+  };
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setMessError(null);
+
+  if (!checkInDate || !checkOutDate) {
+    setMessError('Vui lòng chọn ngày nhận phòng và trả phòng');
+    return;
+  }
+  if (new Date(checkOutDate) <= new Date(checkInDate)) {
+    setMessError('Ngày trả phòng phải sau ngày nhận phòng');
+    return;
+  }
+  const totalGuests = guests.adults + guests.children + guests.infants;
+  if (totalGuests > roomData?.capacity) {
+    setMessError(`Số khách vượt quá sức chứa tối đa (${roomData.capacity} người)`);
+    return;
+  }
+
+  const bookingDTO = {
+    userId: localStorage.getItem('userId') || 1, // Thay bằng logic xác thực thực tế
+    homestayId: parseInt(homestayId),
+    roomNumber: roomNumber,
+    checkInDate: checkInDate,
+    checkOutDate: checkOutDate,
+    adults: guests.adults,
+    children: guests.children,
+    totalPeople: totalGuests,
+    totalAmount: calculateTotalAmount(),
+    services: Object.keys(selectedServices).filter((key) => selectedServices[key]).map(Number),
+  };
+
+  console.log('Sending booking DTO:', bookingDTO); // Thêm log để kiểm tra
+
+  try {
+    const response = await axios.post('http://localhost:8080/api/bookings', bookingDTO);
+    console.log('Booking response:', response.data); // Thêm log để kiểm tra response
+    setBookingId(response.data.id); // Đảm bảo response.data.id tồn tại
+    setShowConfirmationModal(true);
+  } catch (err) {
+    console.error('Error response:', err.response?.data);
+    setMessError(err.response?.data?.message || 'Không thể tạo đặt phòng. Vui lòng thử lại.');
+  }
+};
+  const handleConfirmBooking = () => {
+    console.log('Booking ID trước khi thanh toán:', bookingId);
+    const validationError = validateCustomerInfo();
+    if (validationError) {
+        setMessError(validationError);
+        return;
+    }
+    setShowConfirmationModal(false);
+    setShowPaymentModal(true);
+};
+
+  if (loading) return <div className="text-center py-10">Đang tải dữ liệu...</div>;
+  if (error) return <div className="text-center py-10 text-red-500">{error}</div>;
+  if (!roomData) return null;
 
   const formattedPrice = new Intl.NumberFormat('vi-VN', {
     style: 'currency',
     currency: 'VND',
-  }).format(parseInt(price));
+  }).format(calculateTotalAmount());
 
   const totalGuests = guests.adults + guests.children + guests.infants;
   const guestLabel = `${totalGuests} khách${guests.pets > 0 ? `, ${guests.pets} thú cưng` : ''}`;
+  const nights = checkInDate && checkOutDate
+    ? Math.ceil((new Date(checkOutDate) - new Date(checkInDate)) / (1000 * 60 * 60 * 24))
+    : 0;
 
   return (
     <Container className="my-4">
-      {/* Room Images */}
       <Row className="g-0 mb-4">
-        <Col md={8}>
+        <Col md={12}>
           <img
-            src={roomData.detailImageHomestay}
-            alt="Main Room"
-            className="w-100 rounded-start"
+            src={`/${roomData.detailImageHomestay}`}
+            alt="Phòng chính"
+            className="w-100 rounded"
             style={{ height: '400px', objectFit: 'cover' }}
           />
-        </Col>
-        <Col md={4}>
-          <Row className="g-0 h-100">
-            <Col xs={12} className="h-50">
-              <img
-                src={roomData.detailImageRoom1}
-                alt="Room 2"
-                className="w-100"
-                style={{ height: '100%', objectFit: 'cover' }}
-              />
-            </Col>
-            <Col xs={12} className="h-50">
-              <img
-                src={roomData.detailImageRoom2}
-                alt="Room 3"
-                className="w-100 rounded-bottom-end"
-                style={{ height: '100%', objectFit: 'cover' }}
-              />
-            </Col>
-          </Row>
         </Col>
       </Row>
 
       <Row>
         <Col md={8}>
-          {/* Room Info */}
           <Card className="mb-4">
             <Card.Body>
               <h2 className="h3 mb-3">{roomData.roomName}</h2>
@@ -156,122 +289,136 @@ const RoomDetails = () => {
               </div>
               <div className="d-flex align-items-center mb-2">
                 <i className="bi bi-geo-alt text-muted me-2"></i>
-                <span>123 Đường Biển, Đà Nẵng</span>
+                <span>{roomData.address} ({roomData.location})</span>
+              </div>
+              <div className="d-flex align-items-center mb-2">
+                <i className="bi bi-star-fill text-warning me-2"></i>
+                <span>{roomData.star.toFixed(1)} sao</span>
+              </div>
+              <div className="d-flex align-items-center mb-2">
+                <i className="bi bi-people text-muted me-2"></i>
+                <span>Sức chứa: {roomData.capacity} người</span>
               </div>
               <div className="d-flex align-items-center mb-3">
-                <i className="bi bi-star-fill text-warning me-2"></i>
-                <span>{roomData.star} sao</span>
+                <i className={`bi bi-${roomData.status ? 'check-circle' : 'x-circle'} ${roomData.status ? 'text-success' : 'text-danger'} me-2`}></i>
+                <span>Trạng thái: {roomData.status ? 'Còn trống' : 'Đã đặt'}</span>
               </div>
               <p className="text-muted mb-4">{roomData.description}</p>
 
               <h3 className="h4 mb-3">Tiện nghi chỗ ở</h3>
-              <Row>
-                {amenities.map((amenity, index) => (
-                  <Col xs={6} md={4} key={index} className="mb-3">
-                    <div className="d-flex align-items-center">
-                      <i className={`bi ${amenity.icon} fs-5 me-2 text-primary`}></i>
-                      <span>{amenity.text}</span>
+              <Row className="gy-3 mb-3">
+                {roomData.amenities.map((amenity, index) => (
+                  <Col key={index} xs={12} sm={6} md={4}>
+                    <div className="d-flex align-items-center bg-light p-2 rounded shadow-sm">
+                      <i className={`${amenity.iconClass || 'fas fa-check'} fs-5 me-3 text-primary`}></i>
+                      <span className="fw-medium">{amenity.typeName}</span>
                     </div>
                   </Col>
                 ))}
               </Row>
+
+              <h3 className="h4 mb-3">Dịch vụ bổ sung</h3>
+              {services.length > 0 ? (
+                <Row>
+                  {services.map((service, index) => (
+                    <Col xs={6} md={4} key={index} className="mb-3">
+                      <Card
+                        className={`border ${selectedServices[service.id] ? 'border-primary' : ''}`}
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => handleServiceClick(service)}
+                      >
+                        <Card.Body>
+                          <Card.Title>{service.serviceType?.serviceName || 'Dịch vụ không xác định'}</Card.Title>
+                          <Card.Text>
+                            Giá: {new Intl.NumberFormat('vi-VN', {
+                              style: 'currency',
+                              currency: 'VND',
+                            }).format(service.price)}
+                            {service.specialNotes ? `/${service.specialNotes}` : ''}
+                          </Card.Text>
+                          <Form.Check
+                            type="checkbox"
+                            label="Chọn dịch vụ này"
+                            checked={selectedServices[service.id] || false}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              handleServiceChange(service.id);
+                            }}
+                          />
+                        </Card.Body>
+                      </Card>
+                    </Col>
+                  ))}
+                </Row>
+              ) : (
+                <p className="text-muted">Không có dịch vụ bổ sung nào.</p>
+              )}
             </Card.Body>
           </Card>
-          {/*Quy tắc chung */}
+
           <Card className="mb-4">
             <Card.Body>
-              <h3 className="h4 mb-3">Quy tắc chung</h3>
-              <p className="mb-4">
-                Hawai Boutique Villa Hoi An nhận yêu cầu đặc biệt - gửi yêu cầu trong bước kế tiếp!
-              </p>
-
-              <hr className="my-4" />
-
-              <h4 className="h5 mb-3">Nhận phòng</h4>
-              <div className="mb-4">
-                <div className="d-flex align-items-center mb-2">
-                  <i className="bi bi-clock me-2"></i>
-                  <div>
-                    <strong>Trà phòng</strong>
-                    <div>Từ 14:00 - 00:00</div>
-                    <div>Từ 01:00 - 12:00</div>
-                  </div>
-                </div>
-              </div>
-
-              <hr className="my-4" />
-
-              <hr className="my-4" />
-
-              <h4 className="h5 mb-3">Trẻ em và giường</h4>
-
-              <div className="mb-3">
-                <h5 className="h6 mb-2">Chính sách trẻ em</h5>
-                <p>Phù hợp cho tất cả trẻ em.</p>
-                <p>Trẻ em từ 12 tuổi trở lên sẽ được tính giá như người lớn tại chỗ nghỉ này.</p>
-                <p>
-                  Để xem thông tin giá và tình trạng phòng trống chính xác, vui lòng thêm số lượng và độ tuổi
-                  của trẻ em trong nhóm của bạn khi tìm kiếm.
-                </p>
-              </div>
-
-              <div>
-                <h5 className="h6 mb-2">Chính sách nôi (cũi) và giường phụ</h5>
-                <h6 className="h6 mb-2">0 - 4 tuổi</h6>
-                <ul className="mb-0">
-                  <li>Có nôi/cũi nếu yêu cầu</li>
-                  <li>Miễn phí</li>
+              <h4 className="mb-3 fw-bold">Quy tắc chung</h4>
+              {homestayRules.length > 0 ? (
+                <ul className="list-unstyled mb-0">
+                  {homestayRules.map((rule, index) => (
+                    <li key={index} className="mb-2">
+                      <span className="fw-semibold text-dark">{rule.ruleName}</span>: <span className="text-muted">{rule.description}</span>
+                    </li>
+                  ))}
                 </ul>
-              </div>
+              ) : (
+                <p className="text-muted">Không có quy tắc cụ thể.</p>
+              )}
             </Card.Body>
           </Card>
 
-
-
-          {/* Reviews */}
           <Card className="mb-4">
             <Card.Body>
               <h3 className="h4 mb-3">Đánh giá của khách</h3>
-              {reviews.map((review, index) => (
-                <div key={index} className="mb-3 pb-3 border-bottom">
-                  <div className="d-flex justify-content-between align-items-center mb-2">
-                    <div>
-                      <strong>{review.name}</strong>
-                      <span className="text-muted ms-2">({review.date})</span>
+              {roomData.reviews.length > 0 ? (
+                roomData.reviews.map((review, index) => (
+                  <div key={index} className="mb-3 pb-3 border-bottom">
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <div>
+                        <strong>{review.userName || 'Ẩn danh'}</strong>
+                        <span className="text-muted ms-2">({new Date(review.createdAt).toLocaleDateString('vi-VN')})</span>
+                      </div>
+                      <div className="d-flex">
+                        {[...Array(5)].map((_, i) => (
+                          <i
+                            key={i}
+                            className={`bi bi-star${i < Math.floor(review.rating) ? '-fill' : i < review.rating ? '-half' : ''} text-warning`}
+                          ></i>
+                        ))}
+                      </div>
                     </div>
-                    <div className="d-flex">
-                      {[...Array(5)].map((_, i) => (
-                        <i
-                          key={i}
-                          className={`bi bi-star${i < Math.floor(review.rating)
-                              ? '-fill'
-                              : i < review.rating
-                                ? '-half'
-                                : ''
-                            } text-warning`}
-                        ></i>
-                      ))}
-                    </div>
+                    <p className="mb-0 text-muted">{review.comment}</p>
                   </div>
-                  <p className="mb-0 text-muted">{review.comment}</p>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-muted">Chưa có đánh giá nào.</p>
+              )}
             </Card.Body>
           </Card>
 
-          {/* Cancellation Policy */}
           <Card className="mb-4">
             <Card.Body>
               <h3 className="h4 mb-3">Chính sách hủy phòng</h3>
-              <ul className="text-muted">
-                <li>Miễn phí hủy phòng trước 48 giờ trước ngày nhận phòng.</li>
-                <li>Hủy phòng trong vòng 48 giờ sẽ bị tính phí 50% giá phòng.</li>
-                <li>Không hoàn tiền nếu hủy sau 24 giờ trước ngày nhận phòng.</li>
-              </ul>
+              {cancellationPolicies.length > 0 ? (
+                <ul className="text-muted">
+                  {cancellationPolicies.map((policy, index) => (
+                    <li key={index}>
+                      {policy.name}: {policy.description} (Hoàn tiền {policy.refundPercentage}% nếu hủy trước {policy.daysBeforeCheckin} ngày)
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-muted">Không có chính sách hủy phòng cụ thể.</p>
+              )}
             </Card.Body>
           </Card>
 
-          {/* Location */}
           <Card className="mb-4">
             <Card.Body>
               <h3 className="h4 mb-3">Vị trí</h3>
@@ -287,78 +434,32 @@ const RoomDetails = () => {
               </div>
             </Card.Body>
           </Card>
-
-
-          {/* Host Info */}
-
-          <Card className="mb-4">
-            <Card.Body>
-              <h3 className="h4 mb-3" style={{
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                fontWeight: 'bold'
-              }}>
-                Thông tin chủ nhà
-              </h3>
-              <Row className="align-items-center">
-                <Col xs={3} md={2}>
-                  <div className="rounded-circle overflow-hidden" style={{
-                    width: '100%',
-                    paddingBottom: '100%',
-                    position: 'relative',
-                  }}>
-                    <img
-                      src={hostData.image}
-                      alt={hostData.name}
-                      style={{
-                        position: 'absolute',
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover'
-                      }}
-                    />
-                  </div>
-                </Col>
-                <Col xs={9} md={7}>
-                  <h4 className="h5 mb-1">{hostData.name}</h4>
-                  <div className="d-flex align-items-center mb-2">
-                    <i className="bi bi-star-fill text-warning me-1"></i>
-                    <span className="me-2">4.9</span>
-                    <span className="text-muted me-2">•</span>
-                    <span className="text-success">
-                      <i className="bi bi-check-circle-fill me-1"></i>
-                      Đã xác thực
-                    </span>
-                  </div>
-                  <div className="mb-2">
-                    <i className="bi bi-telephone text-primary me-2"></i>
-                    <span>0987 123 456</span>
-                  </div>
-                  <div className="mb-2">
-                    <i className="bi bi-envelope text-primary me-2"></i>
-                    <span>tuannguyen@gmail.com</span>
-                  </div>
-                  <div>
-                    <i className="bi bi-geo-alt text-primary me-2"></i>
-                    <span>Quận 2, TP. Hồ Chí Minh</span>
-                  </div>
-                </Col>
-                <Col xs={12} md={3} className="mt-2 mt-md-0">
-                  <Button variant="primary" className="w-110">
-                    <i className="bi bi-chat-left-text me-2"></i>
-                    Chat với chủ nhà
-                  </Button>
-                </Col>
-              </Row>
-            </Card.Body>
-          </Card>
         </Col>
 
         <Col md={4}>
-          {/* Booking Form */}
           <Card className="sticky-top" style={{ top: '20px' }}>
             <Card.Body>
-              <h3 className="h4 mb-3">{formattedPrice} / đêm</h3>
+              <h3 className="h4 mb-3">Tổng quan đặt phòng</h3>
+              <div className="mb-3">
+                <strong>Phòng:</strong> {roomData.roomName} <br />
+                <strong>Homestay:</strong> {roomData.name} <br />
+                <strong>Ngày nhận phòng:</strong> {checkInDate ? new Date(checkInDate).toLocaleDateString('vi-VN') : 'Chưa chọn'} <br />
+                <strong>Ngày trả phòng:</strong> {checkOutDate ? new Date(checkOutDate).toLocaleDateString('vi-VN') : 'Chưa chọn'} <br />
+                <strong>Số khách:</strong> {guestLabel} <br />
+                <strong>Dịch vụ bổ sung:</strong>
+                {getSelectedServicesSummary().length > 0 ? (
+                  <ul className="list-unstyled mt-2">
+                    {getSelectedServicesSummary().map((service, index) => (
+                      <li key={index}>
+                        {service.name}: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(service.price)} {service.specialNotes ? `/${service.specialNotes}` : ''}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <span className="text-muted"> Không có dịch vụ nào được chọn.</span>
+                )}
+              </div>
+              <h3 className="h4 mb-3">Tổng: {formattedPrice}</h3>
               <Form onSubmit={handleSubmit}>
                 <Form.Group className="mb-3">
                   <Form.Label>Nhận phòng</Form.Label>
@@ -367,6 +468,7 @@ const RoomDetails = () => {
                     value={checkInDate}
                     onChange={(e) => setCheckInDate(e.target.value)}
                     required
+                    min={new Date().toISOString().split('T')[0]}
                   />
                 </Form.Group>
 
@@ -377,6 +479,7 @@ const RoomDetails = () => {
                     value={checkOutDate}
                     onChange={(e) => setCheckOutDate(e.target.value)}
                     required
+                    min={checkInDate ? new Date(new Date(checkInDate).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] : ''}
                   />
                 </Form.Group>
 
@@ -425,7 +528,7 @@ const RoomDetails = () => {
                                   e.preventDefault();
                                   updateGuestCount(key, 1);
                                 }}
-                                disabled={totalGuests >= 5 && key !== 'pets'}
+                                disabled={totalGuests >= roomData.capacity && key !== 'pets'}
                               >
                                 +
                               </Button>
@@ -437,10 +540,15 @@ const RoomDetails = () => {
                   </Collapse>
                 </Form.Group>
 
-                {messError && <div className="alert alert-danger">{messError}</div>}
+                {messError && <Alert variant="danger">{messError}</Alert>}
 
-                <Button variant="primary" type="submit" className="w-100 py-2 fw-bold">
-                  Đặt phòng ngay
+                <Button
+                  variant="primary"
+                  type="submit"
+                  className="w-100 py-2 fw-bold"
+                  disabled={!roomData.status}
+                >
+                  Xác nhận đặt phòng
                 </Button>
               </Form>
             </Card.Body>
@@ -448,23 +556,176 @@ const RoomDetails = () => {
         </Col>
       </Row>
 
-      <Modal show={showPaymentModal} onHide={() => setShowPaymentModal(false)} size="lg" centered>
+      
+      {/* Modal Xác nhận thông tin khách hàng */}
+      <Modal show={showConfirmationModal} onHide={() => setShowConfirmationModal(false)} centered size="lg">
         <Modal.Header closeButton>
-          <Modal.Title>Thanh toán</Modal.Title>
+          <Modal.Title>Xác nhận thông tin khách hàng</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <PaymentCheckout
-            roomName={roomData.roomName}
-            price={formattedPrice}
-            checkInDate={checkInDate}
-            checkOutDate={checkOutDate}
-            onClose={() => setShowPaymentModal(false)}
-            onPaymentSuccess={() => {
-              setShowPaymentModal(false);
-              // Add success handling logic here
-            }}
+          <div className="row">
+            {/* Thông tin khách hàng - Cột trái */}
+            <div className="col-md-6">
+              <h5>Thông tin khách hàng</h5>
+              <Form>
+                <Form.Group className="mb-3">
+                  <Form.Label>Họ và tên</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={customerInfo.fullName}
+                    onChange={(e) => handleCustomerInfoChange('fullName', e.target.value)}
+                    placeholder="Nhập họ và tên"
+                    required
+                  />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Email</Form.Label>
+                  <Form.Control
+                    type="email"
+                    value={customerInfo.email}
+                    onChange={(e) => handleCustomerInfoChange('email', e.target.value)}
+                    placeholder="Nhập email"
+                    required
+                  />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Số điện thoại</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={customerInfo.phone}
+                    onChange={(e) => handleCustomerInfoChange('phone', e.target.value)}
+                    placeholder="Nhập số điện thoại"
+                    required
+                  />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Địa chỉ</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={customerInfo.address}
+                    onChange={(e) => handleCustomerInfoChange('address', e.target.value)}
+                    placeholder="Nhập địa chỉ (không bắt buộc)"
+                  />
+                </Form.Group>
+              </Form>
+              {messError && <Alert variant="danger">{messError}</Alert>}
+            </div>
+
+            {/* Thông tin đặt phòng - Cột phải */}
+            <div className="col-md-6">
+              <h5>Thông tin đặt phòng</h5>
+              <div className="mb-3">
+                <strong>Homestay:</strong> {roomData?.name}
+              </div>
+              <div className="mb-3">
+                <strong>Phòng:</strong> {roomData?.roomName}
+              </div>
+              <div className="mb-3">
+                <strong>Ngày nhận phòng:</strong> {checkInDate ? new Date(checkInDate).toLocaleDateString('vi-VN') : 'Chưa chọn'}
+              </div>
+              <div className="mb-3">
+                <strong>Ngày trả phòng:</strong> {checkOutDate ? new Date(checkOutDate).toLocaleDateString('vi-VN') : 'Chưa chọn'}
+              </div>
+              <div className="mb-3">
+                <strong>Số đêm:</strong> {nights} đêm
+              </div>
+              <div className="mb-3">
+                <strong>Số khách:</strong> {guestLabel}
+              </div>
+              <div className="mb-3">
+                <strong>Dịch vụ bổ sung:</strong>
+                {getSelectedServicesSummary().length > 0 ? (
+                  <ul className="mt-2">
+                    {getSelectedServicesSummary().map((service, index) => (
+                      <li key={index}>
+                        {service.name}: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(service.price)} {service.specialNotes ? `/${service.specialNotes}` : ''}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-muted mt-2">Không có dịch vụ nào được chọn.</p>
+                )}
+              </div>
+              <div className="mb-3">
+                <strong>Tổng chi phí:</strong> {formattedPrice}
+              </div>
+            </div>
+          </div>
+          <p className="text-muted small mt-3">Vui lòng kiểm tra kỹ thông tin trước khi xác nhận.</p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowConfirmationModal(false)}>
+            Quay lại
+          </Button>
+          <Button variant="primary" onClick={handleConfirmBooking}>
+            Xác nhận và thanh toán
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+        {/* Modal Thanh toán */}
+        <Modal show={showPaymentModal} onHide={() => setShowPaymentModal(false)} size="lg" centered>
+          <Modal.Header closeButton>
+            <Modal.Title>Thanh toán</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <PaymentCheckout
+              roomName={roomData?.roomName}
+              homestayName={roomData?.name}
+              checkInDate={checkInDate}
+              checkOutDate={checkOutDate}
+              guests={guestLabel}
+              totalAmount={calculateTotalAmount()}
+              selectedServices={getSelectedServicesSummary()}
+              bookingId={bookingId}
+              customerInfo={customerInfo} // Truyền thông tin khách hàng
+              onClose={() => setShowPaymentModal(false)}
+              onPaymentSuccess={() => {
+                setShowPaymentModal(false);
+                navigate('/booking-success');
+              }}
+            />
+          </Modal.Body>
+        </Modal>
+
+      {/* Modal Dịch vụ */}
+      <Modal show={showServiceModal} onHide={() => setShowServiceModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>{selectedService?.serviceType?.serviceName || 'Dịch vụ không xác định'}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedService?.images?.[0]?.imageUrl ? (
+            <img
+              src={`/${selectedService.images[0].imageUrl}`}
+              alt={selectedService.serviceType?.serviceName || 'Dịch vụ'}
+              className="w-100 mb-3"
+              style={{ maxHeight: '300px', objectFit: 'cover' }}
+            />
+          ) : (
+            <p className="text-muted">Không có hình ảnh cho dịch vụ này.</p>
+          )}
+          <p>
+            <strong>Giá:</strong> {new Intl.NumberFormat('vi-VN', {
+              style: 'currency',
+              currency: 'VND',
+            }).format(selectedService?.price || 0)}
+            {selectedService?.specialNotes ? `/${selectedService.specialNotes}` : ''}
+          </p>
+          <p>
+            <strong>Mô tả:</strong> {selectedService?.serviceType?.description || 'Không có mô tả'}
+          </p>
+          <Form.Check
+            type="checkbox"
+            label="Chọn dịch vụ này"
+            checked={selectedServices[selectedService?.id] || false}
+            onChange={() => handleServiceChange(selectedService?.id)}
           />
         </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowServiceModal(false)}>
+            Đóng
+          </Button>
+        </Modal.Footer>
       </Modal>
     </Container>
   );

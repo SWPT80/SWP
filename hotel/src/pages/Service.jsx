@@ -8,6 +8,7 @@ import 'swiper/css/navigation';
 import '../assets/styles/Explore.css';
 import '../assets/styles/RoomCarousel.css';
 import hue from '../assets/images/hue.jpg';
+import { useNavigate } from 'react-router-dom';
 
 const serviceCategories = [
   { name: 'Vận chuyển', count: '32 dịch vụ', img: hue },
@@ -62,6 +63,7 @@ const ExploreServices = () => {
 
 // ServiceCarousel Component (updated classNames to match HomeCarousel)
 const ServiceCarousel = ({ title, services }) => {
+  const navigate = useNavigate();
   const scrollRef = useRef();
 
   const scroll = (direction) => {
@@ -74,6 +76,10 @@ const ServiceCarousel = ({ title, services }) => {
     }
   };
 
+  const handleServiceClick = (homestayId) => {
+    navigate(`/rooms/homestay/${homestayId}`);
+  };
+
   return (
     <div className="carousel-container">
       <h2 className="carousel-title">{title}</h2>
@@ -83,7 +89,12 @@ const ServiceCarousel = ({ title, services }) => {
         </button>
         <div ref={scrollRef} className="carousel-scroll">
           {services.map((service, index) => (
-            <div key={index} className="room-card">
+            <div
+              key={index}
+              className="room-card"
+              onClick={() => handleServiceClick(service.homestayId)}
+              style={{ cursor: 'pointer' }}
+            >
               <img
                 src={service.images?.[0]?.imageUrl}
                 alt={service.specialNotes || 'Dịch vụ'}
@@ -91,10 +102,7 @@ const ServiceCarousel = ({ title, services }) => {
               />
               <div className="room-info">
                 <h3 className="room-title">{service.specialNotes}</h3>
-
-                <p className="room-location">
-                  {service.price.toLocaleString('vi-VN')} VND
-                </p>
+                <p className="room-location">{service.price.toLocaleString('vi-VN')} VND</p>
               </div>
             </div>
           ))}
@@ -106,7 +114,6 @@ const ServiceCarousel = ({ title, services }) => {
     </div>
   );
 };
-
 
 // ServiceContent Component
 const ServiceContent = () => {

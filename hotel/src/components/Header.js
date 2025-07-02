@@ -154,27 +154,8 @@ const Header = () => {
 
   return (
     <div className="super_container">
-      <header className={`header ${isMenuOpen ? 'menu-open' : ''} ${isScrolled ? 'scrolled' : ''}`}>
-        {/* Top Bar */}
-        <div className="top_bar">
-          <div className="container">
-            <div className="row">
-              <div className="col d-flex flex-row align-items-center">
-                <div className="phone">TraExco_fpt@gmail.com</div>
-                <div className="social ml-auto">
-                  <ul className="social_list">
-                    <li className="social_list_item"><a href="#"><i className="fab fa-pinterest"></i></a></li>
-                    <li className="social_list_item"><a href="#"><i className="fab fa-facebook-f"></i></a></li>
-                    <li className="social_list_item"><a href="#"><i className="fab fa-twitter"></i></a></li>
-                    <li className="social_list_item"><a href="#"><i className="fab fa-dribbble"></i></a></li>
-                    <li className="social_list_item"><a href="#"><i className="fab fa-behance"></i></a></li>
-                    <li className="social_list_item"><a href="#"><i className="fab fa-linkedin-in"></i></a></li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      <header className={`header ${isMenuOpen ? 'menu-open' : ''} `}>
+       
 
         {/* Main Nav */}
         <nav className="main_nav">

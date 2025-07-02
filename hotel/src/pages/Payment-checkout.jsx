@@ -1,302 +1,250 @@
 import React, { useState } from 'react';
-import { Card, Row, Col, Form, Button, InputGroup } from 'react-bootstrap';
+import { Card, Row, Col, Form, Button, Alert } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
+import axios from 'axios';
 
-const PaymentCheckout = ({ roomName, price, checkInDate, checkOutDate, onClose, onPaymentSuccess }) => {
-  const [paymentMethod, setPaymentMethod] = useState('card');
-  const [promoCode, setPromoCode] = useState('1234');
-  const [formData, setFormData] = useState({
-    cardNumber: '4860 5432 6744 3789',
-    expiryMonth: '02',
-    expiryYear: '29',
-    cvv: '234',
-    firstName: 'Jane',
-    lastName: 'Doe',
-    address: '',
-    city: '',
-    country: 'United states',
-    state: 'New York',
-    zipCode: '',
-  });
+const PaymentCheckout = ({
+  roomName, homestayName, checkInDate, checkOutDate,
+  guests, totalAmount, selectedServices, bookingId,
+  onClose, onPaymentSuccess
+}) => {
+  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [promoCode, setPromoCode] = useState('');
+  const [promoError, setPromoError] = useState(null);
+  const [promoDiscount, setPromoDiscount] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleInputChange = (field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+  const handleApplyPromo = async () => {
+    if (!promoCode.trim()) return;
+    
+    try {
+      setIsProcessing(true);
+      const response = await axios.get(`http://localhost:8080/api/vouchers/validate?code=${promoCode}`);
+      if (response.data.valid) {
+        setPromoDiscount(response.data.discount);
+        setPromoError(null);
+      } else {
+        setPromoError('Mã khuyến mãi không hợp lệ hoặc đã hết hạn.');
+        setPromoDiscount(0);
+      }
+    } catch (error) {
+      setPromoError('Không thể xác minh mã khuyến mãi. Vui lòng thử lại.');
+      setPromoDiscount(0);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
-  const handleApplyPromo = () => {
-    console.log('Apply promo code:', promoCode);
+  const handlePayment = async () => {
+    try {
+      setIsProcessing(true);
+      if (!bookingId) {
+      throw new Error('Booking ID is missing');
+    }
+      const paymentData = {
+        bookingId: bookingId,
+        amount: totalAmount * (1 - promoDiscount),
+        paymentMethod: paymentMethod.toUpperCase(),
+        status: 'PENDING',
+        paymentDetails: null
+      };
+
+      await axios.post('http://localhost:8080/api/payments', paymentData);
+      onPaymentSuccess();
+    } catch (error) {
+      console.error('Lỗi khi xử lý thanh toán:', error);
+      alert('Không thể xử lý thanh toán. Vui lòng thử lại.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
-  const handlePayment = () => {
-    console.log('Process payment with:', formData);
-    onPaymentSuccess(); // Call success callback
-  };
+  const nights = checkInDate && checkOutDate
+    ? Math.ceil((new Date(checkOutDate) - new Date(checkInDate)) / (1000 * 60 * 60 * 24))
+    : 0;
+
+  const finalAmount = totalAmount * (1 - promoDiscount);
+  const formattedTotal = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalAmount);
+  const formattedFinal = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(finalAmount);
+
+  const paymentMethods = [
+    { id: 'cash', label: 'Tiền mặt', icon: 'bi-wallet2', description: 'Thanh toán khi nhận phòng' },
+    { id: 'vnpay', label: 'VNPay', icon: 'bi-credit-card', description: 'Thanh toán qua thẻ ngân hàng' },
+    { id: 'qr', label: 'QR Code', icon: 'bi-qr-code', description: 'Quét mã QR để thanh toán' }
+  ];
 
   return (
-    <Row>
-      <Col lg={7} className="pe-lg-4">
-        <Card className="border-0 shadow-sm mb-4">
+    <Row className="g-4">
+      <Col lg={7}>
+        <Card className="border-0 shadow-sm">
           <Card.Body className="p-4">
-            <h5 className="fw-bold mb-3">Chi tiết thanh toán</h5>
-            <div className="mb-4">
-              <Row>
-                <Col md={6} className="mb-3">
-                  <div
-                    className={`border rounded p-3 text-center ${
-                      paymentMethod === 'card' ? 'border-primary bg-light' : 'border-secondary'
-                    }`}
-                    onClick={() => setPaymentMethod('card')}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <span className="fw-bold">Thẻ tín dụng</span>
-                  </div>
-                </Col>
-                <Col md={6} className="mb-3">
-                  <div
-                    className={`border rounded p-3 text-center ${
-                      paymentMethod === 'paypal' ? 'border-primary bg-light' : 'border-secondary'
-                    }`}
-                    onClick={() => setPaymentMethod('paypal')}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <span className="fw-bold text-primary">PayPal</span>
-                  </div>
-                </Col>
-              </Row>
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <h4 className="fw-bold mb-0">Phương thức thanh toán</h4>
+              <Button variant="link" className="p-0 text-decoration-none text-secondary" onClick={onClose}>
+                <i className="bi bi-arrow-left me-2"></i> Quay lại
+              </Button>
             </div>
 
-            {paymentMethod === 'card' && (
-              <div className="mb-4">
-                <h6 className="fw-bold mb-3">Thông tin thẻ tín dụng</h6>
-                <Row>
-                  <Col md={6} className="mb-3">
-                    <Form.Label className="small text-muted text-uppercase">Số thẻ</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={formData.cardNumber}
-                      onChange={(e) => handleInputChange('cardNumber', e.target.value)}
-                      placeholder="1234 5678 9012 3456"
-                    />
-                  </Col>
-                  <Col md={3} className="mb-3">
-                    <Form.Label className="small text-muted text-uppercase">Hết hạn</Form.Label>
-                    <Row>
-                      <Col>
-                        <Form.Select
-                          size="sm"
-                          value={formData.expiryMonth}
-                          onChange={(e) => handleInputChange('expiryMonth', e.target.value)}
-                        >
-                          <option value="02">02</option>
-                          <option value="01">01</option>
-                          <option value="03">03</option>
-                          <option value="04">04</option>
-                          <option value="05">05</option>
-                          <option value="06">06</option>
-                          <option value="07">07</option>
-                          <option value="08">08</option>
-                          <option value="09">09</option>
-                          <option value="10">10</option>
-                          <option value="11">11</option>
-                          <option value="12">12</option>
-                        </Form.Select>
-                      </Col>
-                      <Col>
-                        <Form.Select
-                          size="sm"
-                          value={formData.expiryYear}
-                          onChange={(e) => handleInputChange('expiryYear', e.target.value)}
-                        >
-                          <option value="29">29</option>
-                          <option value="24">24</option>
-                          <option value="25">25</option>
-                          <option value="26">26</option>
-                          <option value="27">27</option>
-                          <option value="28">28</option>
-                          <option value="30">30</option>
-                        </Form.Select>
-                      </Col>
-                    </Row>
-                  </Col>
-                  <Col md={3} className="mb-3">
-                    <Form.Label className="small text-muted text-uppercase">CVV</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={formData.cvv}
-                      onChange={(e) => handleInputChange('cvv', e.target.value)}
-                      placeholder="123"
-                      maxLength="4"
-                    />
-                  </Col>
-                </Row>
+            <div className="mb-4">
+              <div className="row g-3">
+                {paymentMethods.map((method) => (
+                  <div className="col-md-6" key={method.id}>
+                    <div
+                      className={`card h-100 cursor-pointer ${paymentMethod === method.id ? 'border-primary bg-light' : 'border-light'}`}
+                      onClick={() => setPaymentMethod(method.id)}
+                      style={{ transition: 'all 0.2s' }}
+                    >
+                      <div className="card-body text-center py-4">
+                        <div className="mb-3">
+                          <i className={`bi ${method.icon} fs-2 ${paymentMethod === method.id ? 'text-primary' : 'text-secondary'}`}></i>
+                        </div>
+                        <h5 className={`fw-bold mb-2 ${paymentMethod === method.id ? 'text-primary' : ''}`}>
+                          {method.label}
+                        </h5>
+                        <p className="small text-muted mb-0">{method.description}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            )}
-
-            <div className="mb-4">
-              <h6 className="fw-bold mb-3">Thông tin thanh toán</h6>
-              <Row>
-                <Col md={6} className="mb-3">
-                  <Form.Label className="small text-muted text-uppercase">Họ</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={formData.firstName}
-                    onChange={(e) => handleInputChange('firstName', e.target.value)}
-                    placeholder="Jane"
-                  />
-                </Col>
-                <Col md={6} className="mb-3">
-                  <Form.Label className="small text-muted text-uppercase">Tên</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={formData.lastName}
-                    onChange={(e) => handleInputChange('lastName', e.target.value)}
-                    placeholder="Doe"
-                  />
-                </Col>
-                <Col md={6} className="mb-3">
-                  <Form.Label className="small text-muted text-uppercase">Địa chỉ</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={formData.address}
-                    onChange={(e) => handleInputChange('address', e.target.value)}
-                    placeholder="Địa chỉ"
-                  />
-                </Col>
-                <Col md={6} className="mb-3">
-                  <Form.Label className="small text-muted text-uppercase">Thành phố</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={formData.city}
-                    onChange={(e) => handleInputChange('city', e.target.value)}
-                    placeholder="Thành phố"
-                  />
-                </Col>
-                <Col md={4} className="mb-3">
-                  <Form.Label className="small text-muted text-uppercase">Quốc gia</Form.Label>
-                  <Form.Select
-                    value={formData.country}
-                    onChange={(e) => handleInputChange('country', e.target.value)}
-                  >
-                    <option value="United states">United States</option>
-                    <option value="Canada">Canada</option>
-                    <option value="Vietnam">Vietnam</option>
-                  </Form.Select>
-                </Col>
-                <Col md={4} className="mb-3">
-                  <Form.Label className="small text-muted text-uppercase">Tỉnh/Bang</Form.Label>
-                  <Form.Select
-                    value={formData.state}
-                    onChange={(e) => handleInputChange('state', e.target.value)}
-                  >
-                    <option value="New York">New York</option>
-                    <option value="California">California</option>
-                    <option value="Da Nang">Đà Nẵng</option>
-                  </Form.Select>
-                </Col>
-                <Col md={4} className="mb-3">
-                  <Form.Label className="small text-muted text-uppercase">Mã ZIP</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={formData.zipCode}
-                    onChange={(e) => handleInputChange('zipCode', e.target.value)}
-                    placeholder="12345"
-                  />
-                </Col>
-              </Row>
             </div>
 
             <div className="mb-4">
-              <p className="small text-muted">
-                Bằng cách tiếp tục, tôi đồng ý với{' '}
-                <a href="#" className="text-decoration-none">
-                  Chính sách thanh toán
-                </a>{' '}
-                và hiểu rằng đăng ký của tôi sẽ tự động gia hạn vào cuối kỳ trừ khi tôi hủy.
+              <h5 className="fw-bold mb-3">Mã khuyến mãi</h5>
+              <div className="d-flex gap-2">
+                <Form.Control
+                  type="text"
+                  value={promoCode}
+                  onChange={(e) => setPromoCode(e.target.value)}
+                  placeholder="Nhập mã khuyến mãi"
+                  className="flex-grow-1"
+                />
+                <Button 
+                  variant="outline-primary" 
+                  onClick={handleApplyPromo}
+                  disabled={isProcessing || !promoCode.trim()}
+                >
+                  {isProcessing ? 'Đang xử lý...' : 'Áp dụng'}
+                </Button>
+              </div>
+              {promoError && (
+                <Alert variant="danger" className="mt-2 small py-2">
+                  <i className="bi bi-exclamation-circle me-2"></i>
+                  {promoError}
+                </Alert>
+              )}
+              {promoDiscount > 0 && (
+                <Alert variant="success" className="mt-2 small py-2">
+                  <i className="bi bi-check-circle me-2"></i>
+                  Đã áp dụng giảm giá {promoDiscount * 100}%
+                </Alert>
+              )}
+            </div>
+
+            <div className="border-top pt-3">
+              <p className="small text-muted mb-0">
+                Bằng cách tiếp tục, bạn đồng ý với{' '}
+                <a href="#" className="text-primary text-decoration-none">Điều khoản dịch vụ</a> và{' '}
+                <a href="#" className="text-primary text-decoration-none">Chính sách bảo mật</a> của chúng tôi.
               </p>
             </div>
-
-            <Button variant="link" className="p-0 text-decoration-none" onClick={onClose}>
-              <i className="bi bi-arrow-left me-2"></i> Quay lại
-            </Button>
           </Card.Body>
         </Card>
       </Col>
 
       <Col lg={5}>
-        <Card className="border-0 shadow-sm position-sticky" style={{ top: '20px' }}>
-          <Card.Header className="bg-white border-0 d-flex justify-content-between align-items-center py-3">
-            <h6 className="fw-bold mb-0">Tổng quan đơn hàng</h6>
-            <Button variant="link" className="p-0 text-muted" onClick={onClose}>
-              <i className="bi bi-x"></i>
+        <Card className="border-0 shadow-sm sticky-top" style={{ top: '20px' }}>
+          <Card.Body className="p-4">
+            <h4 className="fw-bold mb-4">Tóm tắt đơn hàng</h4>
+
+            <div className="mb-4">
+              <h6 className="fw-bold mb-3">Thông tin đặt phòng</h6>
+              <div className="bg-light p-3 rounded">
+                <p className="mb-1"><strong>Homestay:</strong> {homestayName}</p>
+                <p className="mb-1"><strong>Phòng:</strong> {roomName}</p>
+                <p className="mb-1"><strong>Nhận phòng:</strong> {checkInDate ? new Date(checkInDate).toLocaleDateString('vi-VN') : 'N/A'}</p>
+                <p className="mb-1"><strong>Trả phòng:</strong> {checkOutDate ? new Date(checkOutDate).toLocaleDateString('vi-VN') : 'N/A'}</p>
+                <p className="mb-1"><strong>Số đêm:</strong> {nights} đêm</p>
+                <p className="mb-0"><strong>Số khách:</strong> {guests}</p>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <h6 className="fw-bold mb-3">Chi tiết giá</h6>
+              <div className="border-bottom pb-3 mb-3">
+                <div className="d-flex justify-content-between mb-2">
+                  <span>Giá phòng ({nights} đêm)</span>
+                  <span>
+                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
+                      totalAmount - selectedServices.reduce((sum, s) => {
+                        let serviceCost = s.price;
+                        if (s.specialNotes?.includes('per person')) serviceCost *= guests.replace(/[^0-9]/g, '');
+                        if (s.specialNotes?.includes('per day')) serviceCost *= nights;
+                        if (s.specialNotes?.includes('per person per day')) serviceCost *= guests.replace(/[^0-9]/g, '') * nights;
+                        return sum + serviceCost;
+                      }, 0)
+                    )}
+                  </span>
+                </div>
+
+                {selectedServices.length > 0 && (
+                  <div className="mb-2">
+                    <p className="small fw-bold mb-2">Dịch vụ bổ sung:</p>
+                    {selectedServices.map((service, index) => (
+                      <div key={index} className="d-flex justify-content-between small">
+                        <span>
+                          {service.name} {service.specialNotes && <span className="text-muted">({service.specialNotes})</span>}
+                        </span>
+                        <span>
+                          {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(service.price)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="d-flex justify-content-between mb-2">
+                <span>Tạm tính</span>
+                <span>{formattedTotal}</span>
+              </div>
+
+              {promoDiscount > 0 && (
+                <div className="d-flex justify-content-between mb-2 text-success">
+                  <span>Giảm giá ({promoDiscount * 100}%)</span>
+                  <span>-{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalAmount * promoDiscount)}</span>
+                </div>
+              )}
+
+              <div className="d-flex justify-content-between fw-bold fs-5 mt-3">
+                <span>Tổng cộng</span>
+                <span>{formattedFinal}</span>
+              </div>
+            </div>
+
+            <Button
+              variant="primary"
+              size="lg"
+              className="w-100 fw-bold py-3"
+              onClick={handlePayment}
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  Đang xử lý...
+                </>
+              ) : (
+                `Thanh toán ${formattedFinal}`
+              )}
             </Button>
-          </Card.Header>
-          <Card.Body className="px-4">
-            <div className="mb-4">
-              <div className="d-flex justify-content-between align-items-start mb-2">
-                <div>
-                  <h6 className="fw-bold mb-1">{roomName}</h6>
-                  <p className="small text-muted mb-0">{price} × 1 đêm</p>
-                </div>
-                <span className="fw-bold">{price}</span>
-              </div>
-            </div>
 
-            <div className="mb-4">
-              <Form.Control
-                type="text"
-                value={promoCode}
-                onChange={(e) => setPromoCode(e.target.value)}
-                placeholder="Mã khuyến mãi"
-                size="sm"
-              />
-              <Button variant="outline-secondary" size="sm" className="mt-2" onClick={handleApplyPromo}>
-                Áp dụng
-              </Button>
-            </div>
-
-            <div className="mb-4">
-              <div className="d-flex justify-content-between align-items-center mb-2">
-                <h6 className="fw-bold mb-0">Tổng cộng</h6>
-                <span className="fw-bold">{price}</span>
-              </div>
-              <p className="small text-muted mb-0">Đơn hàng sẽ được gia hạn vào {new Date().toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })}</p>
-            </div>
-
-            <hr />
-
-            <div className="mb-4">
-              <p className="small text-muted">
-                Tổng số tiền cuối cùng có thể khác do thuế hoặc phí địa phương.
+            <div className="text-center mt-3">
+              <p className="small text-muted mb-0">
+                <i className="bi bi-shield-lock me-2"></i>
+                Thanh toán an toàn với mã hóa SSL
               </p>
-            </div>
-
-            <div className="mb-4">
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <h5 className="fw-bold mb-0">Tổng cộng hôm nay</h5>
-                <h5 className="fw-bold mb-0">{price}</h5>
-              </div>
-
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <div className="d-flex align-items-center">
-                  <div className="bg-secondary rounded-circle me-2" style={{ width: '8px', height: '8px' }}></div>
-                  <span className="small text-muted">Chưa có phương thức thanh toán</span>
-                </div>
-                <span className="small text-muted">-{price}</span>
-              </div>
-
-              <Button
-                variant="success"
-                size="lg"
-                className="w-100 fw-bold"
-                onClick={handlePayment}
-                style={{ backgroundColor: '#28a745', borderColor: '#28a745' }}
-              >
-                Thanh toán ngay
-              </Button>
             </div>
           </Card.Body>
         </Card>

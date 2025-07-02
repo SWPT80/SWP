@@ -1,4 +1,3 @@
-
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Navigation } from 'swiper/modules';
 import hue from '../assets/images/hue.jpg';
@@ -9,8 +8,7 @@ import 'swiper/css/autoplay';
 import 'swiper/css/navigation';
 import '../assets/styles/RoomCarousel.css';
 import '../assets/styles/Explore.css';
-
-
+import { Link } from 'react-router-dom';
 
 const destinations = [
   { name: 'TP. Hồ Chí Minh', stays: '6.252 chỗ nghỉ', img: hue },
@@ -86,18 +84,22 @@ const RoomCarousel = ({ title, homestays }) => {
         </button>
         <div ref={scrollRef} className="carousel-scroll">
           {homestays.map((homestay, index) => (
-            <div key={index} className="room-card">
+            <Link
+              key={homestay.id || index}
+              to={`/offer?homestayId=${homestay.id}`} // Chuyển hướng đến Offers với homestayId
+              className="room-card"
+              style={{ textDecoration: 'none' }}
+            >
               <img
-                src={homestay.images?.[0]?.imageUrl}
+                src={homestay.images?.[0]?.imageUrl || '/images/default.jpg'}
                 alt={homestay.homestayName || 'Homestay'}
                 className="room-image"
               />
               <div className="room-info">
                 <h3 className="room-title">{homestay.homestayName}</h3>
-                
                 <p className="room-location">{homestay.location}</p>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
         <button className="nav-button nav-right" onClick={() => scroll('right')}>
@@ -107,6 +109,7 @@ const RoomCarousel = ({ title, homestays }) => {
     </div>
   );
 };
+
 const HomeContent = () => {
   const [homestays, setHomestays] = useState([]);
   const [locationHomestays, setLocationHomestays] = useState({});
@@ -137,12 +140,10 @@ const HomeContent = () => {
       }
     };
 
-
     fetchHomestays();
   }, []);
 
   return (
-    
     <div className="px-6 py-10">
       <ExploreVietnam />
       <div className="mt-10">
@@ -157,7 +158,9 @@ const HomeContent = () => {
     </div>
   );
 };
+
 const Home = () => {
   return <HomeContent />; 
 };
+
 export default Home;

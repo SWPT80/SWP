@@ -8,6 +8,7 @@ import 'swiper/css/navigation';
 import '../assets/styles/Explore.css';
 import '../assets/styles/RoomCarousel.css';
 import hue from '../assets/images/hue.jpg';
+import { useNavigate } from 'react-router-dom';
 
 const experienceDestinations = [
   { name: 'Huế', activities: '12 trải nghiệm', img: hue },
@@ -60,6 +61,7 @@ const ExploreExperiences = () => {
 };
 
 const ExperienceCarousel = ({ title, experiences }) => {
+  const navigate = useNavigate();
   const scrollRef = useRef();
 
   const scroll = (direction) => {
@@ -72,6 +74,10 @@ const ExperienceCarousel = ({ title, experiences }) => {
     }
   };
 
+  const handleExperienceClick = (homestayId) => {
+    navigate(`/rooms/homestay/${homestayId}`);
+  };
+
   return (
     <div className="carousel-container">
       <h2 className="carousel-title">{title}</h2>
@@ -81,18 +87,20 @@ const ExperienceCarousel = ({ title, experiences }) => {
         </button>
         <div ref={scrollRef} className="carousel-scroll">
           {experiences.map((experience, index) => (
-            <div key={index} className="room-card">
+            <div
+              key={index}
+              className="room-card"
+              onClick={() => handleExperienceClick(experience.homestayId)}
+              style={{ cursor: 'pointer' }}
+            >
               <img
                 src={experience.images?.[0]?.imageUrl}
-                alt={experience.specialNotes|| 'Trải Nghiệm'}
+                alt={experience.specialNotes || 'Trải Nghiệm'}
                 className="room-image"
               />
               <div className="room-info">
                 <h3 className="room-title">{experience.specialNotes}</h3>
-                <p className="room-location">{experience.location}</p>
-                <p className="room-price">
-                  {experience.price?.toLocaleString('vi-VN')} VND
-                </p>
+                <p className="room-location">{experience.price?.toLocaleString('vi-VN')} VND</p>
               </div>
             </div>
           ))}
@@ -104,7 +112,6 @@ const ExperienceCarousel = ({ title, experiences }) => {
     </div>
   );
 };
-
 const ExperienceContent = () => {
   const [experiences, setExperiences] = useState([]);
   const [typeExperiences, setTypeExperiences] = useState({});
