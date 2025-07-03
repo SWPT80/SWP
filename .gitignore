@@ -1,0 +1,20 @@
+# === Frontend (React) ===
+node_modules/
+build/
+dist/
+.cache/
+.env
+*.log
+
+# === Backend (Spring Boot - Maven) ===
+target/
+*.iml
+*.log
+
+# === IDE Settings ===
+.idea/
+.vscode/
+
+# === System files ===
+.DS_Store
+Thumbs.db
