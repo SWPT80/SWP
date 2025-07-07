@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import RoomForm  from "../../components/host/RoomForm";
+import RoomForm  from "../../../components/host/RoomForm";
 
 export default function EditRoom() {
   const [formData, setFormData] = useState(null); // ban đầu là null

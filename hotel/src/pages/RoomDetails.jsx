@@ -1,11 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Button, Form, Collapse, Modal, Alert } from 'react-bootstrap';
+import {
+  Container,
+  Row,
+  Col,
+  Card,
+  Button,
+  Form,
+  Collapse,
+  Modal,
+  Alert,
+  ListGroup,
+  Badge
+} from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import PaymentCheckout from './Payment-checkout';
+import PaymentCheckout from './payment/Payment-checkout';
 
 const RoomDetails = () => {
   const { homestayId, roomNumber } = useParams();
@@ -32,8 +44,8 @@ const RoomDetails = () => {
   const [selectedServices, setSelectedServices] = useState({});
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
-  // Thêm trạng thái cho thông tin khách hàng
   const [customerInfo, setCustomerInfo] = useState({
+    userId: null,
     fullName: '',
     email: '',
     phone: '',
@@ -96,18 +108,21 @@ const RoomDetails = () => {
           amenities: roomDetails.amenities || [],
         });
 
-        // Lấy thông tin khách hàng từ hệ thống xác thực (nếu có)
-        // Ví dụ: Lấy từ localStorage hoặc API
-        // const userId = localStorage.getItem('userId');
-        // if (userId) {
-        //   const userResponse = await axios.get(`http://localhost:8080/api/users/${userId}`);
-        //   setCustomerInfo({
-        //     fullName: userResponse.data.fullName || '',
-        //     email: userResponse.data.email || '',
-        //     phone: userResponse.data.phone || '',
-        //     address: userResponse.data.address || '',
-        //   });
-        // }
+        // Lấy thông tin khách hàng từ hệ thống xác thực
+        const userId = localStorage.getItem('userId') || 1; // Thay bằng logic xác thực thực tế
+        try {
+          const userResponse = await axios.get(`http://localhost:8080/api/users/${userId}`);
+          setCustomerInfo({
+            userId: userResponse.data.userId,
+            fullName: userResponse.data.fullName || '',
+            email: userResponse.data.email || '',
+            phone: userResponse.data.phone || '',
+            address: userResponse.data.address || '',
+          });
+        } catch (userError) {
+          console.error('Lỗi khi lấy thông tin người dùng:', userError);
+          setMessError('Không thể lấy thông tin người dùng. Vui lòng nhập thủ công.');
+        }
       } catch (err) {
         console.error('Lỗi khi lấy chi tiết phòng:', err);
         setError('Không thể tải chi tiết phòng. Vui lòng thử lại sau.');
@@ -196,26 +211,27 @@ const RoomDetails = () => {
     if (!customerInfo.phone || !/^\d{10,11}$/.test(customerInfo.phone)) return 'Vui lòng nhập số điện thoại hợp lệ (10-11 số).';
     return null;
   };
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setMessError(null);
 
-  if (!checkInDate || !checkOutDate) {
-    setMessError('Vui lòng chọn ngày nhận phòng và trả phòng');
-    return;
-  }
-  if (new Date(checkOutDate) <= new Date(checkInDate)) {
-    setMessError('Ngày trả phòng phải sau ngày nhận phòng');
-    return;
-  }
-  const totalGuests = guests.adults + guests.children + guests.infants;
-  if (totalGuests > roomData?.capacity) {
-    setMessError(`Số khách vượt quá sức chứa tối đa (${roomData.capacity} người)`);
-    return;
-  }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setMessError(null);
 
-  const bookingDTO = {
-    userId: localStorage.getItem('userId') || 1, // Thay bằng logic xác thực thực tế
+    if (!checkInDate || !checkOutDate) {
+      setMessError('Vui lòng chọn ngày nhận phòng và trả phòng');
+      return;
+    }
+    if (new Date(checkOutDate) <= new Date(checkInDate)) {
+      setMessError('Ngày trả phòng phải sau ngày nhận phòng');
+      return;
+    }
+    const totalGuests = guests.adults + guests.children + guests.infants;
+    if (totalGuests > roomData?.capacity) {
+      setMessError(`Số khách vượt quá sức chứa tối đa (${roomData.capacity} người)`);
+      return;
+    }
+
+    const bookingDTO = {
+    userId: customerInfo.userId || 1,
     homestayId: parseInt(homestayId),
     roomNumber: roomNumber,
     checkInDate: checkInDate,
@@ -227,31 +243,33 @@ const handleSubmit = async (e) => {
     services: Object.keys(selectedServices).filter((key) => selectedServices[key]).map(Number),
   };
 
-  console.log('Sending booking DTO:', bookingDTO); // Thêm log để kiểm tra
-
   try {
     const response = await axios.post('http://localhost:8080/api/bookings', bookingDTO);
-    console.log('Booking response:', response.data); // Thêm log để kiểm tra response
-    setBookingId(response.data.id); // Đảm bảo response.data.id tồn tại
+    console.log('Booking response:', response.data);
+    const bookingId = Number(response.data.id); // Đảm bảo là số
+    if (isNaN(bookingId)) {
+      throw new Error('Mã đặt phòng không hợp lệ nhận được từ server');
+    }
+    setBookingId(bookingId);
     setShowConfirmationModal(true);
   } catch (err) {
     console.error('Error response:', err.response?.data);
     setMessError(err.response?.data?.message || 'Không thể tạo đặt phòng. Vui lòng thử lại.');
   }
-};
+  };
+
   const handleConfirmBooking = () => {
-    console.log('Booking ID trước khi thanh toán:', bookingId);
     const validationError = validateCustomerInfo();
     if (validationError) {
-        setMessError(validationError);
-        return;
+      setMessError(validationError);
+      return;
     }
     setShowConfirmationModal(false);
     setShowPaymentModal(true);
-};
+  };
 
-  if (loading) return <div className="text-center py-10">Đang tải dữ liệu...</div>;
-  if (error) return <div className="text-center py-10 text-red-500">{error}</div>;
+  if (loading) return <Container className="text-center py-5"><Alert variant="info">Đang tải dữ liệu...</Alert></Container>;
+  if (error) return <Container className="text-center py-5"><Alert variant="danger">{error}</Alert></Container>;
   if (!roomData) return null;
 
   const formattedPrice = new Intl.NumberFormat('vi-VN', {
@@ -267,12 +285,13 @@ const handleSubmit = async (e) => {
 
   return (
     <Container className="my-4">
-      <Row className="g-0 mb-4">
+      <Row className="mb-4">
         <Col md={12}>
-          <img
+          <Card.Img
+            variant="top"
             src={`/${roomData.detailImageHomestay}`}
             alt="Phòng chính"
-            className="w-100 rounded"
+            className="rounded"
             style={{ height: '400px', objectFit: 'cover' }}
           />
         </Col>
@@ -282,146 +301,180 @@ const handleSubmit = async (e) => {
         <Col md={8}>
           <Card className="mb-4">
             <Card.Body>
-              <h2 className="h3 mb-3">{roomData.roomName}</h2>
-              <div className="d-flex align-items-center mb-2">
-                <i className="bi bi-building text-muted me-2"></i>
-                <span>{roomData.name}</span>
-              </div>
-              <div className="d-flex align-items-center mb-2">
-                <i className="bi bi-geo-alt text-muted me-2"></i>
-                <span>{roomData.address} ({roomData.location})</span>
-              </div>
-              <div className="d-flex align-items-center mb-2">
-                <i className="bi bi-star-fill text-warning me-2"></i>
-                <span>{roomData.star.toFixed(1)} sao</span>
-              </div>
-              <div className="d-flex align-items-center mb-2">
-                <i className="bi bi-people text-muted me-2"></i>
-                <span>Sức chứa: {roomData.capacity} người</span>
-              </div>
-              <div className="d-flex align-items-center mb-3">
-                <i className={`bi bi-${roomData.status ? 'check-circle' : 'x-circle'} ${roomData.status ? 'text-success' : 'text-danger'} me-2`}></i>
-                <span>Trạng thái: {roomData.status ? 'Còn trống' : 'Đã đặt'}</span>
-              </div>
-              <p className="text-muted mb-4">{roomData.description}</p>
+              <Card.Title as="h2" className="mb-3">{roomData.roomName}</Card.Title>
+              <ListGroup variant="flush" className="mb-3">
+                <ListGroup.Item className="d-flex align-items-center">
+                  <i className="bi bi-building text-muted me-2"></i>
+                  <span>{roomData.name}</span>
+                </ListGroup.Item>
+                <ListGroup.Item className="d-flex align-items-center">
+                  <i className="bi bi-geo-alt text-muted me-2"></i>
+                  <span>{roomData.address} ({roomData.location})</span>
+                </ListGroup.Item>
+                <ListGroup.Item className="d-flex align-items-center">
+                  <i className="bi bi-star-fill text-warning me-2"></i>
+                  <span>{roomData.star.toFixed(1)} sao</span>
+                </ListGroup.Item>
+                <ListGroup.Item className="d-flex align-items-center">
+                  <i className="bi bi-people text-muted me-2"></i>
+                  <span>Sức chứa: {roomData.capacity} người</span>
+                </ListGroup.Item>
+                <ListGroup.Item className="d-flex align-items-center">
+                  <i className={`bi bi-${roomData.status ? 'check-circle' : 'x-circle'} ${roomData.status ? 'text-success' : 'text-danger'} me-2`}></i>
+                  <span>Trạng thái: {roomData.status ? 'Còn trống' : 'Đã đặt'}</span>
+                </ListGroup.Item>
+              </ListGroup>
+              <Card.Text className="text-muted mb-4">{roomData.description}</Card.Text>
 
-              <h3 className="h4 mb-3">Tiện nghi chỗ ở</h3>
+              <Card.Title as="h3" className="mb-3">Tiện nghi chỗ ở</Card.Title>
               <Row className="gy-3 mb-3">
                 {roomData.amenities.map((amenity, index) => (
                   <Col key={index} xs={12} sm={6} md={4}>
-                    <div className="d-flex align-items-center bg-light p-2 rounded shadow-sm">
-                      <i className={`${amenity.iconClass || 'fas fa-check'} fs-5 me-3 text-primary`}></i>
-                      <span className="fw-medium">{amenity.typeName}</span>
-                    </div>
+                    <Card className="h-100">
+                      <Card.Body className="d-flex align-items-center">
+                        <i className={`${amenity.iconClass || 'fas fa-check'} fs-5 me-3 text-primary`}></i>
+                        <span className="fw-medium">{amenity.typeName}</span>
+                      </Card.Body>
+                    </Card>
                   </Col>
                 ))}
               </Row>
 
-              <h3 className="h4 mb-3">Dịch vụ bổ sung</h3>
+
+            </Card.Body>
+          </Card>
+          <Card className="mb-4 shadow-sm">
+            <Card.Body>
+              <Card.Title as="h3" className="mb-4 pb-2 border-bottom">
+                Dịch vụ bổ sung
+              </Card.Title>
+
               {services.length > 0 ? (
-                <Row>
+                <Row className="g-4">
                   {services.map((service, index) => (
-                    <Col xs={6} md={4} key={index} className="mb-3">
+                    <Col lg={6} key={index}>
                       <Card
-                        className={`border ${selectedServices[service.id] ? 'border-primary' : ''}`}
-                        style={{ cursor: 'pointer' }}
+                        className={`h-100 border-0 shadow-sm hover-shadow transition-all ${selectedServices[service.id] ? 'border-start border-primary border-3' : ''}`}
                         onClick={() => handleServiceClick(service)}
                       >
-                        <Card.Body>
-                          <Card.Title>{service.serviceType?.serviceName || 'Dịch vụ không xác định'}</Card.Title>
-                          <Card.Text>
-                            Giá: {new Intl.NumberFormat('vi-VN', {
-                              style: 'currency',
-                              currency: 'VND',
-                            }).format(service.price)}
-                            {service.specialNotes ? `/${service.specialNotes}` : ''}
+                        <Card.Body className="p-3">
+                          <div className="d-flex justify-content-between align-items-start mb-2">
+                            <Card.Title className="mb-0 text-primary">
+                              {service.serviceType?.serviceName || 'Dịch vụ'}
+                            </Card.Title>
+                            <Badge pill bg="light" text="dark" className="fs-6">
+                              {new Intl.NumberFormat('vi-VN', {
+                                style: 'currency',
+                                currency: 'VND'
+                              }).format(service.price)}
+                            </Badge>
+                          </div>
+
+                          <Card.Text className="text-muted small mb-3">
+                            {service.specialNotes || 'Không có mô tả'}
                           </Card.Text>
-                          <Form.Check
-                            type="checkbox"
-                            label="Chọn dịch vụ này"
-                            checked={selectedServices[service.id] || false}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              handleServiceChange(service.id);
-                            }}
-                          />
+
+                          <div className="d-flex justify-content-between align-items-center">
+                            <div>
+                              {service.specialNotes && (
+                                <Badge bg="info" className="me-2">
+                                  {service.specialNotes}
+                                </Badge>
+                              )}
+                            </div>
+
+                            <Form.Check
+                              type="switch"
+                              id={`service-${service.id}`}
+                              label="Chọn"
+                              checked={selectedServices[service.id] || false}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                handleServiceChange(service.id);
+                              }}
+                              className="fw-bold"
+                            />
+                          </div>
                         </Card.Body>
                       </Card>
                     </Col>
                   ))}
                 </Row>
               ) : (
-                <p className="text-muted">Không có dịch vụ bổ sung nào.</p>
+                <Alert variant="info" className="mb-0">
+                  Hiện không có dịch vụ bổ sung nào
+                </Alert>
               )}
             </Card.Body>
           </Card>
-
           <Card className="mb-4">
             <Card.Body>
-              <h4 className="mb-3 fw-bold">Quy tắc chung</h4>
+              <Card.Title as="h4" className="mb-3">Quy tắc chung</Card.Title>
               {homestayRules.length > 0 ? (
-                <ul className="list-unstyled mb-0">
+                <ListGroup variant="flush">
                   {homestayRules.map((rule, index) => (
-                    <li key={index} className="mb-2">
+                    <ListGroup.Item key={index} className="mb-2">
                       <span className="fw-semibold text-dark">{rule.ruleName}</span>: <span className="text-muted">{rule.description}</span>
-                    </li>
+                    </ListGroup.Item>
                   ))}
-                </ul>
+                </ListGroup>
               ) : (
-                <p className="text-muted">Không có quy tắc cụ thể.</p>
+                <Alert variant="info">Không có quy tắc cụ thể.</Alert>
               )}
             </Card.Body>
           </Card>
 
           <Card className="mb-4">
             <Card.Body>
-              <h3 className="h4 mb-3">Đánh giá của khách</h3>
+              <Card.Title as="h3" className="mb-3">Đánh giá của khách</Card.Title>
               {roomData.reviews.length > 0 ? (
                 roomData.reviews.map((review, index) => (
-                  <div key={index} className="mb-3 pb-3 border-bottom">
-                    <div className="d-flex justify-content-between align-items-center mb-2">
-                      <div>
-                        <strong>{review.userName || 'Ẩn danh'}</strong>
-                        <span className="text-muted ms-2">({new Date(review.createdAt).toLocaleDateString('vi-VN')})</span>
+                  <Card key={index} className="mb-3">
+                    <Card.Body>
+                      <div className="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                          <strong>{review.userName || 'Ẩn danh'}</strong>
+                          <span className="text-muted ms-2">({new Date(review.createdAt).toLocaleDateString('vi-VN')})</span>
+                        </div>
+                        <div className="d-flex">
+                          {[...Array(5)].map((_, i) => (
+                            <i
+                              key={i}
+                              className={`bi bi-star${i < Math.floor(review.rating) ? '-fill' : i < review.rating ? '-half' : ''} text-warning`}
+                            ></i>
+                          ))}
+                        </div>
                       </div>
-                      <div className="d-flex">
-                        {[...Array(5)].map((_, i) => (
-                          <i
-                            key={i}
-                            className={`bi bi-star${i < Math.floor(review.rating) ? '-fill' : i < review.rating ? '-half' : ''} text-warning`}
-                          ></i>
-                        ))}
-                      </div>
-                    </div>
-                    <p className="mb-0 text-muted">{review.comment}</p>
-                  </div>
+                      <Card.Text className="mb-0 text-muted">{review.comment}</Card.Text>
+                    </Card.Body>
+                  </Card>
                 ))
               ) : (
-                <p className="text-muted">Chưa có đánh giá nào.</p>
+                <Alert variant="info">Chưa có đánh giá nào.</Alert>
               )}
             </Card.Body>
           </Card>
 
           <Card className="mb-4">
             <Card.Body>
-              <h3 className="h4 mb-3">Chính sách hủy phòng</h3>
+              <Card.Title as="h3" className="mb-3">Chính sách hủy phòng</Card.Title>
               {cancellationPolicies.length > 0 ? (
-                <ul className="text-muted">
+                <ListGroup variant="flush">
                   {cancellationPolicies.map((policy, index) => (
-                    <li key={index}>
+                    <ListGroup.Item key={index}>
                       {policy.name}: {policy.description} (Hoàn tiền {policy.refundPercentage}% nếu hủy trước {policy.daysBeforeCheckin} ngày)
-                    </li>
+                    </ListGroup.Item>
                   ))}
-                </ul>
+                </ListGroup>
               ) : (
-                <p className="text-muted">Không có chính sách hủy phòng cụ thể.</p>
+                <Alert variant="info">Không có chính sách hủy phòng cụ thể.</Alert>
               )}
             </Card.Body>
           </Card>
 
           <Card className="mb-4">
             <Card.Body>
-              <h3 className="h4 mb-3">Vị trí</h3>
+              <Card.Title as="h3" className="mb-3">Vị trí</Card.Title>
               <div style={{ height: '300px', width: '100%' }}>
                 <iframe
                   src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3834.110419706312!2d108.245!3d16.0595!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTbCsDAzJzM0LjIiTiAxMDjCsDE0JzUxLjAiRQ!5e0!3m2!1svi!2s!4v1625091234567"
@@ -437,10 +490,10 @@ const handleSubmit = async (e) => {
         </Col>
 
         <Col md={4}>
-          <Card className="sticky-top" style={{ top: '20px' }}>
+          <Card className="sticky-top" style={{ top: '20px', maxHeight: '90vh', overflowY: 'auto' }}>
             <Card.Body>
-              <h3 className="h4 mb-3">Tổng quan đặt phòng</h3>
-              <div className="mb-3">
+              <Card.Title as="h3" className="mb-3">Tổng quan đặt phòng</Card.Title>
+              <Card.Text className="mb-3">
                 <strong>Phòng:</strong> {roomData.roomName} <br />
                 <strong>Homestay:</strong> {roomData.name} <br />
                 <strong>Ngày nhận phòng:</strong> {checkInDate ? new Date(checkInDate).toLocaleDateString('vi-VN') : 'Chưa chọn'} <br />
@@ -448,18 +501,18 @@ const handleSubmit = async (e) => {
                 <strong>Số khách:</strong> {guestLabel} <br />
                 <strong>Dịch vụ bổ sung:</strong>
                 {getSelectedServicesSummary().length > 0 ? (
-                  <ul className="list-unstyled mt-2">
+                  <ListGroup variant="flush" className="mt-2">
                     {getSelectedServicesSummary().map((service, index) => (
-                      <li key={index}>
+                      <ListGroup.Item key={index}>
                         {service.name}: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(service.price)} {service.specialNotes ? `/${service.specialNotes}` : ''}
-                      </li>
+                      </ListGroup.Item>
                     ))}
-                  </ul>
+                  </ListGroup>
                 ) : (
                   <span className="text-muted"> Không có dịch vụ nào được chọn.</span>
                 )}
-              </div>
-              <h3 className="h4 mb-3">Tổng: {formattedPrice}</h3>
+              </Card.Text>
+              <Card.Title as="h3" className="mb-3">Tổng: {formattedPrice}</Card.Title>
               <Form onSubmit={handleSubmit}>
                 <Form.Group className="mb-3">
                   <Form.Label>Nhận phòng</Form.Label>
@@ -483,7 +536,7 @@ const handleSubmit = async (e) => {
                   />
                 </Form.Group>
 
-                <Form.Group className="mb-3 position-relative">
+                <Form.Group className="mb-3">
                   <Form.Label>Khách</Form.Label>
                   <div
                     className="form-control d-flex justify-content-between align-items-center"
@@ -556,17 +609,15 @@ const handleSubmit = async (e) => {
         </Col>
       </Row>
 
-      
       {/* Modal Xác nhận thông tin khách hàng */}
       <Modal show={showConfirmationModal} onHide={() => setShowConfirmationModal(false)} centered size="lg">
         <Modal.Header closeButton>
           <Modal.Title>Xác nhận thông tin khách hàng</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <div className="row">
-            {/* Thông tin khách hàng - Cột trái */}
-            <div className="col-md-6">
-              <h5>Thông tin khách hàng</h5>
+          <Row>
+            <Col md={6}>
+              <Card.Title as="h5">Thông tin khách hàng</Card.Title>
               <Form>
                 <Form.Group className="mb-3">
                   <Form.Label>Họ và tên</Form.Label>
@@ -609,49 +660,52 @@ const handleSubmit = async (e) => {
                 </Form.Group>
               </Form>
               {messError && <Alert variant="danger">{messError}</Alert>}
-            </div>
+            </Col>
 
-            {/* Thông tin đặt phòng - Cột phải */}
-            <div className="col-md-6">
-              <h5>Thông tin đặt phòng</h5>
-              <div className="mb-3">
-                <strong>Homestay:</strong> {roomData?.name}
-              </div>
-              <div className="mb-3">
-                <strong>Phòng:</strong> {roomData?.roomName}
-              </div>
-              <div className="mb-3">
-                <strong>Ngày nhận phòng:</strong> {checkInDate ? new Date(checkInDate).toLocaleDateString('vi-VN') : 'Chưa chọn'}
-              </div>
-              <div className="mb-3">
-                <strong>Ngày trả phòng:</strong> {checkOutDate ? new Date(checkOutDate).toLocaleDateString('vi-VN') : 'Chưa chọn'}
-              </div>
-              <div className="mb-3">
-                <strong>Số đêm:</strong> {nights} đêm
-              </div>
-              <div className="mb-3">
-                <strong>Số khách:</strong> {guestLabel}
-              </div>
-              <div className="mb-3">
-                <strong>Dịch vụ bổ sung:</strong>
-                {getSelectedServicesSummary().length > 0 ? (
-                  <ul className="mt-2">
-                    {getSelectedServicesSummary().map((service, index) => (
-                      <li key={index}>
-                        {service.name}: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(service.price)} {service.specialNotes ? `/${service.specialNotes}` : ''}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-muted mt-2">Không có dịch vụ nào được chọn.</p>
-                )}
-              </div>
-              <div className="mb-3">
-                <strong>Tổng chi phí:</strong> {formattedPrice}
-              </div>
-            </div>
-          </div>
-          <p className="text-muted small mt-3">Vui lòng kiểm tra kỹ thông tin trước khi xác nhận.</p>
+            <Col md={6}>
+              <Card.Title as="h5">Thông tin đặt phòng</Card.Title>
+              <ListGroup variant="flush">
+                <ListGroup.Item>
+                  <strong>Homestay:</strong> {roomData?.name}
+                </ListGroup.Item>
+                <ListGroup.Item>
+                  <strong>Phòng:</strong> {roomData?.roomName}
+                </ListGroup.Item>
+                <ListGroup.Item>
+                  <strong>Ngày nhận phòng:</strong> {checkInDate ? new Date(checkInDate).toLocaleDateString('vi-VN') : 'Chưa chọn'}
+                </ListGroup.Item>
+                <ListGroup.Item>
+                  <strong>Ngày trả phòng:</strong> {checkOutDate ? new Date(checkOutDate).toLocaleDateString('vi-VN') : 'Chưa chọn'}
+                </ListGroup.Item>
+                <ListGroup.Item>
+                  <strong>Số đêm:</strong> {nights} đêm
+                </ListGroup.Item>
+                <ListGroup.Item>
+                  <strong>Số khách:</strong> {guestLabel}
+                </ListGroup.Item>
+                <ListGroup.Item>
+                  <strong>Dịch vụ bổ sung:</strong>
+                  {getSelectedServicesSummary().length > 0 ? (
+                    <ListGroup variant="flush" className="mt-2">
+                      {getSelectedServicesSummary().map((service, index) => (
+                        <ListGroup.Item key={index}>
+                          {service.name}: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(service.price)} {service.specialNotes ? `/${service.specialNotes}` : ''}
+                        </ListGroup.Item>
+                      ))}
+                    </ListGroup>
+                  ) : (
+                    <span className="text-muted">Không có dịch vụ nào được chọn.</span>
+                  )}
+                </ListGroup.Item>
+                <ListGroup.Item>
+                  <strong>Tổng chi phí:</strong> {formattedPrice}
+                </ListGroup.Item>
+              </ListGroup>
+            </Col>
+          </Row>
+          <Alert variant="info" className="mt-3">
+            Vui lòng kiểm tra kỹ thông tin trước khi xác nhận.
+          </Alert>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowConfirmationModal(false)}>
@@ -663,30 +717,31 @@ const handleSubmit = async (e) => {
         </Modal.Footer>
       </Modal>
 
-        {/* Modal Thanh toán */}
-        <Modal show={showPaymentModal} onHide={() => setShowPaymentModal(false)} size="lg" centered>
-          <Modal.Header closeButton>
-            <Modal.Title>Thanh toán</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <PaymentCheckout
-              roomName={roomData?.roomName}
-              homestayName={roomData?.name}
-              checkInDate={checkInDate}
-              checkOutDate={checkOutDate}
-              guests={guestLabel}
-              totalAmount={calculateTotalAmount()}
-              selectedServices={getSelectedServicesSummary()}
-              bookingId={bookingId}
-              customerInfo={customerInfo} // Truyền thông tin khách hàng
-              onClose={() => setShowPaymentModal(false)}
-              onPaymentSuccess={() => {
-                setShowPaymentModal(false);
-                navigate('/booking-success');
-              }}
-            />
-          </Modal.Body>
-        </Modal>
+      {/* Modal Thanh toán */}
+      <Modal show={showPaymentModal} onHide={() => setShowPaymentModal(false)} size="lg" centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Thanh toán</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <PaymentCheckout
+            roomName={roomData?.roomName}
+            homestayName={roomData?.name}
+            checkInDate={checkInDate}
+            checkOutDate={checkOutDate}
+            guests={guestLabel}
+            totalAmount={calculateTotalAmount()}
+            depositAmount={calculateTotalAmount() * 0.3}
+            selectedServices={getSelectedServicesSummary()}
+            bookingId={bookingId}
+            customerInfo={customerInfo}
+            onClose={() => setShowPaymentModal(false)}
+            onPaymentSuccess={() => {
+              setShowPaymentModal(false);
+              navigate('/booking-success');
+            }}
+          />
+        </Modal.Body>
+      </Modal>
 
       {/* Modal Dịch vụ */}
       <Modal show={showServiceModal} onHide={() => setShowServiceModal(false)} centered>
@@ -695,27 +750,30 @@ const handleSubmit = async (e) => {
         </Modal.Header>
         <Modal.Body>
           {selectedService?.images?.[0]?.imageUrl ? (
-            <img
+            <Card.Img
+              variant="top"
               src={`/${selectedService.images[0].imageUrl}`}
               alt={selectedService.serviceType?.serviceName || 'Dịch vụ'}
-              className="w-100 mb-3"
+              className="mb-3"
               style={{ maxHeight: '300px', objectFit: 'cover' }}
             />
           ) : (
-            <p className="text-muted">Không có hình ảnh cho dịch vụ này.</p>
+            <Alert variant="info">Không có hình ảnh cho dịch vụ này.</Alert>
           )}
-          <p>
-            <strong>Giá:</strong> {new Intl.NumberFormat('vi-VN', {
-              style: 'currency',
-              currency: 'VND',
-            }).format(selectedService?.price || 0)}
-            {selectedService?.specialNotes ? `/${selectedService.specialNotes}` : ''}
-          </p>
-          <p>
-            <strong>Mô tả:</strong> {selectedService?.serviceType?.description || 'Không có mô tả'}
-          </p>
+          <ListGroup variant="flush" className="mb-3">
+            <ListGroup.Item>
+              <strong>Giá:</strong> {new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND',
+              }).format(selectedService?.price || 0)}
+              {selectedService?.specialNotes && <Badge bg="info" className="ms-2">{selectedService.specialNotes}</Badge>}
+            </ListGroup.Item>
+            <ListGroup.Item>
+              <strong>Mô tả:</strong> {selectedService?.serviceType?.description || 'Không có mô tả'}
+            </ListGroup.Item>
+          </ListGroup>
           <Form.Check
-            type="checkbox"
+            type="switch"
             label="Chọn dịch vụ này"
             checked={selectedServices[selectedService?.id] || false}
             onChange={() => handleServiceChange(selectedService?.id)}

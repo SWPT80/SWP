@@ -6,23 +6,28 @@ import Experience from './pages/Experience';
 import Service from './pages/Service';
 import HomeLayout from './layouts/HomeLayout';
 import HostLayout from './layouts/HostLayout';
-import Messages from './pages/Messages';
-import CustomerReport from './pages/CustomerReport';
-import BillingSystem from './pages/BillingSystem';
-import Dashboard from './pages/Dashboard';
-import HostService from './pages/HostService';
+import Messages from './pages/host/Messages';
+import CustomerReport from './pages/host/CustomerReport';
+import BillingSystem from './pages/host/BillingSystem';
+import Dashboard from './pages/host/Dashboard';
+import HostService from './pages/host/HostService';
 import Occupancy from './components/host/Occupancy';
-import Booking from './pages/Booking';
-import AllRoom from './pages/room/AllRoom';
-import EditRoom from './pages/room/EditRoom';
-import AddRoom from './pages/room/AddRoom';
-import Room from './pages/room/Room';
-import RoomPricing from './pages/room/RoomPricing';
-import FacilitiesList from './pages/amenity/FacilitiesList';
+import Booking from './pages/host/Booking';
+import AllRoom from './pages/host/room/AllRoom';
+import EditRoom from './pages/host/room/EditRoom';
+import AddRoom from './pages/host/room/AddRoom';
+import Room from './pages/host/room/Room';
+import RoomPricing from './pages/host/room/RoomPricing';
+import FacilitiesList from './pages/host/FacilitiesList';
 import RoomDetails from './pages/RoomDetails';
 import BookedLayout from './layouts/BookedLayout';
-import PaymentCheckout from './pages/Payment-checkout';
 import Offers from './pages/Offer';
+
+// payment
+import PaymentCheckout from './pages/payment/Payment-checkout';
+import PaymentCallback from './pages/payment/PaymentCallback';
+import BookingSuccess from './pages/payment/BookingSuccess';
+
 
 function App() {
   return (
@@ -52,8 +57,9 @@ function App() {
         <Route element={<BookedLayout />}>
           <Route path="/offer" element={<Offers />} />
           <Route path="/room/roomdetails/:homestayId/:roomNumber" element={<RoomDetails />} />
-
           <Route path="/checkout" element={<PaymentCheckout />} />
+          <Route path="/payment-callback" element={<PaymentCallback />} />
+          <Route path="/booking-success" element={<BookingSuccess />} />
         </Route>
       </Routes>
     </Router>

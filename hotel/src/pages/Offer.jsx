@@ -448,7 +448,7 @@ const Offers = () => {
                           <Card.Body className="d-flex flex-column justify-content-between">
                             <div>
                               <h5 className="text-success">
-                                Tuyệt vời {((item.rating / 5) * 10).toFixed(1)}
+                                Tuyệt vời {((item.rating / 5) * 5).toFixed(1)}
                               </h5>
                               <p className="text-muted small mb-2">
                                 {item.reviews} đánh giá
@@ -462,7 +462,7 @@ const Offers = () => {
                             </div>
                             <div className="text-center">
                               <Badge pill bg="warning" className="fs-5 p-2">
-                                {((item.rating / 5) * 10).toFixed(1)}
+                                {((item.rating / 5) * 5).toFixed(1)}
                               </Badge>
                             </div>
                           </Card.Body>

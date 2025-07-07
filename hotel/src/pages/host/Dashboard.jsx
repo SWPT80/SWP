@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { CalendarSection } from '../components/host/CalendarSection';
-import { BookingsTable } from '../components/host/BookingsTable';
+import { CalendarSection } from '../../components/host/CalendarSection';
+import { BookingsTable } from '../../components/host/BookingsTable';
 import { Container, Row, Col, Card, Dropdown } from 'react-bootstrap';
 import { Line } from 'react-chartjs-2';
 import {

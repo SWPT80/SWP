@@ -6,7 +6,7 @@ import {
   BsChatDots,
   BsThreeDotsVertical
 } from "react-icons/bs";
-import { DashboardHeader } from '../components/host/DashboardHeader';
+import { DashboardHeader } from '../../components/host/DashboardHeader';
 
 
 export default function HostService() {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import RoomForm from "../../components/host/RoomForm";
+import RoomForm from "../../../components/host/RoomForm";
 
 export default function AddRoom() {
   const [formData, setFormData] = useState({

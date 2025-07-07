@@ -1,6 +1,6 @@
 import { Container, Row, Col, Card, Badge, Button } from "react-bootstrap";
 import { MessageCircle } from "lucide-react";
-import { DashboardHeader } from '../components/host/DashboardHeader';
+import { DashboardHeader } from '../../components/host/DashboardHeader';
 
 
 export default function Messages() {

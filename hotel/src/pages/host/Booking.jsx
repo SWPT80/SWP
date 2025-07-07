@@ -1,6 +1,6 @@
 import { Container, Row, Col, Card, Badge, Button, Table } from "react-bootstrap";
 import { Calendar, Home, Clock } from "lucide-react";
-import { BookingsTable } from "../components/host/BookingsTable";
+import { BookingsTable } from "../../components/host/BookingsTable";
 
 
 export default function Booking() {
