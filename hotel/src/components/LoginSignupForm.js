@@ -1,204 +1,236 @@
 import React, { useState } from 'react';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import { FaFacebook, FaGoogle, FaApple } from 'react-icons/fa';
+import { Modal, Button, Form, Tabs, Tab } from 'react-bootstrap';
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
+import axios from 'axios';
 
-const AuthForm = () => {
-  const [isLogin, setIsLogin] = useState(true);
-  const [formData, setFormData] = useState({
-    email: '',
-    username: '',
-    phone: '',
-    password: '',
-    confirmPassword: ''
-  });
-  const [countryCode, setCountryCode] = useState('+84');
-  const [showPassword, setShowPassword] = useState(false);
+const AuthModal = ({ show, onClose, onAuthSuccess }) => {
+  const [key, setKey] = useState('login');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isLogin) {
-      // Xử lý đăng nhập
-      console.log('Đăng nhập với:', formData.email, formData.password);
-    } else {
-      // Xử lý đăng ký
-      if (formData.password !== formData.confirmPassword) {
-        alert('Mật khẩu không khớp!');
-        return;
-      }
-      console.log('Đăng ký với:', formData);
+    setError('');
+    setSuccess('');
+
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData);
+
+    try {
+        if (key === 'login') {
+            const response = await axios.post('http://localhost:8080/api/auth/login', {
+                email: data.loginEmail,
+                password: data.loginPassword,
+            });
+            localStorage.setItem('token', response.data.token);
+            const meResponse = await axios.get('http://localhost:8080/api/auth/me', {
+                headers: { Authorization: `Bearer ${response.data.token}` },
+            });
+            console.log('User info from /me (Login):', meResponse.data);
+            const fullName = meResponse.data.fullName || data.loginEmail.split('@')[0];
+            console.log('Using fullName:', fullName);
+            setSuccess('Đăng nhập thành công!');
+            onAuthSuccess({ fullName });
+            onClose();
+        } else {
+            if (data.registerPassword !== data.registerConfirmPassword) {
+                setError('Mật khẩu xác nhận không khớp');
+                return;
+            }
+            const response = await axios.post('http://localhost:8080/api/auth/register', {
+              userName: data.registerUserName,
+              fullName: data.registerName,
+              email: data.registerEmail,
+              phone: data.registerPhone || null,
+              birthdate: data.registerBirthdate || null,
+              address: data.registerAddress || null,
+              password: data.registerPassword,
+          });
+            localStorage.setItem('token', response.data.token);
+            setSuccess('Đăng ký thành công!');
+            onAuthSuccess({ fullName: data.registerName });
+            setTimeout(() => {
+                setKey('login');
+                onClose();
+            }, 1000);
+        }
+    } catch (err) {
+        // Cải thiện xử lý lỗi
+        if (err.response?.status === 400 && err.response?.data) {
+            // Xử lý lỗi validation từ backend
+            const errors = err.response.data;
+            if (typeof errors === 'object') {
+                const errorMessages = Object.values(errors).join(', ');
+                setError(errorMessages);
+            } else {
+                setError(errors || 'Có lỗi xảy ra khi đăng ký');
+            }
+        } else {
+            setError(err.response?.data?.message || 'Có lỗi xảy ra');
+        }
+    }
+};
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      const response = await axios.post('http://localhost:8080/api/auth/google', {
+        token: credentialResponse.credential,
+      });
+      localStorage.setItem('token', response.data.token);
+      const meResponse = await axios.get('http://localhost:8080/api/auth/me', {
+        headers: { Authorization: `Bearer ${response.data.token}` },
+      });
+      console.log('User info from /me (Google):', meResponse.data);
+      const email = meResponse.data.email || 'user@example.com';
+      const fullName = meResponse.data.fullName || email.split('@')[0];
+      console.log('Using fullName from Google:', fullName);
+      setSuccess('Đăng nhập Google thành công!');
+      onAuthSuccess({ fullName });
+      onClose();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Lỗi đăng nhập Google');
+      console.error('Google Login Error:', err);
     }
   };
 
-  const toggleAuthMode = () => {
-    setIsLogin(!isLogin);
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    const email = e.target.elements.forgotEmail.value;
+    try {
+      await axios.post('http://localhost:8080/api/auth/forgot-password', { email });
+      setSuccess('Yêu cầu đặt lại mật khẩu đã được gửi!');
+      setShowForgotPassword(false);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Có lỗi xảy ra');
+    }
   };
 
   return (
-    <div className="container mt-5">
-      <div className="row justify-content-center">
-        <div className="col-md-6 col-lg-5">
-          <div className="card shadow">
-            <div className="card-body p-4">
-              <h2 className="text-center mb-4">
-                {isLogin ? 'Đăng nhập' : 'Đăng ký'}
-              </h2>
-              
-              <h5 className="text-center mb-4">Chào mừng bạn đến với Airbnb</h5>
-              
-              <form onSubmit={handleSubmit}>
-                {!isLogin && (
-                  <div className="mb-3">
-                    <label htmlFor="username" className="form-label">Tên người dùng</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      id="username"
-                      name="username"
-                      value={formData.username}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                )}
-                
-                <div className="mb-3">
-                  <label htmlFor="email" className="form-label">Email</label>
-                  <input
-                    type="email"
-                    className="form-control"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                  />
+    <Modal show={show} onHide={onClose} centered>
+      <Modal.Header closeButton>
+        <Modal.Title>Đăng nhập hoặc Đăng ký</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        {error && <div className="alert alert-danger">{error}</div>}
+        {success && <div className="alert alert-success">{success}</div>}
+        <Tabs
+          id="auth-tabs"
+          activeKey={key}
+          onSelect={(k) => {
+            setKey(k);
+            setShowForgotPassword(false);
+          }}
+          className="mb-3"
+        >
+          <Tab eventKey="login" title="Đăng nhập">
+            {!showForgotPassword ? (
+              <Form onSubmit={handleSubmit}>
+                <Form.Group className="mb-3" controlId="loginEmail">
+                  <Form.Label>Email</Form.Label>
+                  <Form.Control type="email" name="loginEmail" placeholder="Nhập email" required />
+                </Form.Group>
+                <Form.Group className="mb-3" controlId="loginPassword">
+                  <Form.Label>Mật khẩu</Form.Label>
+                  <Form.Control type="password" name="loginPassword" placeholder="Nhập mật khẩu" required />
+                </Form.Group>
+                <Button variant="primary" type="submit" className="w-100">
+                  Đăng nhập
+                </Button>
+                <div className="text-center mt-2">
+                  <a href="#" onClick={() => setShowForgotPassword(true)}>
+                    Quên mật khẩu?
+                  </a>
                 </div>
-                
-                {!isLogin && (
-                  <>
-                    <div className="mb-3">
-                      <label className="form-label">Quốc gia/Khu vực</label>
-                      <select 
-                        className="form-select"
-                        value={countryCode}
-                        onChange={(e) => setCountryCode(e.target.value)}
-                      >
-                        <option value="+84">Việt Nam (+84)</option>
-                        <option value="+1">USA (+1)</option>
-                        {/* Thêm các quốc gia khác */}
-                      </select>
-                    </div>
-                    
-                    <div className="mb-3">
-                      <label htmlFor="phone" className="form-label">Số điện thoại</label>
-                      <div className="input-group">
-                        <span className="input-group-text">{countryCode}</span>
-                        <input
-                          type="tel"
-                          className="form-control"
-                          id="phone"
-                          name="phone"
-                          value={formData.phone}
-                          onChange={handleChange}
+              </Form>
+            ) : (
+              <Form onSubmit={handleForgotPassword}>
+                <Form.Group className="mb-3" controlId="forgotEmail">
+                  <Form.Label>Email</Form.Label>
+                  <Form.Control type="email" name="forgotEmail" placeholder="Nhập email của bạn" required />
+                </Form.Group>
+                <Button variant="primary" type="submit" className="w-100">
+                  Gửi yêu cầu đặt lại mật khẩu
+                </Button>
+                <div className="text-center mt-2">
+                  <a href="#" onClick={() => setShowForgotPassword(false)}>
+                    Quay lại đăng nhập
+                  </a>
+                </div>
+              </Form>
+            )}
+          </Tab>
+          <Tab eventKey="register" title="Đăng ký">
+              <Form onSubmit={handleSubmit}>
+                  <Form.Group className="mb-3" controlId="registerUserName">
+                      <Form.Label>Tên người dùng</Form.Label>
+                      <Form.Control
+                          type="text"
+                          name="registerUserName"
+                          placeholder="Nhập tên người dùng"
                           required
-                        />
-                      </div>
-                      <small className="text-muted">
-                        Chúng tôi sẽ gọi điện hoặc nhắn tin cho bạn để xác nhận số điện thoại. 
-                        Có áp dụng phí dữ liệu và phí tin nhắn tiêu chuẩn.
-                      </small>
-                    </div>
-                  </>
-                )}
-                
-                <div className="mb-3">
-                  <label htmlFor="password" className="form-label">Mật khẩu</label>
-                  <div className="input-group">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      className="form-control"
-                      id="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      required
-                    />
-                    <button 
-                      className="btn btn-outline-secondary" 
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? 'Ẩn' : 'Hiện'}
-                    </button>
-                  </div>
-                </div>
-                
-                {!isLogin && (
-                  <div className="mb-3">
-                    <label htmlFor="confirmPassword" className="form-label">Nhập lại mật khẩu</label>
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      className="form-control"
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                )}
-                
-                <div className="d-grid gap-2 mb-3">
-                  <button type="submit" className="btn btn-danger">
-                    {isLogin ? 'Đăng nhập' : 'Đăng ký'}
-                  </button>
-                </div>
-              </form>
-              
-              <div className="text-center mb-3">
-                <small className="text-muted">
-                  {isLogin ? 'Bạn chưa có tài khoản?' : 'Bạn đã có tài khoản?'}
-                  <button 
-                    className="btn btn-link p-0 ms-1"
-                    onClick={toggleAuthMode}
-                  >
-                    {isLogin ? 'Đăng ký' : 'Đăng nhập'}
-                  </button>
-                </small>
-              </div>
-              
-              <div className="text-center mb-3">
-                <small className="text-muted">hoặc</small>
-              </div>
-              
-              <div className="d-grid gap-2">
-                <button className="btn btn-outline-dark mb-2 d-flex align-items-center justify-content-center">
-                  <FaGoogle className="me-2" />
-                  Tiếp tục với Google
-                </button>
-                <button className="btn btn-outline-dark mb-2 d-flex align-items-center justify-content-center">
-                  <FaApple className="me-2" />
-                  Tiếp tục với Apple
-                </button>
-                <button className="btn btn-outline-dark d-flex align-items-center justify-content-center">
-                  <FaFacebook className="me-2" />
-                  Tiếp tục với Facebook
-                </button>
-              </div>
-            </div>
-          </div>
+                      />
+                  </Form.Group>
+                  <Form.Group className="mb-3" controlId="registerName">
+                      <Form.Label>Họ và tên</Form.Label>
+                      <Form.Control
+                          type="text"
+                          name="registerName"
+                          placeholder="Nhập họ và tên"
+                          required
+                      />
+                  </Form.Group>
+                  <Form.Group className="mb-3" controlId="registerEmail">
+                      <Form.Label>Email</Form.Label>
+                      <Form.Control
+                          type="email"
+                          name="registerEmail"
+                          placeholder="Nhập email"
+                          required
+                      />
+                  </Form.Group>
+                  <Form.Group className="mb-3" controlId="registerPassword">
+                      <Form.Label>Mật khẩu</Form.Label>
+                      <Form.Control
+                          type="password"
+                          name="registerPassword"
+                          placeholder="Nhập mật khẩu"
+                          required
+                      />
+                  </Form.Group>
+                  <Form.Group className="mb-3" controlId="registerConfirmPassword">
+                      <Form.Label>Xác nhận mật khẩu</Form.Label>
+                      <Form.Control
+                          type="password"
+                          name="registerConfirmPassword"
+                          placeholder="Xác nhận mật khẩu"
+                          required
+                      />
+                  </Form.Group>
+                  <Button variant="primary" type="submit" className="w-100">
+                      Đăng ký
+                  </Button>
+              </Form>
+          </Tab>
+        </Tabs>
+        <div className="social-login-section mt-4">
+          <h6 className="text-center mb-3">hoặc</h6>
+          <GoogleOAuthProvider clientId="736882827867-gjjrd24l8vofkj87nhe8kt1q0d7t9ako.apps.googleusercontent.com">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => setError('Lỗi đăng nhập Google')}
+              theme="outline"
+              size="large"
+              width="100%"
+            />
+          </GoogleOAuthProvider>
         </div>
-      </div>
-    </div>
+      </Modal.Body>
+    </Modal>
   );
 };
 
-export default AuthForm;
+export default AuthModal;

@@ -9,9 +9,11 @@ import {
   Badge
 } from 'react-bootstrap';
 import { useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
+import { useAuth } from '../../context/AuthContext';
+import axios from '../../utils/axiosConfig';
 
 const BookingSuccess = () => {
+  const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [bookingDetails, setBookingDetails] = useState(null);
@@ -21,6 +23,12 @@ const BookingSuccess = () => {
   useEffect(() => {
     const fetchBookingDetails = async () => {
       try {
+        if (!isLoggedIn) {
+          setError('Vui lòng đăng nhập để xem thông tin đặt phòng.');
+          navigate('/admin/login');
+          return;
+        }
+
         const queryParams = new URLSearchParams(location.search);
         const bookingId = queryParams.get('bookingId');
         const txnRef = queryParams.get('txnRef') || queryParams.get('orderId');
@@ -29,7 +37,7 @@ const BookingSuccess = () => {
           throw new Error('Không tìm thấy bookingId trong URL');
         }
 
-        const response = await axios.get(`http://localhost:8080/api/bookings/${bookingId}`, {
+        const response = await axios.get(`/api/bookings/${bookingId}`, {
           params: { includeDetails: true }
         });
 
@@ -39,7 +47,6 @@ const BookingSuccess = () => {
 
         const bookingData = response.data;
 
-        // Gộp dữ liệu dịch vụ từ serviceDetails nếu có
         if (Array.isArray(bookingData.serviceDetails)) {
           bookingData.services = bookingData.serviceDetails.map(service => ({
             id: service.id,
@@ -53,15 +60,20 @@ const BookingSuccess = () => {
 
         setBookingDetails(bookingData);
       } catch (err) {
-        setError(err.response?.data?.message || 'Không thể tải thông tin đặt phòng. Vui lòng liên hệ hỗ trợ.');
         console.error('Lỗi khi lấy thông tin đặt phòng:', err);
+        setError(err.response?.status === 401
+          ? 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.'
+          : err.response?.data?.message || 'Không thể tải thông tin đặt phòng. Vui lòng liên hệ hỗ trợ.');
+        if (err.response?.status === 401) {
+          navigate('/admin/login');
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchBookingDetails();
-  }, [location]);
+  }, [location, isLoggedIn, navigate]);
 
   const formattedAmount = (amount) =>
     new Intl.NumberFormat('vi-VN', {

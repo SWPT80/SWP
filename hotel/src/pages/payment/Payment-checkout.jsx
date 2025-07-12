@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Form, Button, Alert, Container, ListGroup, Spinner, Badge } from 'react-bootstrap';
-import axios from 'axios';
+import { useAuth } from '../../context/AuthContext';
+import axios from '../../utils/axiosConfig';
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 
 const PaymentCheckout = ({ bookingId, onClose, onPaymentSuccess }) => {
+  const { isLoggedIn } = useAuth();
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [depositPaymentMethod, setDepositPaymentMethod] = useState('vnpay');
   const [promoCode, setPromoCode] = useState('');
@@ -17,7 +19,6 @@ const PaymentCheckout = ({ bookingId, onClose, onPaymentSuccess }) => {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  // Fetch booking details
   useEffect(() => {
     const fetchBookingDetails = async () => {
       if (!bookingId || isNaN(bookingId)) {
@@ -26,15 +27,20 @@ const PaymentCheckout = ({ bookingId, onClose, onPaymentSuccess }) => {
         return;
       }
 
+      if (!isLoggedIn) {
+        setError('Vui lòng đăng nhập để tiếp tục thanh toán.');
+        navigate('/admin/login');
+        return;
+      }
+
       try {
         setLoading(true);
-        const response = await axios.get(`http://localhost:8080/api/bookings/${bookingId}`, {
+        const response = await axios.get(`/api/bookings/${bookingId}`, {
           params: { includeDetails: true }
         });
-        
+
         const bookingData = response.data;
-        
-        // Process services similar to BookingSuccess component
+
         if (Array.isArray(bookingData.serviceDetails)) {
           bookingData.services = bookingData.serviceDetails.map(service => ({
             id: service.id,
@@ -45,7 +51,7 @@ const PaymentCheckout = ({ bookingId, onClose, onPaymentSuccess }) => {
         } else {
           bookingData.services = [];
         }
-        
+
         setBookingDetails(bookingData);
         setError(null);
       } catch (err) {
@@ -57,7 +63,7 @@ const PaymentCheckout = ({ bookingId, onClose, onPaymentSuccess }) => {
     };
 
     fetchBookingDetails();
-  }, [bookingId]);
+  }, [bookingId, isLoggedIn, navigate]);
 
   const handleApplyPromo = async () => {
     if (!promoCode.trim()) {
@@ -67,7 +73,7 @@ const PaymentCheckout = ({ bookingId, onClose, onPaymentSuccess }) => {
 
     try {
       setIsProcessing(true);
-      // Mock API call for promo validation
+      // Mock API call for promo validation (replace with actual API if available)
       await new Promise(resolve => setTimeout(resolve, 1000));
       const validPromoCodes = {
         'SUMMER2025': 0.2,
@@ -92,50 +98,58 @@ const PaymentCheckout = ({ bookingId, onClose, onPaymentSuccess }) => {
 
   const handlePayment = async () => {
     try {
-        setIsProcessing(true);
-        setPaymentStatus(null);
+      setIsProcessing(true);
+      setPaymentStatus(null);
 
-        const normalizedPaymentMethod = paymentMethod.toUpperCase().trim();
-        const normalizedDepositPaymentMethod = depositPaymentMethod.toUpperCase().trim();
-        const effectivePaymentMethod = normalizedPaymentMethod === "CASH"
-            ? `DEPOSIT_${normalizedDepositPaymentMethod}`
-            : normalizedPaymentMethod;
+      if (!isLoggedIn) {
+        setError('Vui lòng đăng nhập để thực hiện thanh toán.');
+        navigate('/admin/login');
+        return;
+      }
 
-        const paymentData = {
-            bookingId: bookingId,
-            amount: finalAmount.toString(),
-            paymentMethod: effectivePaymentMethod,
-            status: "PENDING",
-            transactionId: `TRX${Math.floor(Math.random() * 1000000)}`,
-            paymentDate: new Date().toISOString(),
-            isDeposit: normalizedPaymentMethod === "CASH",
-            paymentDetails: `TxnRef: TRX${Math.floor(Math.random() * 1000000)}${normalizedPaymentMethod === "CASH" ? "; Deposit Payment" : ""}`
-        };
+      const normalizedPaymentMethod = paymentMethod.toUpperCase().trim();
+      const normalizedDepositPaymentMethod = depositPaymentMethod.toUpperCase().trim();
+      const effectivePaymentMethod = normalizedPaymentMethod === "CASH"
+        ? `DEPOSIT_${normalizedDepositPaymentMethod}`
+        : normalizedPaymentMethod;
 
-        console.log('Payment data:', paymentData);
+      const paymentData = {
+        bookingId: bookingId,
+        amount: finalAmount.toString(),
+        paymentMethod: effectivePaymentMethod,
+        status: "PENDING",
+        transactionId: `TRX${Math.floor(Math.random() * 1000000)}`,
+        paymentDate: new Date().toISOString(),
+        isDeposit: normalizedPaymentMethod === "CASH",
+        paymentDetails: `TxnRef: TRX${Math.floor(Math.random() * 1000000)}${normalizedPaymentMethod === "CASH" ? "; Deposit Payment" : ""}`
+      };
 
-        const response = await axios.post('http://localhost:8080/api/payments/create-payment-url', paymentData, {
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-        console.log('Payment response:', response.data);
-
-        if (response.data) {
-            window.location.href = response.data;
-        } else {
-            throw new Error('Không nhận được URL thanh toán từ server');
+      const response = await axios.post('/api/payments/create-payment-url', paymentData, {
+        headers: {
+          'Content-Type': 'application/json'
         }
+      });
 
-        setPaymentStatus('success');
-        onPaymentSuccess();
+      if (response.data) {
+        window.location.href = response.data;
+      } else {
+        throw new Error('Không nhận được URL thanh toán từ server');
+      }
+
+      setPaymentStatus('success');
+      onPaymentSuccess();
     } catch (error) {
-        console.error('Payment error:', error.response?.data || error.message);
-        const errorMessage = error.response?.data?.message || error.message;
-        alert(`Thanh toán thất bại: ${errorMessage}`);
-        setPaymentStatus('error');
+      console.error('Payment error:', error.response?.data || error.message);
+      const errorMessage = error.response?.status === 401
+        ? 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.'
+        : error.response?.data?.message || 'Thanh toán thất bại. Vui lòng thử lại.';
+      setError(errorMessage);
+      setPaymentStatus('error');
+      if (error.response?.status === 401) {
+        navigate('/admin/login');
+      }
     } finally {
-        setIsProcessing(false);
+      setIsProcessing(false);
     }
   };
 
@@ -413,8 +427,7 @@ const PaymentCheckout = ({ bookingId, onClose, onPaymentSuccess }) => {
                   <h5 className="fw-bold mb-3">Chi tiết giá</h5>
                   <ListGroup variant="flush" className="mb-2">
                     <ListGroup.Item className="d-flex justify-content-between">
-                      <span> <strong>Giá phòng ({nights} đêm) 
-                       + dịch vụ</strong> </span>
+                      <span><strong>Giá phòng ({nights} đêm) + dịch vụ</strong></span>
                       <span>{formatCurrency(totalAmount)}</span>
                     </ListGroup.Item>
                     {bookingDetails.services?.map((service) => (

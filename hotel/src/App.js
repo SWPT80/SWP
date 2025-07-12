@@ -57,9 +57,11 @@ import FacilitiesList from "./pages/host/FacilitiesList";
 import PaymentCheckout from "./pages/payment/Payment-checkout";
 import PaymentCallback from "./pages/payment/PaymentCallback";
 import BookingSuccess from "./pages/payment/BookingSuccess";
+import { AuthProvider } from './context/AuthContext';
 
 function App() {
   return (
+    <AuthProvider>
     <Router>
       <Routes>
         {/* Admin Routes */}
@@ -97,9 +99,7 @@ function App() {
         <Route element={<HomeLayout />}>
           <Route path="/" element={<Home />} />
           <Route path="/experience" element={<Experience />} />
-          <Route path="/services" element={<Service />} />
-          <Route path="/offers" element={<Offers />} />
-          <Route path="/rooms/:id" element={<RoomDetails />} />
+          <Route path="/services" element={<Service />} />     
         </Route>
 
         {/* Host Routes */}
@@ -125,17 +125,20 @@ function App() {
 
         {/* Booking/Payment Routes */}
         <Route element={<BookedLayout />}>
+          <Route path="/offer" element={<Offers />} />
+          <Route path="/room/roomdetails/:homestayId/:roomNumber" element={<RoomDetails />} />
           <Route path="/checkout" element={<PaymentCheckout />} />
           <Route path="/payment-callback" element={<PaymentCallback />} />
           <Route path="/booking-success" element={<BookingSuccess />} />
         </Route>
 
         {/* Error Routes */}
-        <Route path="/404" element={<Error404 />} />
+        {/* <Route path="/404" element={<Error404 />} />
         <Route path="/500" element={<Error500 />} />
-        <Route path="*" element={<Navigate to="/404" replace />} />
+        <Route path="*" element={<Navigate to="/404" replace />} /> */}
       </Routes>
     </Router>
+    </AuthProvider>
   );
 }
 

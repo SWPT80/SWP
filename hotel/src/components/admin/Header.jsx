@@ -4,7 +4,7 @@ import HeaderUser from './Header-user';
 
 const Header = ({ onToggleSidebar, isOpen }) => {
   return (
-    <div className="header">
+    <div className="admin_header">
       <button onClick={onToggleSidebar} className="toggle-btn">
         ☰
         <a className="mobile_btn" id="mobile_btn">

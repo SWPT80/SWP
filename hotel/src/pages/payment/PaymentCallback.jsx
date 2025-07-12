@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Container, Alert, Button, Spinner } from 'react-bootstrap';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useAuth } from '../../context/AuthContext';
+import axios from '../../utils/axiosConfig';
 
 const PaymentCallback = () => {
+  const { isLoggedIn } = useAuth();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [message, setMessage] = useState('');
@@ -13,6 +15,15 @@ const PaymentCallback = () => {
   useEffect(() => {
     const fetchPaymentStatus = async () => {
       setIsLoading(true);
+
+      if (!isLoggedIn) {
+        setMessage('Vui lòng đăng nhập để xử lý thanh toán.');
+        setStatus('danger');
+        navigate('/admin/login');
+        setIsLoading(false);
+        return;
+      }
+
       const vnpResponseCode = searchParams.get('vnp_ResponseCode');
       const vnpTxnRef = searchParams.get('vnp_TxnRef');
       const vnpAmount = searchParams.get('vnp_Amount');
@@ -21,7 +32,7 @@ const PaymentCallback = () => {
       const momoAmount = searchParams.get('amount');
 
       try {
-        const response = await axios.get(`http://localhost:8080/api/payments/callback`, {
+        const response = await axios.get(`/api/payments/callback`, {
           params: {
             vnp_ResponseCode: vnpResponseCode,
             vnp_TxnRef: vnpTxnRef,
@@ -38,15 +49,19 @@ const PaymentCallback = () => {
           setTimeout(() => navigate('/booking-success'), 2000);
         }
       } catch (error) {
+        console.error('Error processing payment callback:', error);
         setMessage('Lỗi khi xử lý thanh toán. Vui lòng thử lại.');
         setStatus('danger');
+        if (error.response?.status === 401) {
+          navigate('/admin/login');
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchPaymentStatus();
-  }, [searchParams, navigate]);
+  }, [searchParams, navigate, isLoggedIn]);
 
   return (
     <Container className="my-5 text-center">

@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useParams, useNavigate } from 'react-router-dom';
+import axios from '../utils/axiosConfig';
 import {
   Container,
   Row,
@@ -15,17 +18,17 @@ import {
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
-import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import PaymentCheckout from './payment/Payment-checkout';
 
 const RoomDetails = () => {
   const { homestayId, roomNumber } = useParams();
+  const { isLoggedIn, user } = useAuth();
   const navigate = useNavigate();
   const [roomData, setRoomData] = useState(null);
   const [cancellationPolicies, setCancellationPolicies] = useState([]);
   const [homestayRules, setHomestayRules] = useState([]);
   const [services, setServices] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [checkInDate, setCheckInDate] = useState('');
@@ -53,49 +56,23 @@ const RoomDetails = () => {
   });
 
   useEffect(() => {
-    const fetchRoomDetails = async () => {
+    const fetchData = async () => {
       setLoading(true);
       try {
-        if (!homestayId || !roomNumber) {
-          throw new Error('Thiếu homestayId hoặc roomNumber');
-        }
+        const [roomRes, reviewRes, cancelRes, rulesRes, servicesRes] = await Promise.all([
+          axios.get(`/api/rooms/${homestayId}/${roomNumber}`),
+          axios.get(`/api/reviews/room/${homestayId}/${roomNumber}`).catch(() => ({ data: [] })),
+          axios.get(`/api/cancellation-policies/homestay/${homestayId}`).catch(() => ({ data: [] })),
+          axios.get(`/api/homestay-rules/homestay/${homestayId}`).catch(() => ({ data: [] })),
+          axios.get(`/api/services/homestay/${homestayId}`).catch(() => ({ data: [] })),
+        ]);
 
-        const roomDetailsResponse = await axios.get(
-          `http://localhost:8080/api/rooms/${homestayId}/${roomNumber}`
-        );
-        const roomDetails = roomDetailsResponse.data;
-
-        const reviewsResponse = await axios.get(
-          `http://localhost:8080/api/reviews/room/${homestayId}/${roomNumber}`
-        ).catch(() => ({ data: [] }));
-        const reviews = reviewsResponse.data;
-
-        const cancellationResponse = await axios.get(
-          `http://localhost:8080/api/cancellation-policies/homestay/${homestayId}`
-        ).catch(() => ({ data: [] }));
-        setCancellationPolicies(cancellationResponse.data);
-
-        const rulesResponse = await axios.get(
-          `http://localhost:8080/api/homestay-rules/homestay/${homestayId}`
-        ).catch(() => ({ data: [] }));
-        setHomestayRules(rulesResponse.data);
-
-        const servicesResponse = await axios.get(
-          `http://localhost:8080/api/services/homestay/${homestayId}`
-        ).catch(() => ({ data: [] }));
-        setServices(servicesResponse.data);
-
-        const initialServices = servicesResponse.data.reduce((acc, service) => {
-          acc[service.id] = false;
-          return acc;
-        }, {});
-        setSelectedServices(initialServices);
-
+        const roomDetails = roomRes.data;
         setRoomData({
           roomName: roomDetails.room.type,
           name: roomDetails.homestay.homestayName,
-          star: roomDetails.room.rating || (reviews.length > 0
-            ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+          star: roomDetails.room.rating || (reviewRes.data.length > 0
+            ? reviewRes.data.reduce((sum, r) => sum + r.rating, 0) / reviewRes.data.length
             : 0),
           description: roomDetails.homestay.description || 'Không có mô tả',
           address: roomDetails.homestay.address || 'Không có địa chỉ',
@@ -104,35 +81,41 @@ const RoomDetails = () => {
           price: roomDetails.room.price,
           capacity: roomDetails.room.capacity,
           status: roomDetails.room.status,
-          reviews: reviews,
           amenities: roomDetails.amenities || [],
         });
+        setReviews(reviewRes.data);
+        setCancellationPolicies(cancelRes.data);
+        setHomestayRules(rulesRes.data);
+        setServices(servicesRes.data);
 
-        // Lấy thông tin khách hàng từ hệ thống xác thực
-        const userId = localStorage.getItem('userId') || 1; // Thay bằng logic xác thực thực tế
-        try {
-          const userResponse = await axios.get(`http://localhost:8080/api/users/${userId}`);
+        const initialServices = servicesRes.data.reduce((acc, service) => {
+          acc[service.id] = false;
+          return acc;
+        }, {});
+        setSelectedServices(initialServices);
+
+        if (isLoggedIn) {
+          const me = await axios.get('/api/auth/me');
           setCustomerInfo({
-            userId: userResponse.data.userId,
-            fullName: userResponse.data.fullName || '',
-            email: userResponse.data.email || '',
-            phone: userResponse.data.phone || '',
-            address: userResponse.data.address || '',
+            userId: me.data.id,
+            fullName: me.data.fullName,
+            email: me.data.email,
+            phone: me.data.phone,
+            address: me.data.address,
           });
-        } catch (userError) {
-          console.error('Lỗi khi lấy thông tin người dùng:', userError);
-          setMessError('Không thể lấy thông tin người dùng. Vui lòng nhập thủ công.');
+        } else {
+          setMessError('Chưa đăng nhập. Nhập thông tin thủ công.');
         }
       } catch (err) {
-        console.error('Lỗi khi lấy chi tiết phòng:', err);
+        console.error('Lỗi khi lấy dữ liệu:', err);
         setError('Không thể tải chi tiết phòng. Vui lòng thử lại sau.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchRoomDetails();
-  }, [homestayId, roomNumber]);
+    fetchData();
+  }, [homestayId, roomNumber, isLoggedIn]);
 
   const toggleGuestOptions = () => setShowGuestOptions(!showGuestOptions);
 
@@ -216,6 +199,12 @@ const RoomDetails = () => {
     e.preventDefault();
     setMessError(null);
 
+    if (!isLoggedIn) {
+      setMessError('Vui lòng đăng nhập để đặt phòng.');
+      navigate('/admin/login');
+      return;
+    }
+
     if (!checkInDate || !checkOutDate) {
       setMessError('Vui lòng chọn ngày nhận phòng và trả phòng');
       return;
@@ -231,31 +220,37 @@ const RoomDetails = () => {
     }
 
     const bookingDTO = {
-    userId: customerInfo.userId || 1,
-    homestayId: parseInt(homestayId),
-    roomNumber: roomNumber,
-    checkInDate: checkInDate,
-    checkOutDate: checkOutDate,
-    adults: guests.adults,
-    children: guests.children,
-    totalPeople: totalGuests,
-    totalAmount: calculateTotalAmount(),
-    services: Object.keys(selectedServices).filter((key) => selectedServices[key]).map(Number),
-  };
+      userId: customerInfo.userId,
+      homestayId: parseInt(homestayId),
+      roomNumber: roomNumber,
+      checkInDate: checkInDate,
+      checkOutDate: checkOutDate,
+      adults: guests.adults,
+      children: guests.children,
+      totalPeople: totalGuests,
+      totalAmount: calculateTotalAmount(),
+      services: Object.entries(selectedServices)
+        .filter(([_, val]) => val)
+        .map(([id]) => parseInt(id)),
+    };
 
-  try {
-    const response = await axios.post('http://localhost:8080/api/bookings', bookingDTO);
-    console.log('Booking response:', response.data);
-    const bookingId = Number(response.data.id); // Đảm bảo là số
-    if (isNaN(bookingId)) {
-      throw new Error('Mã đặt phòng không hợp lệ nhận được từ server');
+    try {
+      const response = await axios.post('/api/bookings', bookingDTO);
+      const bookingId = Number(response.data.id);
+      if (isNaN(bookingId)) {
+        throw new Error('Mã đặt phòng không hợp lệ nhận được từ server');
+      }
+      setBookingId(bookingId);
+      setShowConfirmationModal(true);
+    } catch (err) {
+      console.error('Lỗi đặt phòng:', err);
+      if (err.response?.status === 401) {
+        setMessError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        navigate('/admin/login');
+      } else {
+        setMessError('Không thể tạo đặt phòng. Vui lòng thử lại.');
+      }
     }
-    setBookingId(bookingId);
-    setShowConfirmationModal(true);
-  } catch (err) {
-    console.error('Error response:', err.response?.data);
-    setMessError(err.response?.data?.message || 'Không thể tạo đặt phòng. Vui lòng thử lại.');
-  }
   };
 
   const handleConfirmBooking = () => {
@@ -339,8 +334,6 @@ const RoomDetails = () => {
                   </Col>
                 ))}
               </Row>
-
-
             </Card.Body>
           </Card>
           <Card className="mb-4 shadow-sm">
@@ -427,8 +420,8 @@ const RoomDetails = () => {
           <Card className="mb-4">
             <Card.Body>
               <Card.Title as="h3" className="mb-3">Đánh giá của khách</Card.Title>
-              {roomData.reviews.length > 0 ? (
-                roomData.reviews.map((review, index) => (
+              {reviews.length > 0 ? (
+                reviews.map((review, index) => (
                   <Card key={index} className="mb-3">
                     <Card.Body>
                       <div className="d-flex justify-content-between align-items-center mb-2">
@@ -493,7 +486,7 @@ const RoomDetails = () => {
           <Card className="sticky-top" style={{ top: '20px', maxHeight: '90vh', overflowY: 'auto' }}>
             <Card.Body>
               <Card.Title as="h3" className="mb-3">Tổng quan đặt phòng</Card.Title>
-              <Card.Text className="mb-3">
+              <div className="mb-3">
                 <strong>Phòng:</strong> {roomData.roomName} <br />
                 <strong>Homestay:</strong> {roomData.name} <br />
                 <strong>Ngày nhận phòng:</strong> {checkInDate ? new Date(checkInDate).toLocaleDateString('vi-VN') : 'Chưa chọn'} <br />
@@ -511,7 +504,7 @@ const RoomDetails = () => {
                 ) : (
                   <span className="text-muted"> Không có dịch vụ nào được chọn.</span>
                 )}
-              </Card.Text>
+              </div>
               <Card.Title as="h3" className="mb-3">Tổng: {formattedPrice}</Card.Title>
               <Form onSubmit={handleSubmit}>
                 <Form.Group className="mb-3">
