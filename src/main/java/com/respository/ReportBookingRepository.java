@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface BookingRepository extends JpaRepository<Booking, Integer> {
+public interface ReportBookingRepository extends JpaRepository<Booking, Integer> {
 
     // === 1. Tổng doanh thu theo thời gian ===
 

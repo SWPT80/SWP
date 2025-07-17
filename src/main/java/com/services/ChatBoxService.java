@@ -27,7 +27,7 @@ public class ChatBoxService {
         headers.setBearerAuth(apiKey);
 
         Map<String, Object> body = new HashMap<>();
-        body.put("model", userRequest.getModel()); // e.g. gpt-3.5-turbo
+        body.put("model", userRequest.getModel());
         body.put("messages", userRequest.getMessages());
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);

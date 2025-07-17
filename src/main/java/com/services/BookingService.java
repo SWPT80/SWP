@@ -1,7 +1,7 @@
 package com.services;
 
 import com.entity.Booking;
-import com.respository.BookingRepository;
+import com.respository.ReportBookingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -12,10 +12,10 @@ import java.util.stream.Collectors;
 public class BookingService {
 
     @Autowired
-    private BookingRepository bookingRepository;
+    private ReportBookingRepository reportBookingRepository;
 
     public List<Booking> getBookingsWithServicesByUserId(int userId) {
-        List<Booking> bookings = bookingRepository.findAll()
+        List<Booking> bookings = reportBookingRepository.findAll()
                 .stream()
                 .filter(b -> b.getUserId() == userId)
                 .collect(Collectors.toList());

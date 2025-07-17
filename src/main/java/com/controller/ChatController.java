@@ -4,7 +4,6 @@ import com.dto.response.ConversationDTO;
 import com.entity.Conversation;
 import com.entity.Message;
 import com.entity.Users;
-import com.respository.MessageRepository;
 import com.respository.UserRepository;
 import com.services.ChatService;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -2,7 +2,6 @@ package com.respository;
 
 import com.entity.BookingWithService;
 import com.entity.BookingServiceKey;
-import com.services.BookingService;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,7 +10,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface BookingServiceRepository extends JpaRepository<BookingWithService, BookingServiceKey> {
+public interface ReportBookingServiceRepository extends JpaRepository<BookingWithService, BookingServiceKey> {
     // 1.1 Doanh thu dịch vụ theo ngày
     @Query(value = """
         SELECT DAY(b.check_out_date), h.homestay_id, st.service_name, SUM(bs.quantity * s.price)

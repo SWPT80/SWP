@@ -1,7 +1,7 @@
 package com.services;
 
-import com.respository.BookingRepository;
-import com.respository.BookingServiceRepository;
+import com.respository.ReportBookingRepository;
+import com.respository.ReportBookingServiceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -11,10 +11,10 @@ import java.util.*;
 public class ReportService {
 
     @Autowired
-    private BookingRepository bookingRepo;
+    private ReportBookingRepository bookingRepo;
 
     @Autowired
-    private BookingServiceRepository bookingServiceRepo;
+    private ReportBookingServiceRepository bookingServiceRepo;
 
     // ===== 1. Revenue by Homestay =====
 
