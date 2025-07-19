@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useParams } from 'react-router-dom';
 
 const EditBooking = () => {
-  const query = new URLSearchParams(window.location.search);
-  const bookingId = query.get('id');
+  const { id: bookingId } = useParams();
 
   const [booking, setBooking] = useState({
-    user: { fullName: '' },
+    userFullName: '',
     checkInDate: '',
     checkOutDate: '',
     status: '',
@@ -15,11 +15,17 @@ const EditBooking = () => {
   });
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+
     if (bookingId) {
-      axios.get(`http://localhost:8080/api/bookings/${bookingId}`)
-        .then(res => setBooking(res.data))
-        .catch(err => {
-          console.error("Lỗi lấy booking:", err);
+      axios.get(`http://localhost:8080/api/bookings/${bookingId}/with-user-info`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+        .then((res) => setBooking(res.data))
+        .catch((err) => {
+          console.error("Lỗi lấy booking:", err.response?.data || err.message);
           alert("Không tìm thấy thông tin booking.");
         });
     }
@@ -34,7 +40,13 @@ const EditBooking = () => {
   };
 
   const handleSave = () => {
-    axios.put(`http://localhost:8080/api/bookings/${bookingId}`, booking)
+    const token = localStorage.getItem("token");
+
+    axios.put(`http://localhost:8080/api/bookings/${bookingId}`, booking, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
       .then(() => alert("Cập nhật booking thành công"))
       .catch(err => {
         console.error("Lỗi cập nhật:", err);
@@ -63,8 +75,8 @@ const EditBooking = () => {
                       <label>Customer Name</label>
                       <input
                         className="form-control"
-                        name="fullName"
-                        value={booking.user?.fullName || ''}
+                        name="userFullName"
+                        value={booking.userFullName || ''}
                         readOnly
                       />
                     </div>

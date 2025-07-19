@@ -1,0 +1,184 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+body {
+  font-family: 'Poppins', Arial, sans-serif;
+  margin: 0;
+}
+
+.become-host-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #4b0082, #9370db); /* Adjusted to match the header's dark purple */
+  padding: 20px;
+}
+
+.become-host-card {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+  padding: 35px;
+  width: 100%;
+  max-width: 550px;
+  text-align: center;
+  backdrop-filter: blur(8px);
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.text-muted {
+    color: #757575;
+    font-size: 16px;
+    margin-top: 15px; /* Tăng margin-top để tách khỏi dòng trên */
+    line-height: 1.5; /* Thêm line-height để text dễ đọc hơn */
+    margin-bottom: 0; /* Đảm bảo không chồng lấn với phần tử sau */
+  }
+
+.form-group {
+  text-align: left;
+  margin-bottom: 25px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 16px;
+  color: #263238;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 15px;
+  border: 2px solid #E0E0E0;
+  border-radius: 12px;
+  font-size: 15px;
+  background: #F5F5F5;
+  transition: border-color 0.3s, box-shadow 0.3s, transform 0.2s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #ffa500; /* Adjusted to match the orange from the image */
+  box-shadow: 0 0 12px rgba(255, 165, 0, 0.5);
+  transform: scale(1.02);
+  background: white;
+}
+
+.become-host-button {
+  padding: 15px;
+  background: linear-gradient(90deg, #ffa500, #ff4500); /* Adjusted to match the orange gradient from the image */
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.3s, background 0.3s;
+}
+
+.become-host-button:hover {
+  transform: translateY(-4px);
+  background: linear-gradient(90deg, #ff4500, #ffa500);
+}
+
+.alert-success {
+  background-color: #e6f3e6;
+  border: 2px solid #228b22; /* Adjusted to a forest green to complement the theme */
+  color: #228b22;
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 20px;
+  animation: slideIn 0.5s ease-out;
+}
+
+.alert-danger {
+  background-color: #ffebee;
+  border: 2px solid #dc143c; /* Adjusted to a crimson red to complement the theme */
+  color: #dc143c;
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 20px;
+  animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-overlay {
+  display: flex;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.7);
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes popIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.modal-content h3 {
+  margin-bottom: 25px;
+  color: #ffa500; /* Adjusted to match the orange from the image */
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.modal-options {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 25px;
+}
+
+.option-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+  min-height: 100px;
+  padding: 15px 20px;
+  background: #F5F5F5;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.3s;
+  font-weight: 500;
+  font-size: 16px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.option-label:hover {
+  background: #ffe4b5; /* Adjusted to a light orange to match the theme */
+  transform: translateY(-3px);
+  color: #ffa500;
+}
+
+.option-label.selected {
+  background: #ffe4b5;
+  border: 2px solid #ffa500;
+  color: #ffa500;
+}
+
+.option-label svg {
+  font-size: 28px;
+  margin-bottom: 8px;
+  color: #ffa500;
+}

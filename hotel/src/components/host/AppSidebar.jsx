@@ -10,29 +10,26 @@ import {
   Utensils,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-
 const items = [
-  { title: 'Dashboard', url: '/hostdashboard', icon: BarChart3 },
-  
+  { title: 'Dashboard', url: '/host/dashboard', icon: BarChart3 },
   {
     title: 'Rooms',
     icon: Home,
     submenu: [
-      { title: 'All Rooms', url: '/rooms/allroom' },
-      { title: 'Add Room', url: '/rooms/addroom' },
-      { title: 'Edit Room', url: '/rooms/editroom' },
-      { title: 'Room Pricing', url: '/rooms/roompricing' },
+      { title: 'All Rooms', url: '/host/rooms/allroom' },
+      { title: 'Add Room', url: '/host/rooms/add' },
+      { title: 'Edit Room', url: '/host/rooms/edit' },
+      { title: 'Room Pricing', url: '/host/rooms/pricing' },
     ],
   },
-  { title: 'Room Facilites', url: '/roomfacilites', icon: Utensils },
-  { title: 'Occupancy', url: '/occupancy', icon: Home},
-  { title: 'Booking', url: '/booking', icon: MessageCircle },
-  { title: 'Messages', url: '/messages', icon: MessageCircle },
-  { title: 'Customer Report', url: '/customerreport', icon: Star },
-  { title: 'Billing System', url: '/billingsystem', icon: CreditCard },
-  { title: 'Service', url: '/hostservice', icon: Utensils },
+  { title: 'Room Facilities', url: '/host/facilities', icon: Utensils },
+  { title: 'Occupancy', url: '/host/occupancy', icon: Home },
+  { title: 'Booking', url: '/host/bookings', icon: MessageCircle },
+  { title: 'Messages', url: '/host/messages', icon: MessageCircle },
+  { title: 'Customer Report', url: '/host/reports', icon: Star },
+  { title: 'Billing System', url: '/host/billing', icon: CreditCard },
+  { title: 'Service', url: '/host/services', icon: Utensils },
 ];
-
 export function AppSidebar() {
   const location = useLocation();
   const [expandedItem, setExpandedItem] = useState(null);

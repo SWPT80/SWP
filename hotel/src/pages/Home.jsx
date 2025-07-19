@@ -144,7 +144,7 @@ const HomeContent = () => {
   }, []);
 
   return (
-    <div className="px-6 py-10">
+    <div className="px-6 py-10 max-w-screen-xl mx-auto">
       <ExploreVietnam />
       <div className="mt-10">
         {Object.keys(locationHomestays).map((location) => (

@@ -11,18 +11,20 @@ import {
   Form,
   Collapse,
   Modal,
-  Alert,
   ListGroup,
   Badge
 } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import PaymentCheckout from './payment/Payment-checkout';
+import AuthModal from '../components/LoginSignupForm';
 
 const RoomDetails = () => {
   const { homestayId, roomNumber } = useParams();
-  const { isLoggedIn, user } = useAuth();
+  const { isLoggedIn, user, setUser, setIsLoggedIn, checkAuth } = useAuth();
   const navigate = useNavigate();
   const [roomData, setRoomData] = useState(null);
   const [cancellationPolicies, setCancellationPolicies] = useState([]);
@@ -36,6 +38,7 @@ const RoomDetails = () => {
   const [messError, setMessError] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [bookingId, setBookingId] = useState(null);
   const [guests, setGuests] = useState({
     adults: 1,
@@ -55,9 +58,28 @@ const RoomDetails = () => {
     address: '',
   });
 
+  // Hàm hiển thị toast
+  const showToast = (message, type = 'info') => {
+    const options = {
+      position: 'top-right',
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+    };
+    if (type === 'error') {
+      toast.error(message, options);
+    } else {
+      toast.info(message, options);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
+      showToast('Đang tải dữ liệu...');
       try {
         const [roomRes, reviewRes, cancelRes, rulesRes, servicesRes] = await Promise.all([
           axios.get(`/api/rooms/${homestayId}/${roomNumber}`),
@@ -103,12 +125,11 @@ const RoomDetails = () => {
             phone: me.data.phone,
             address: me.data.address,
           });
-        } else {
-          setMessError('Chưa đăng nhập. Nhập thông tin thủ công.');
         }
       } catch (err) {
         console.error('Lỗi khi lấy dữ liệu:', err);
         setError('Không thể tải chi tiết phòng. Vui lòng thử lại sau.');
+        showToast('Không thể tải chi tiết phòng. Vui lòng thử lại sau.', 'error');
       } finally {
         setLoading(false);
       }
@@ -117,7 +138,34 @@ const RoomDetails = () => {
     fetchData();
   }, [homestayId, roomNumber, isLoggedIn]);
 
-  const toggleGuestOptions = () => setShowGuestOptions(!showGuestOptions);
+  useEffect(() => {
+    // Hiển thị thông báo cho services, rules, reviews, và cancellation policies
+    if (!loading && roomData) {
+      if (services.length === 0) {
+        showToast('Hiện không có dịch vụ bổ sung nào');
+      }
+      if (homestayRules.length === 0) {
+        showToast('Không có quy tắc cụ thể');
+      }
+      if (reviews.length === 0) {
+        showToast('Chưa có đánh giá nào');
+      }
+      if (cancellationPolicies.length === 0) {
+        showToast('Không có chính sách hủy phòng cụ thể');
+      }
+    }
+  }, [services, homestayRules, reviews, cancellationPolicies, loading, roomData]);
+
+  useEffect(() => {
+    // Hiển thị messError dưới dạng toast
+    if (messError) {
+      showToast(messError, 'error');
+    }
+  }, [messError]);
+
+  const toggleGuestOptions = () => {
+    setShowGuestOptions(!showGuestOptions);
+  };
 
   const updateGuestCount = (type, delta) => {
     setGuests((prev) => {
@@ -144,6 +192,17 @@ const RoomDetails = () => {
   const handleServiceClick = (service) => {
     setSelectedService(service);
     setShowServiceModal(true);
+  };
+
+  useEffect(() => {
+    // Hiển thị thông báo khi mở modal dịch vụ và không có hình ảnh
+    if (showServiceModal && selectedService?.images?.[0]?.imageUrl == null) {
+      showToast('Không có hình ảnh cho dịch vụ này');
+    }
+  }, [showServiceModal, selectedService]);
+
+  const handleDateChange = (setter) => (e) => {
+    setter(e.target.value);
   };
 
   const calculateTotalAmount = () => {
@@ -197,22 +256,28 @@ const RoomDetails = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    e.stopPropagation(); // Ngăn sự kiện mặc định của trình duyệt
     setMessError(null);
 
-    if (!isLoggedIn) {
-      setMessError('Vui lòng đăng nhập để đặt phòng.');
-      navigate('/admin/login');
+    // Kiểm tra riêng các trường ngày
+    if (!checkInDate) {
+      showToast('Vui lòng chọn ngày nhận phòng.', 'error');
       return;
     }
-
-    if (!checkInDate || !checkOutDate) {
-      setMessError('Vui lòng chọn ngày nhận phòng và trả phòng');
+    if (!checkOutDate) {
+      showToast('Vui lòng chọn ngày trả phòng.', 'error');
       return;
     }
     if (new Date(checkOutDate) <= new Date(checkInDate)) {
-      setMessError('Ngày trả phòng phải sau ngày nhận phòng');
+      setMessError('Ngày trả phòng phải sau ngày nhận phòng.');
       return;
     }
+    if (!isLoggedIn) {
+      setMessError('Vui lòng đăng nhập để đặt phòng.');
+      setShowAuthModal(true);
+      return;
+    }
+
     const totalGuests = guests.adults + guests.children + guests.infants;
     if (totalGuests > roomData?.capacity) {
       setMessError(`Số khách vượt quá sức chứa tối đa (${roomData.capacity} người)`);
@@ -242,11 +307,12 @@ const RoomDetails = () => {
       }
       setBookingId(bookingId);
       setShowConfirmationModal(true);
+      showToast('Vui lòng kiểm tra kỹ thông tin trước khi xác nhận.');
     } catch (err) {
       console.error('Lỗi đặt phòng:', err);
       if (err.response?.status === 401) {
         setMessError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
-        navigate('/admin/login');
+        setShowAuthModal(true);
       } else {
         setMessError('Không thể tạo đặt phòng. Vui lòng thử lại.');
       }
@@ -263,8 +329,42 @@ const RoomDetails = () => {
     setShowPaymentModal(true);
   };
 
-  if (loading) return <Container className="text-center py-5"><Alert variant="info">Đang tải dữ liệu...</Alert></Container>;
-  if (error) return <Container className="text-center py-5"><Alert variant="danger">{error}</Alert></Container>;
+  const handleAuthSuccess = async ({ fullName, role }) => {
+    try {
+      const me = await axios.get('/api/auth/me', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      console.log('User info from /me:', me.data);
+      setCustomerInfo({
+        userId: me.data.id || null,
+        fullName: me.data.fullName || fullName,
+        email: me.data.email || fullName.includes('@') ? fullName : '',
+        phone: me.data.phone || '',
+        address: me.data.address || '',
+      });
+      setUser({ ...me.data, fullName: me.data.fullName || fullName, role });
+      setIsLoggedIn(true);
+      checkAuth();
+    } catch (err) {
+      console.error('Error fetching user info after auth:', err);
+      setMessError('Không thể lấy thông tin người dùng sau khi đăng nhập.');
+    }
+  };
+
+  if (loading) {
+    return (
+      <Container className="text-center py-5">
+        <ToastContainer />
+      </Container>
+    );
+  }
+  if (error) {
+    return (
+      <Container className="text-center py-5">
+        <ToastContainer />
+      </Container>
+    );
+  }
   if (!roomData) return null;
 
   const formattedPrice = new Intl.NumberFormat('vi-VN', {
@@ -280,6 +380,7 @@ const RoomDetails = () => {
 
   return (
     <Container className="my-4">
+      <ToastContainer />
       <Row className="mb-4">
         <Col md={12}>
           <Card.Img
@@ -341,8 +442,7 @@ const RoomDetails = () => {
               <Card.Title as="h3" className="mb-4 pb-2 border-bottom">
                 Dịch vụ bổ sung
               </Card.Title>
-
-              {services.length > 0 ? (
+              {services.length > 0 && (
                 <Row className="g-4">
                   {services.map((service, index) => (
                     <Col lg={6} key={index}>
@@ -362,11 +462,9 @@ const RoomDetails = () => {
                               }).format(service.price)}
                             </Badge>
                           </div>
-
                           <Card.Text className="text-muted small mb-3">
                             {service.specialNotes || 'Không có mô tả'}
                           </Card.Text>
-
                           <div className="d-flex justify-content-between align-items-center">
                             <div>
                               {service.specialNotes && (
@@ -375,7 +473,6 @@ const RoomDetails = () => {
                                 </Badge>
                               )}
                             </div>
-
                             <Form.Check
                               type="switch"
                               id={`service-${service.id}`}
@@ -393,17 +490,13 @@ const RoomDetails = () => {
                     </Col>
                   ))}
                 </Row>
-              ) : (
-                <Alert variant="info" className="mb-0">
-                  Hiện không có dịch vụ bổ sung nào
-                </Alert>
               )}
             </Card.Body>
           </Card>
           <Card className="mb-4">
             <Card.Body>
               <Card.Title as="h4" className="mb-3">Quy tắc chung</Card.Title>
-              {homestayRules.length > 0 ? (
+              {homestayRules.length > 0 && (
                 <ListGroup variant="flush">
                   {homestayRules.map((rule, index) => (
                     <ListGroup.Item key={index} className="mb-2">
@@ -411,16 +504,13 @@ const RoomDetails = () => {
                     </ListGroup.Item>
                   ))}
                 </ListGroup>
-              ) : (
-                <Alert variant="info">Không có quy tắc cụ thể.</Alert>
               )}
             </Card.Body>
           </Card>
-
           <Card className="mb-4">
             <Card.Body>
               <Card.Title as="h3" className="mb-3">Đánh giá của khách</Card.Title>
-              {reviews.length > 0 ? (
+              {reviews.length > 0 && (
                 reviews.map((review, index) => (
                   <Card key={index} className="mb-3">
                     <Card.Body>
@@ -442,16 +532,13 @@ const RoomDetails = () => {
                     </Card.Body>
                   </Card>
                 ))
-              ) : (
-                <Alert variant="info">Chưa có đánh giá nào.</Alert>
               )}
             </Card.Body>
           </Card>
-
           <Card className="mb-4">
             <Card.Body>
               <Card.Title as="h3" className="mb-3">Chính sách hủy phòng</Card.Title>
-              {cancellationPolicies.length > 0 ? (
+              {cancellationPolicies.length > 0 && (
                 <ListGroup variant="flush">
                   {cancellationPolicies.map((policy, index) => (
                     <ListGroup.Item key={index}>
@@ -459,12 +546,9 @@ const RoomDetails = () => {
                     </ListGroup.Item>
                   ))}
                 </ListGroup>
-              ) : (
-                <Alert variant="info">Không có chính sách hủy phòng cụ thể.</Alert>
               )}
             </Card.Body>
           </Card>
-
           <Card className="mb-4">
             <Card.Body>
               <Card.Title as="h3" className="mb-3">Vị trí</Card.Title>
@@ -481,7 +565,6 @@ const RoomDetails = () => {
             </Card.Body>
           </Card>
         </Col>
-
         <Col md={4}>
           <Card className="sticky-top" style={{ top: '20px', maxHeight: '90vh', overflowY: 'auto' }}>
             <Card.Body>
@@ -506,29 +589,27 @@ const RoomDetails = () => {
                 )}
               </div>
               <Card.Title as="h3" className="mb-3">Tổng: {formattedPrice}</Card.Title>
-              <Form onSubmit={handleSubmit}>
+              <Form noValidate onSubmit={handleSubmit}>
                 <Form.Group className="mb-3">
                   <Form.Label>Nhận phòng</Form.Label>
                   <Form.Control
                     type="date"
                     value={checkInDate}
-                    onChange={(e) => setCheckInDate(e.target.value)}
+                    onChange={handleDateChange(setCheckInDate)}
                     required
                     min={new Date().toISOString().split('T')[0]}
                   />
                 </Form.Group>
-
                 <Form.Group className="mb-3">
                   <Form.Label>Trả phòng</Form.Label>
                   <Form.Control
                     type="date"
                     value={checkOutDate}
-                    onChange={(e) => setCheckOutDate(e.target.value)}
+                    onChange={handleDateChange(setCheckOutDate)}
                     required
                     min={checkInDate ? new Date(new Date(checkInDate).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] : ''}
                   />
                 </Form.Group>
-
                 <Form.Group className="mb-3">
                   <Form.Label>Khách</Form.Label>
                   <div
@@ -539,7 +620,6 @@ const RoomDetails = () => {
                     <span>{guestLabel}</span>
                     <i className={`bi bi-chevron-${showGuestOptions ? 'up' : 'down'}`}></i>
                   </div>
-
                   <Collapse in={showGuestOptions}>
                     <Card className="mt-2">
                       <Card.Body>
@@ -585,9 +665,6 @@ const RoomDetails = () => {
                     </Card>
                   </Collapse>
                 </Form.Group>
-
-                {messError && <Alert variant="danger">{messError}</Alert>}
-
                 <Button
                   variant="primary"
                   type="submit"
@@ -602,7 +679,6 @@ const RoomDetails = () => {
         </Col>
       </Row>
 
-      {/* Modal Xác nhận thông tin khách hàng */}
       <Modal show={showConfirmationModal} onHide={() => setShowConfirmationModal(false)} centered size="lg">
         <Modal.Header closeButton>
           <Modal.Title>Xác nhận thông tin khách hàng</Modal.Title>
@@ -652,9 +728,7 @@ const RoomDetails = () => {
                   />
                 </Form.Group>
               </Form>
-              {messError && <Alert variant="danger">{messError}</Alert>}
             </Col>
-
             <Col md={6}>
               <Card.Title as="h5">Thông tin đặt phòng</Card.Title>
               <ListGroup variant="flush">
@@ -696,9 +770,6 @@ const RoomDetails = () => {
               </ListGroup>
             </Col>
           </Row>
-          <Alert variant="info" className="mt-3">
-            Vui lòng kiểm tra kỹ thông tin trước khi xác nhận.
-          </Alert>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowConfirmationModal(false)}>
@@ -710,7 +781,6 @@ const RoomDetails = () => {
         </Modal.Footer>
       </Modal>
 
-      {/* Modal Thanh toán */}
       <Modal show={showPaymentModal} onHide={() => setShowPaymentModal(false)} size="lg" centered>
         <Modal.Header closeButton>
           <Modal.Title>Thanh toán</Modal.Title>
@@ -736,13 +806,12 @@ const RoomDetails = () => {
         </Modal.Body>
       </Modal>
 
-      {/* Modal Dịch vụ */}
       <Modal show={showServiceModal} onHide={() => setShowServiceModal(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>{selectedService?.serviceType?.serviceName || 'Dịch vụ không xác định'}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {selectedService?.images?.[0]?.imageUrl ? (
+          {selectedService?.images?.[0]?.imageUrl && (
             <Card.Img
               variant="top"
               src={`/${selectedService.images[0].imageUrl}`}
@@ -750,8 +819,6 @@ const RoomDetails = () => {
               className="mb-3"
               style={{ maxHeight: '300px', objectFit: 'cover' }}
             />
-          ) : (
-            <Alert variant="info">Không có hình ảnh cho dịch vụ này.</Alert>
           )}
           <ListGroup variant="flush" className="mb-3">
             <ListGroup.Item>
@@ -778,6 +845,12 @@ const RoomDetails = () => {
           </Button>
         </Modal.Footer>
       </Modal>
+
+      <AuthModal
+        show={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onAuthSuccess={handleAuthSuccess}
+      />
     </Container>
   );
 };

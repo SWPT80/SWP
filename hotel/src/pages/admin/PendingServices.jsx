@@ -14,7 +14,7 @@ const PendingServices = () => {
     axios.patch(`http://localhost:8080/api/services/${id}/status?status=true`)
       .then(() => {
         alert("Đã duyệt dịch vụ!");
-        setPendingServices((prev) => prev.filter((s) => s.serviceId !== id));
+        setPendingServices((prev) => prev.filter((s) => s.id !== id)); // ✅ dùng s.id
       })
       .catch(() => alert("Lỗi duyệt dịch vụ."));
   };
@@ -28,7 +28,7 @@ const PendingServices = () => {
             <thead>
               <tr>
                 <th>Service ID</th>
-                <th>Homestay</th>
+                <th>Homestay ID</th>
                 <th>Type</th>
                 <th>Price</th>
                 <th>Note</th>
@@ -37,14 +37,14 @@ const PendingServices = () => {
             </thead>
             <tbody>
               {pendingServices.length > 0 ? pendingServices.map((s) => (
-                <tr key={s.serviceId}>
-                  <td>{s.serviceId}</td>
-                  <td>{s.homestay?.homestayId || 'N/A'}</td>
-                  <td>{s.type?.serviceName || 'N/A'}</td>
+                <tr key={s.id}> {/* ✅ s.id */}
+                  <td>{s.id}</td>
+                  <td>{s.homestayId || 'N/A'}</td> {/* ✅ s.homestayId */}
+                  <td>{s.serviceType?.serviceName || 'N/A'}</td> {/* ✅ s.serviceType */}
                   <td>{s.price?.toLocaleString()} VND</td>
                   <td>{s.specialNotes || '-'}</td>
                   <td>
-                    <button className="btn btn-success btn-sm" onClick={() => handleApprove(s.serviceId)}>
+                    <button className="btn btn-success btn-sm" onClick={() => handleApprove(s.id)}>
                       Duyệt
                     </button>
                   </td>

@@ -1,7 +1,8 @@
+.explore-container,
 .carousel-container {
-    position: relative;
-    margin-bottom: 2.5rem;
-  }
+  max-width: 1280px;
+  margin: 0 auto;
+}
   
   .carousel-title {
     font-size: 1.5rem;

@@ -13,6 +13,8 @@ const PaymentCallback = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    console.log('Token in localStorage:', localStorage.getItem('token'));
+  console.log('isLoggedIn:', isLoggedIn);
     const fetchPaymentStatus = async () => {
       setIsLoading(true);
 

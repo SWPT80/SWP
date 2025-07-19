@@ -1,6 +1,6 @@
 ﻿import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import "../../assets/css/Style.css";
+import "../../assets/css/Dashboard.css";
 import LineChartDashboard from '../../components/admin/LineChartDashboard';
 import DonutChartDashboard from '../../components/admin/DonutChartDashboard';
 import { useNavigate } from 'react-router-dom';
@@ -11,9 +11,17 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios.get('http://localhost:8080/api/bookings')
+    const token = localStorage.getItem('token');
+    axios.get('http://localhost:8080/api/bookings/with-user-info', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
       .then(res => setBookings(res.data))
-      .catch(err => console.error("Lỗi khi lấy danh sách booking:", err));
+      .catch(err => {
+        console.error("Lỗi khi lấy danh sách booking:", err.response?.data || err.message);
+        alert("Bạn không có quyền truy cập.");
+      });
   }, []);
 
   const displayedBookings = showAll ? bookings : bookings.slice(0, 5);
@@ -89,7 +97,7 @@ const Dashboard = () => {
                   <button
                     type="button"
                     className="btn btn-primary float-right veiwbutton"
-                    onClick={() => navigate('/all-booking')}
+                    onClick={() => navigate('/admin/all-booking')}
                   >
                     View All
                   </button>
@@ -110,15 +118,17 @@ const Dashboard = () => {
                       </thead>
                       <tbody>
                         {displayedBookings.map((b) => (
-                          <tr key={b.bookingId}>
-                            <td>{b.bookingId}</td>
-                            <td>{b.user?.fullName || 'N/A'}</td>
-                            <td>{b.room?.roomNumber || 'N/A'}</td>
+                          <tr key={b.id}>
+                            <td>{b.id}</td>
+                            <td>{b.userId}</td>
+                            <td>{b.roomNumber}</td>
                             <td>{b.checkInDate}</td>
                             <td>{b.checkOutDate}</td>
                             <td>{b.totalAmount?.toLocaleString()} VND</td>
                             <td>
-                              <span className={`badge ${b.status === 'booked' ? 'badge-success' : 'badge-secondary'}`}>{b.status}</span>
+                              <span className={`badge ${b.status === 'booked' ? 'badge-success' : 'badge-secondary'}`}>
+                                {b.status}
+                              </span>
                             </td>
                           </tr>
                         ))}

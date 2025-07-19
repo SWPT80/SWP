@@ -3,6 +3,7 @@ import AdminLayout from "./layouts/AdminLayout";
 import HomeLayout from "./layouts/HomeLayout";
 import HostLayout from "./layouts/HostLayout";
 import BookedLayout from "./layouts/BookedLayout";
+import PrivateRoute from "./routes/PrivateRoute";
 
 // Admin Pages
 import Dashboard from "./pages/admin/Dashboard";
@@ -58,35 +59,45 @@ import PaymentCheckout from "./pages/payment/Payment-checkout";
 import PaymentCallback from "./pages/payment/PaymentCallback";
 import BookingSuccess from "./pages/payment/BookingSuccess";
 import { AuthProvider } from './context/AuthContext';
-
+//Become host
+import Profiles from "./components/ProfilePage";
+import BecomeHost from "./components/BecomeHost";
+import ResetPassword from "./components/ResetPassword";
 function App() {
   return (
     <AuthProvider>
     <Router>
       <Routes>
         {/* Admin Routes */}
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Navigate to="/admin/dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="all-booking" element={<AllBooking />} />
-          <Route path="edit-booking/:id" element={<EditBooking />} />
-          <Route path="all-customer" element={<AllCustomer />} />
-          <Route path="edit-customer/:id" element={<EditCustomer />} />
-          <Route path="all-hosts" element={<AllHost />} />
-          <Route path="edit-host/:id" element={<EditHost />} />
-          <Route path="all-service" element={<AllService />} />
-          <Route path="edit-service/:id" element={<EditService />} />
-          <Route path="add-service" element={<AddService />} />
-          <Route path="pending-services" element={<PendingServices />} />
-          <Route path="invoices" element={<Invoices />} />
-          <Route path="expenses" element={<Expenses />} />
-          <Route path="activities" element={<Activity />} />
-          <Route path="expense-reports" element={<ExpenseReports />} />
-          <Route path="invoice-reports" element={<InvoiceReports />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="gallery" element={<Gallery />} />
-          <Route path="*" element={<Error404 />} />
-        </Route>
+          <Route
+            path="/admin"
+            element={
+              <PrivateRoute allowedRoles={['ADMIN']}>
+                <AdminLayout />
+              </PrivateRoute>
+            }
+          >
+            <Route index element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="all-booking" element={<AllBooking />} />
+            <Route path="edit-booking/:id" element={<EditBooking />} />
+            <Route path="all-customer" element={<AllCustomer />} />
+            <Route path="edit-customer/:id" element={<EditCustomer />} />
+            <Route path="all-hosts" element={<AllHost />} />
+            <Route path="edit-host/:id" element={<EditHost />} />
+            <Route path="all-service" element={<AllService />} />
+            <Route path="edit-service/:id" element={<EditService />} />
+            <Route path="add-service" element={<AddService />} />
+            <Route path="pending-services" element={<PendingServices />} />
+            <Route path="invoices" element={<Invoices />} />
+            <Route path="expenses" element={<Expenses />} />
+            <Route path="activities" element={<Activity />} />
+            <Route path="expense-reports" element={<ExpenseReports />} />
+            <Route path="invoice-reports" element={<InvoiceReports />} />
+            <Route path="profile" element={<Profile />} />
+            <Route path="gallery" element={<Gallery />} />
+            <Route path="*" element={<Error404 />} />
+          </Route>
 
         {/* Authentication Routes (No Layout) */}
         <Route path="/admin/login" element={<Login />} />
@@ -103,25 +114,33 @@ function App() {
         </Route>
 
         {/* Host Routes */}
-        <Route element={<HostLayout />}>
-          <Route path="/host" element={<Navigate to="/host/dashboard" replace />} />
-          <Route path="/host/dashboard" element={<HostDashboard />} />
-          
-          <Route path="/host/rooms" element={<Room />}>
-            <Route index element={<AllRoom />} />
-            <Route path="add" element={<AddRoom />} />
-            <Route path="edit/:id" element={<EditRoom />} />
-            <Route path="pricing" element={<RoomPricing />} />
+          <Route
+            path="/host"
+            element={
+              <PrivateRoute allowedRoles={['HOST']}>
+                <HostLayout />
+              </PrivateRoute>
+            }
+          >
+            <Route index element={<Navigate to="/host/dashboard" replace />} />
+            <Route path="dashboard" element={<HostDashboard />} />
+
+            <Route path="rooms" element={<Room />}>
+              <Route index element={<AllRoom />} />
+              <Route path="add" element={<AddRoom />} />
+              <Route path="edit/:id" element={<EditRoom />} />
+              <Route path="pricing" element={<RoomPricing />} />
+            </Route>
+
+            <Route path="messages" element={<Messages />} />
+            <Route path="reports" element={<CustomerReport />} />
+            <Route path="billing" element={<BillingSystem />} />
+            <Route path="services" element={<HostService />} />
+            <Route path="occupancy" element={<Occupancy />} />
+            <Route path="bookings" element={<HostBooking />} />
+            <Route path="facilities" element={<FacilitiesList />} />
           </Route>
-          
-          <Route path="/host/messages" element={<Messages />} />
-          <Route path="/host/reports" element={<CustomerReport />} />
-          <Route path="/host/billing" element={<BillingSystem />} />
-          <Route path="/host/services" element={<HostService />} />
-          <Route path="/host/occupancy" element={<Occupancy />} />
-          <Route path="/host/bookings" element={<HostBooking />} />
-          <Route path="/host/facilities" element={<FacilitiesList />} />
-        </Route>
+
 
         {/* Booking/Payment Routes */}
         <Route element={<BookedLayout />}>
@@ -131,7 +150,11 @@ function App() {
           <Route path="/payment-callback" element={<PaymentCallback />} />
           <Route path="/booking-success" element={<BookingSuccess />} />
         </Route>
+        <Route path="/profiles" element={<Profiles/>} />
 
+        <Route path="/become-host" element={<BecomeHost/>} />
+
+        <Route path="/reset-password" element={<ResetPassword/>} />
         {/* Error Routes */}
         {/* <Route path="/404" element={<Error404 />} />
         <Route path="/500" element={<Error500 />} />

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import '../../assets/css/Sidebar.css';
 
 const Sidebar = ({ isOpen }) => {
   const [openMenus, setOpenMenus] = useState({});
@@ -12,63 +13,62 @@ const Sidebar = ({ isOpen }) => {
   };
 
   return (
-    // <div className="sidebar" id="sidebar">
-    <div className={`sidebar sidebar-wrapper ${isOpen ? 'open' : 'closed'}`} id="sidebar">
+    <div className={`sidebar-wrapper ${isOpen ? 'open' : 'closed'}`} id="sidebar">
       <div className="sidebar-inner slimscroll">
         <div id="sidebar-menu" className="sidebar-menu">
           <ul>
             <li>
-              <Link to="dashboard"><i className="fas fa-tachometer-alt"></i> <span>Dashboard</span></Link>
-
+              <Link to="dashboard">
+                <i className="fas fa-tachometer-alt"></i> <span>Dashboard</span>
+              </Link>
             </li>
             <li className="list-divider"></li>
 
             {/* Booking */}
             <li className={`submenu ${openMenus.booking ? 'open' : ''}`}>
-              <a href='#' onClick={() => toggleMenu('booking')}>
+              <a href="#" onClick={() => toggleMenu('booking')}>
                 <i className="fas fa-suitcase"></i> <span>Booking</span> <span className="menu-arrow"></span>
               </a>
               <ul className="submenu_class" style={{ display: openMenus.booking ? 'block' : 'none' }}>
-                <li><Link to="/all-booking">All Booking</Link></li>
-                <li><Link to="/edit-booking">Edit Booking</Link></li>
+                <li><Link to="/admin/all-booking">All Booking</Link></li>
+                <li><Link to="/admin/edit-booking/:id">Edit Booking</Link></li>
               </ul>
             </li>
 
             {/* Customers */}
             <li className={`submenu ${openMenus.customers ? 'open' : ''}`}>
-              <a href='#' onClick={() => toggleMenu('customers')}>
+              <a href="#" onClick={() => toggleMenu('customers')}>
                 <i className="fas fa-user"></i> <span>Customers</span> <span className="menu-arrow"></span>
               </a>
               <ul className="submenu_class" style={{ display: openMenus.customers ? 'block' : 'none' }}>
-                <li><Link to="/all-customer">All Customers</Link></li>
-                <li><Link to="/edit-customer">Edit Customer</Link></li>
+                <li><Link to="/admin/all-customer">All Customers</Link></li>
+                <li><Link to="/admin/edit-customer/:id">Edit Customer</Link></li>
               </ul>
             </li>
 
             {/* Host */}
             <li className={`submenu ${openMenus.hosts ? 'open' : ''}`}>
-              <a href='#' onClick={() => toggleMenu('hosts')}>
+              <a href="#" onClick={() => toggleMenu('hosts')}>
                 <i className="fas fa-user-shield"></i> <span>Hosts</span> <span className="menu-arrow"></span>
               </a>
               <ul className="submenu_class" style={{ display: openMenus.hosts ? 'block' : 'none' }}>
-                <li><Link to="/all-hosts">All Hosts</Link></li>
-                <li><Link to="/edit-host">Edit Host</Link></li>
+                <li><Link to="/admin/all-hosts">All Hosts</Link></li>
+                <li><Link to="/admin/edit-host/:id">Edit Host</Link></li>
               </ul>
             </li>
 
             {/* Service */}
             <li className={`submenu ${openMenus.service ? 'open' : ''}`}>
-              <a href='#' onClick={() => toggleMenu('service')}>
+              <a href="#" onClick={() => toggleMenu('service')}>
                 <i className="fas fa-concierge-bell"></i> <span>Service</span> <span className="menu-arrow"></span>
               </a>
               <ul className="submenu_class" style={{ display: openMenus.service ? 'block' : 'none' }}>
-                <li><Link to="/all-service">All Service</Link></li>
-                <li><Link to="/edit-service">Edit Service</Link></li>
-                <li><Link to="/add-service">Add Service</Link></li>
-                <li><Link to="/pendingServices">Pending Services</Link></li>
+                <li><Link to="/admin/all-service">All Service</Link></li>
+                <li><Link to="/admin/edit-service/:id">Edit Service</Link></li>
+                <li><Link to="/admin/add-service">Add Service</Link></li>
+                <li><Link to="/admin/pending-services">Pending Services</Link></li>
               </ul>
             </li>
-
 
             {/* Accounts */}
             <li className={`submenu ${openMenus.accounts ? 'open' : ''}`}>
@@ -76,27 +76,31 @@ const Sidebar = ({ isOpen }) => {
                 <i className="far fa-money-bill-alt"></i> <span>Accounts</span> <span className="menu-arrow"></span>
               </a>
               <ul className="submenu_class" style={{ display: openMenus.accounts ? 'block' : 'none' }}>
-                <li><Link to="/invoices">Invoices</Link></li>
-                <li><Link to="/expenses">Expenses</Link></li>
+                <li><Link to="/admin/invoices">Invoices</Link></li>
+                <li><Link to="/admin/expenses">Expenses</Link></li>
               </ul>
             </li>
 
             <li>
-              <Link to="/activities"><i className="far fa-bell"></i> <span>Activities</span></Link>
+              <Link to="/activities">
+                <i className="far fa-bell"></i> <span>Activities</span>
+              </Link>
             </li>
 
             {/* Reports */}
             <li className={`submenu ${openMenus.reports ? 'open' : ''}`}>
               <a href="#" onClick={() => toggleMenu('reports')}>
-                <i className="fe fe-table"></i> <span>Reports</span> <span className="menu-arrow"></span>
+                <i className="far fa-table"></i> <span>Reports</span> <span className="menu-arrow"></span>
               </a>
               <ul className="submenu_class" style={{ display: openMenus.reports ? 'block' : 'none' }}>
-                <li><Link to="/expense-reports">Expense Report</Link></li>
-                <li><Link to="/invoice-reports">Invoice Report</Link></li>
+                <li><Link to="/admin/expense-reports">Expense Report</Link></li>
+                <li><Link to="/admin/invoice-reports">Invoice Report</Link></li>
               </ul>
             </li>
 
-            <li className="menu-title mt-3"><span>EXTRAS</span></li>
+            <li className="menu-title mt-3">
+              <span>EXTRAS</span>
+            </li>
 
             {/* Extras Pages */}
             <li className={`submenu ${openMenus.pages ? 'open' : ''}`}>

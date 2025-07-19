@@ -5,13 +5,11 @@ import { useNavigate } from 'react-router-dom';
 const PAGE_SIZE = 10;
 
 const AllService = () => {
-  /* ----------------- State ----------------- */
   const [services, setServices] = useState([]);
   const [isOpen, setIsOpen] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
 
-  /* ------------- Fetch danh sách ------------- */
   useEffect(() => {
     axios
       .get('http://localhost:8080/api/services')
@@ -19,7 +17,6 @@ const AllService = () => {
       .catch((err) => console.error('Lỗi lấy danh sách dịch vụ:', err));
   }, []);
 
-  /* ---------------- Handlers ---------------- */
   const toggleDropdown = (id) =>
     setIsOpen((prev) => ({ ...prev, [id]: !prev[id] }));
 
@@ -27,14 +24,13 @@ const AllService = () => {
     if (!window.confirm('Bạn có chắc muốn xóa dịch vụ này?')) return;
     axios
       .delete(`http://localhost:8080/api/services/${id}`)
-      .then(() => setServices((prev) => prev.filter((s) => s.serviceId !== id)))
+      .then(() => setServices((prev) => prev.filter((s) => s.id !== id)))
       .catch((err) => {
         console.error('Lỗi khi xóa service:', err);
         alert('Xóa thất bại.');
       });
   };
 
-  /* --------------- Pagination --------------- */
   const totalPages = Math.ceil(services.length / PAGE_SIZE) || 1;
   const visibleServices = services.slice(
     (currentPage - 1) * PAGE_SIZE,
@@ -46,12 +42,10 @@ const AllService = () => {
     setCurrentPage(page);
   };
 
-  /* ------------------ JSX ------------------- */
   return (
     <div className="main-wrapper">
       <div className="page-wrapper">
         <div className="content container-fluid">
-          {/* Header */}
           <div className="page-header">
             <div className="row align-items-center">
               <div className="col">
@@ -72,7 +66,6 @@ const AllService = () => {
             </div>
           </div>
 
-          {/* Table */}
           <div className="card card-table">
             <div className="card-body booking_card">
               <div className="table-responsive">
@@ -90,10 +83,10 @@ const AllService = () => {
                   </thead>
                   <tbody>
                     {visibleServices.map((s) => (
-                      <tr key={s.serviceId}>
-                        <td className="text-info font-weight-bold">{s.serviceId}</td>
-                        <td>{s.homestay?.homestayId || 'N/A'}</td>
-                        <td>{s.type?.serviceName || 'Unknown'}</td>
+                      <tr key={s.id}>
+                        <td className="text-info font-weight-bold">{s.id}</td>
+                        <td>{s.homestayId ?? 'N/A'}</td>
+                        <td>{s.serviceType?.serviceName ?? 'Unknown'}</td>
                         <td>
                           <span className="text-success font-weight-bold">
                             {s.price?.toLocaleString()} VND
@@ -115,17 +108,17 @@ const AllService = () => {
                           <div className="dropdown">
                             <button
                               className="action-icon btn"
-                              onClick={() => toggleDropdown(s.serviceId)}
+                              onClick={() => toggleDropdown(s.id)}
                             >
                               <i className="fas fa-ellipsis-v"></i>
                             </button>
                             <div
-                              className={`dropdown-menu dropdown-menu-right ${isOpen[s.serviceId] ? 'show' : ''}`}
+                              className={`dropdown-menu dropdown-menu-right ${isOpen[s.id] ? 'show' : ''}`}
                             >
-                              <a className="dropdown-item" href={`/edit-service?id=${s.serviceId}`}>
+                              <a className="dropdown-item" href={`/admin/edit-service/${s.id}`}>
                                 <i className="fas fa-pencil-alt"></i> Edit
                               </a>
-                              <button className="dropdown-item" onClick={() => handleDelete(s.serviceId)}>
+                              <button className="dropdown-item" onClick={() => handleDelete(s.id)}>
                                 <i className="fas fa-trash-alt"></i> Delete
                               </button>
                             </div>
@@ -142,7 +135,6 @@ const AllService = () => {
                 </table>
               </div>
 
-              {/* Pagination */}
               <div className="d-flex justify-content-between align-items-center mt-3">
                 <span>
                   Page {currentPage} / {totalPages}
