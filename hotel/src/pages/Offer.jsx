@@ -436,7 +436,7 @@ const Offers = () => {
                             <small className="text-muted ms-2">({item.reviews} đánh giá)</small>
                           </div>
                           <Link
-                            to={homestayId ? `/room/roomdetails/${item.homestayId}/${item.id}` : `/offer?homestayId=${item.id}`}
+                            to={`/room/roomdetails/${item.homestayId}/${item.id}`}
                             className="btn btn-primary mt-auto align-self-start"
                           >
                             Đặt ngay

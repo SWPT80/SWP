@@ -66,8 +66,8 @@ const AllService = () => {
             </div>
           </div>
 
-          <div className="card card-table">
-            <div className="card-body booking_card">
+          <div className="cardDashboard card-table">
+            <div className="cardDashboard-body booking_card">
               <div className="table-responsive">
                 <table className="table table-striped table-hover table-center mb-0">
                   <thead>

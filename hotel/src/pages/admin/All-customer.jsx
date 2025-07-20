@@ -105,8 +105,8 @@ const AllCustomer = () => {
 
           <div className="row">
             <div className="col-sm-12">
-              <div className="card card-table">
-                <div className="card-body booking_card">
+              <div className="cardDashboard card-table">
+                <div className="cardDashboard-body booking_card">
                   <div className="table-responsive">
                     <table className="table table-striped table-hover table-center mb-0">
                       <thead>

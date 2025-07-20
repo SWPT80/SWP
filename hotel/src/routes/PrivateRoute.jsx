@@ -13,10 +13,7 @@ const PrivateRoute = ({ allowedRoles, children }) => {
   }
 
   // Nếu không đăng nhập, chuyển hướng về trang đăng nhập
-  if (!isLoggedIn || !user) {
-    console.log('PrivateRoute - Redirecting to /admin/login (not logged in)');
-    return <Navigate to="/admin/login" replace />;
-  }
+
 
   // Nếu vai trò không nằm trong danh sách allowedRoles, chuyển hướng về trang chính
   if (allowedRoles && !allowedRoles.includes(user.role)) {

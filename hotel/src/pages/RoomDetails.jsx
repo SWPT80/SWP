@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from '../utils/axiosConfig';
+import '../assets/styles/RoomDetails.css';
+
 import {
   Container,
   Row,
@@ -447,7 +449,7 @@ const RoomDetails = () => {
                   {services.map((service, index) => (
                     <Col lg={6} key={index}>
                       <Card
-                        className={`h-100 border-0 shadow-sm hover-shadow transition-all ${selectedServices[service.id] ? 'border-start border-primary border-3' : ''}`}
+                        className={`room-service-card ${selectedServices[service.id] ? 'selected' : ''}`}
                         onClick={() => handleServiceClick(service)}
                       >
                         <Card.Body className="p-3">
@@ -554,7 +556,7 @@ const RoomDetails = () => {
               <Card.Title as="h3" className="mb-3">Vị trí</Card.Title>
               <div style={{ height: '300px', width: '100%' }}>
                 <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3834.110419706312!2d108.245!3d16.0595!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTbCsDAzJzM0LjIiTiAxMDjCsDE0JzUxLjAiRQ!5e0!3m2!1svi!2s!4v1625091234567"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3834.110419706312!2d108.245!3d16.0595!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTbCsDAzM0LjIiTiAxMDjCsDE0JzUxLjAiRQ!5e0!3m2!1svi!2s!4v1625091234567"
                   width="100%"
                   height="100%"
                   style={{ border: 0 }}
@@ -679,7 +681,11 @@ const RoomDetails = () => {
         </Col>
       </Row>
 
-      <Modal show={showConfirmationModal} onHide={() => setShowConfirmationModal(false)} centered size="lg">
+      <Modal show={showConfirmationModal}
+        onHide={() => setShowConfirmationModal(false)}
+        centered
+        size="xl"
+        className="custom-modal-xl">
         <Modal.Header closeButton>
           <Modal.Title>Xác nhận thông tin khách hàng</Modal.Title>
         </Modal.Header>
@@ -781,7 +787,11 @@ const RoomDetails = () => {
         </Modal.Footer>
       </Modal>
 
-      <Modal show={showPaymentModal} onHide={() => setShowPaymentModal(false)} size="lg" centered>
+      <Modal show={showPaymentModal}
+        onHide={() => setShowPaymentModal(false)}
+        centered
+        size="xl"
+        className="custom-modal-xl">
         <Modal.Header closeButton>
           <Modal.Title>Thanh toán</Modal.Title>
         </Modal.Header>

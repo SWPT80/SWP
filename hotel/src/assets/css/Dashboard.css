@@ -1,4 +1,4 @@
-/* Dashboard Professional Styles */
+Dashboard Professional Styles
 
 /* Main Wrapper */
 .main-wrapper {
@@ -67,7 +67,7 @@
 }
 
 /* Dashboard Cards */
-.card {
+.cardDashboard {
     border: none !important;
     border-radius: 20px !important;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
@@ -187,7 +187,7 @@
     letter-spacing: 0.5px;
 }
 
-.card-body {
+.cardDashboard-body {
     padding: 30px !important;
 }
 

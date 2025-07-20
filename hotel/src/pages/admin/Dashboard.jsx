@@ -47,8 +47,8 @@ const Dashboard = () => {
             { title: 'Enquiry', value: 1538, icon: 'file-plus' },
             { title: 'Collections', value: 364, icon: 'globe' }].map((card, index) => (
               <div className="col-xl-3 col-sm-6 col-12" key={index}>
-                <div className="card board1 fill">
-                  <div className="card-body">
+                <div className="cardDashboard board1 fill">
+                  <div className="cardDashboard-body">
                     <div className="dash-widget-header">
                       <div>
                         <h3 className="card_widget_header">{card.value}</h3>
@@ -68,21 +68,21 @@ const Dashboard = () => {
 
           <div className="row">
             <div className="col-md-12 col-lg-6">
-              <div className="card card-chart">
+              <div className="cardDashboard card-chart">
                 <div className="card-header">
                   <h4 className="card-title">Revenue</h4>
                 </div>
-                <div className="card-body">
+                <div className="cardDashboard-body">
                   <LineChartDashboard />
                 </div>
               </div>
             </div>
             <div className="col-md-12 col-lg-6">
-              <div className="card card-chart">
+              <div className="cardDashboard card-chart">
                 <div className="card-header">
                   <h4 className="card-title">ROOMS BOOKED</h4>
                 </div>
-                <div className="card-body">
+                <div className="cardDashboard-body">
                   <DonutChartDashboard />
                 </div>
               </div>
@@ -91,7 +91,7 @@ const Dashboard = () => {
 
           <div className="row">
             <div className="col-md-12 d-flex">
-              <div className="card card-table flex-fill">
+              <div className="cardDashboard card-table flex-fill">
                 <div className="card-header">
                   <h4 className="card-title float-left mt-2">Booking</h4>
                   <button
@@ -102,7 +102,7 @@ const Dashboard = () => {
                     View All
                   </button>
                 </div>
-                <div className="card-body">
+                <div className="cardDashboard-body">
                   <div className="table-responsive">
                     <table className="table table-hover table-center">
                       <thead>

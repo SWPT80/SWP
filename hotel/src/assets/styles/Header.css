@@ -162,7 +162,9 @@ section {
   right: 0;
   z-index: 1050;
   background: transparent !important;
-  pointer-events: none;
+}
+.super_container > * {
+  pointer-events: auto;
 }
 
 .prlx_parent {
@@ -261,8 +263,38 @@ section {
   pointer-events: all;
   transition: all 0.3s ease;
   overflow: visible; /* Allow content to extend beyond */
+  z-index: 1000;
+  pointer-events: auto;
+}
+.dropdown-menu {
+  z-index: 1100;
+  pointer-events: auto;
+}
+.notification-dropdown, .message-dropdown {
+  position: relative;
+  margin-right: 10px;
 }
 
+.dropdown-menu.notification-menu, .dropdown-menu.message-menu {
+  min-width: 300px;
+  max-height: 400px;
+  overflow-y: auto;
+  border-radius: 10px;
+  border: none;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  margin-top: 10px;
+}
+
+.notification-badge, .message-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 50%;
+  background: #ff4444;
+  color: white;
+}
 /* Remove wave effects */
 .header::before,
 .header::after {
@@ -708,14 +740,23 @@ section {
   right: 0;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   border-radius: 10px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   min-width: 250px;
-  z-index: 1000;
+  z-index: 1100; /* Tăng z-index */
   border: 1px solid rgba(255, 255, 255, 0.2);
   overflow: hidden;
   margin-top: 10px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+}
+
+.user_dropdown.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
 }
 
 .dropdown_item {
@@ -1125,7 +1166,10 @@ section {
 
 /* Modal Container */
 .modal {
-  z-index: 3000 !important;
+  z-index: 2000;
+}
+.mobile-menu {
+  z-index: 2100;
 }
 .modal-dialog {
   max-width: 450px;

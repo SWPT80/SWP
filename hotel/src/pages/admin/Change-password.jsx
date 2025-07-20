@@ -5,8 +5,8 @@ const ChangePassword= () => (
   <div className="content container-fluid">
     <div className="row">
       <div className="col-md-12">
-        <div className="card">
-          <div className="card-body">
+        <div className="cardDashboard">
+          <div className="cardDashboard-body">
             <h4 className="card-title">Change Password</h4>
             <form>
               <div className="form-group">

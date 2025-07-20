@@ -10,19 +10,21 @@ import {
   Utensils,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+
 const items = [
   { title: 'Dashboard', url: '/host/dashboard', icon: BarChart3 },
+
   {
     title: 'Rooms',
     icon: Home,
     submenu: [
-      { title: 'All Rooms', url: '/host/rooms/allroom' },
+      { title: 'All Rooms', url: '/host/rooms' },
       { title: 'Add Room', url: '/host/rooms/add' },
-      { title: 'Edit Room', url: '/host/rooms/edit' },
+      { title: 'Edit Room', url: '/host/rooms/edit/:id' }, // fix: "edi" -> "edit"
       { title: 'Room Pricing', url: '/host/rooms/pricing' },
     ],
   },
-  { title: 'Room Facilities', url: '/host/facilities', icon: Utensils },
+  { title: 'Room Facilites', url: '/host/facilities', icon: Utensils },
   { title: 'Occupancy', url: '/host/occupancy', icon: Home },
   { title: 'Booking', url: '/host/bookings', icon: MessageCircle },
   { title: 'Messages', url: '/host/messages', icon: MessageCircle },
@@ -30,6 +32,7 @@ const items = [
   { title: 'Billing System', url: '/host/billing', icon: CreditCard },
   { title: 'Service', url: '/host/services', icon: Utensils },
 ];
+
 export function AppSidebar() {
   const location = useLocation();
   const [expandedItem, setExpandedItem] = useState(null);
@@ -44,7 +47,9 @@ export function AppSidebar() {
       className="d-flex flex-column bg-light p-3"
       style={{ width: '250px', height: '100vh', borderRight: '1px solid #dee2e6' }}
     >
-      <h1 className="text-primary mb-4">Traexco</h1>
+      <Link to="/" className="text-decoration-none">
+        <h1 className="text-primary mb-4">Traexco</h1>
+      </Link>
       {items.map((item) => (
         <div key={item.title}>
           {item.submenu ? (

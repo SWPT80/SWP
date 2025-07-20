@@ -23,7 +23,7 @@ instance.interceptors.response.use(
     const status = error?.response?.status;
     if (status === 401 || status === 403) {
       localStorage.removeItem('token');
-      window.location.href = '/admin/login'; // Có thể điều hướng khác
+       // Có thể điều hướng khác
     }
     return Promise.reject(error);
   }

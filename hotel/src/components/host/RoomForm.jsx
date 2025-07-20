@@ -2,12 +2,12 @@ import {
   Box,
   Button,
   Grid,
-  MenuItem,
-  Select,
   TextField,
   Typography,
   InputLabel,
   FormControl,
+  Select,
+  MenuItem,
   Paper,
 } from "@mui/material";
 import { styled } from "@mui/system";
@@ -16,7 +16,7 @@ const FileInput = styled("input")({
   display: "none",
 });
 
-export default function RoomForm({ formData, onChange, onSubmit, onCancel, title }) {
+export default function RoomForm({ formData, onChange, onSubmit, onCancel, title ,errors }) {
   return (
     <Box
       sx={{
@@ -38,58 +38,25 @@ export default function RoomForm({ formData, onChange, onSubmit, onCancel, title
             <TextField
               fullWidth
               required
-              name="roomNo"
-              label="Room No"
-              value={formData.roomNo}
+              name="roomId"
+              label="Room ID"
+              value={formData.roomId}
               onChange={onChange}
+              error={!!errors?.roomId}
+  helperText={errors?.roomId}
+               // không cho sửa roomId
             />
           </Grid>
 
           <Grid item xs={12} md={6}>
-            <FormControl fullWidth required>
-              <InputLabel>Select Room Type</InputLabel>
-              <Select
-                name="roomType"
-                value={formData.roomType}
-                label="Select Room Type"
-                onChange={onChange}
-              >
-                {["Delux", "Super Delux", "Vila", "Double", "Single"].map((type) => (
-                  <MenuItem key={type} value={type}>{type}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <FormControl fullWidth required>
-              <InputLabel>AC/Non AC</InputLabel>
-              <Select
-                name="ac"
-                value={formData.ac}
-                label="AC/Non AC"
-                onChange={onChange}
-              >
-                <MenuItem value="AC">AC</MenuItem>
-                <MenuItem value="Non AC">Non AC</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <FormControl fullWidth required>
-              <InputLabel>Select Meal</InputLabel>
-              <Select
-                name="meal"
-                value={formData.meal}
-                label="Select Meal"
-                onChange={onChange}
-              >
-                {["All", "Lunch", "Dinner", "Breakfast", "None"].map((meal) => (
-                  <MenuItem key={meal} value={meal}>{meal}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <TextField
+              fullWidth
+              required
+              name="roomType"
+              label="Room Type"
+              value={formData.roomType}
+              onChange={onChange}
+            />
           </Grid>
 
           <Grid item xs={12} md={6}>
@@ -97,10 +64,35 @@ export default function RoomForm({ formData, onChange, onSubmit, onCancel, title
               fullWidth
               required
               type="number"
-              name="capacity"
+              name="roomCapacity"
               label="Capacity"
-              value={formData.capacity}
+              value={formData.roomCapacity}
               onChange={onChange}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              required
+              type="number"
+              name="roomPrice"
+              label="Price"
+              value={formData.roomPrice}
+              onChange={onChange}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              required
+              type="number"
+              name="rating"
+              label="Rating"
+              value={formData.rating}
+              onChange={onChange}
+              inputProps={{ step: 0.1, min: 0, max: 5 }}
             />
           </Grid>
 
@@ -113,35 +105,36 @@ export default function RoomForm({ formData, onChange, onSubmit, onCancel, title
                 label="Status"
                 onChange={onChange}
               >
-                {["Open", "Booked", "Inactive"].map((status) => (
-                  <MenuItem key={status} value={status}>{status}</MenuItem>
-                ))}
+                <MenuItem value={true}>Active</MenuItem>
+                <MenuItem value={false}>Inactive</MenuItem>
               </Select>
             </FormControl>
           </Grid>
 
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              type="number"
-              name="rent"
-              label="Rent"
-              value={formData.rent}
-              onChange={onChange}
-            />
+          {/* Images preview (if available) */}
+          <Grid item xs={12}>
+            <Typography variant="subtitle1" gutterBottom>
+              Room Images:
+            </Typography>
+            {formData.roomImages?.length > 0 ? (
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                {formData.roomImages.map((img, index) => (
+                  <img
+                    key={index}
+                    src={img.url}
+                    alt={`room-${index}`}
+                    width={80}
+                    height={60}
+                    style={{ objectFit: "cover", borderRadius: "4px" }}
+                  />
+                ))}
+              </Box>
+            ) : (
+              <Typography color="text.secondary">No images</Typography>
+            )}
           </Grid>
 
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              required
-              name="mobile"
-              label="Mobile"
-              value={formData.mobile}
-              onChange={onChange}
-            />
-          </Grid>
-
+          {/* Upload new file (optional) */}
           <Grid item xs={12}>
             <Paper
               variant="outlined"
@@ -156,14 +149,18 @@ export default function RoomForm({ formData, onChange, onSubmit, onCancel, title
                 <FileInput
                   id="file-upload"
                   type="file"
-                  onChange={(e) => onChange({ target: { name: "file", value: e.target.files[0] } })}
+                  onChange={(e) =>
+                    onChange({
+                      target: {
+                        name: "file",
+                        value: e.target.files[0],
+                      },
+                    })
+                  }
                 />
                 <Button variant="outlined" component="span">
-                  Choose file
+                  Upload Image
                 </Button>
-                <Typography variant="body2" sx={{ mt: 1 }}>
-                  or drag and drop file here
-                </Typography>
               </label>
               {formData.file && (
                 <Typography mt={1}>Selected: {formData.file.name}</Typography>
@@ -172,22 +169,10 @@ export default function RoomForm({ formData, onChange, onSubmit, onCancel, title
           </Grid>
 
           <Grid item xs={12}>
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              name="note"
-              label="Note"
-              value={formData.note}
-              onChange={onChange}
-            />
-          </Grid>
-
-          <Grid item xs={12} display="flex" gap={2}>
-            <Button type="submit" variant="contained" color="primary">
+            <Button type="submit" variant="contained" color="primary" sx={{ mr: 2 }}>
               Submit
             </Button>
-            <Button variant="contained" color="error" onClick={onCancel}>
+            <Button variant="outlined" color="error" onClick={onCancel}>
               Cancel
             </Button>
           </Grid>

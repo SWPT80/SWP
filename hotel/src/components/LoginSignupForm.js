@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Modal, Button, Form, Tabs, Tab } from 'react-bootstrap';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
@@ -10,113 +10,80 @@ const AuthModal = ({ show, onClose, onAuthSuccess }) => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLoginSuccess = async (token, role) => {
+    localStorage.setItem('token', token);
+    localStorage.setItem('role', role.toUpperCase());
+
+    // Gọi API /me để lấy thông tin user và lưu hostId
+    try {
+      const meResponse = await axios.get('http://localhost:8080/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const user = meResponse.data;
+      localStorage.setItem('hostId', user.id); // lưu hostId
+      const fullName = user.fullName || user.email.split('@')[0];
+      setSuccess('Đăng nhập thành công!');
+      onAuthSuccess({ fullName });
+      onClose();
+
+      // Điều hướng theo role
+      if (role === 'ADMIN') navigate('/admin/dashboard', { replace: true });
+      else if (role === 'HOST') navigate('/host/dashboard', { replace: true });
+      else navigate('/', { replace: true });
+    } catch (error) {
+      console.error('Lỗi khi gọi /me:', error);
+      setError('Không lấy được thông tin người dùng.');
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
-    setIsLoading(true);
 
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData);
-    console.log('Form Data:', data); // Debug dữ liệu form
 
     try {
       if (key === 'login') {
-        const response = await axios.post('http://localhost:8080/api/auth/login', {
+        const res = await axios.post('http://localhost:8080/api/auth/login', {
           email: data.loginEmail,
-          password: data.loginPassword,
+          password: data.loginPassword
         });
-        console.log('Login API Response:', response.data); // Debug phản hồi API
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('role', response.data.role?.toUpperCase() || 'USER');
-
-        // Gọi API /me để lấy thông tin người dùng
-        const meResponse = await axios.get('http://localhost:8080/api/auth/me', {
-          headers: { Authorization: `Bearer ${response.data.token}` },
-        });
-        console.log('User info from /me:', meResponse.data); // Debug thông tin người dùng
-
-        const userData = {
-          fullName: meResponse.data.fullName || data.loginEmail.split('@')[0],
-          role: meResponse.data.role?.toUpperCase() || 'USER',
-          id: meResponse.data.id,
-        };
-        setSuccess('Đăng nhập thành công!');
-        onAuthSuccess(userData); // Gửi dữ liệu đầy đủ
-        setTimeout(() => onClose(), 1000);
+        await handleLoginSuccess(res.data.token, res.data.role);
       } else {
         if (data.registerPassword !== data.registerConfirmPassword) {
           setError('Mật khẩu xác nhận không khớp');
-          setIsLoading(false);
           return;
         }
-        const response = await axios.post('http://localhost:8080/api/auth/register', {
+
+        const res = await axios.post('http://localhost:8080/api/auth/register', {
           userName: data.registerUserName,
           fullName: data.registerName,
           email: data.registerEmail,
           phone: data.registerPhone || null,
           birthdate: data.registerBirthdate || null,
           address: data.registerAddress || null,
-          password: data.registerPassword,
+          password: data.registerPassword
         });
-        console.log('Register API Response:', response.data); // Debug phản hồi API
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('role', response.data.role?.toUpperCase() || 'USER');
-
-        const userData = {
-          fullName: data.registerName,
-          role: response.data.role?.toUpperCase() || 'USER',
-          id: response.data.id,
-        };
-        setSuccess('Đăng ký thành công!');
-        onAuthSuccess(userData);
-        setTimeout(() => {
-          setKey('login');
-          onClose();
-        }, 1000);
+        await handleLoginSuccess(res.data.token, res.data.role);
       }
     } catch (err) {
-      setIsLoading(false);
-      const errorMessage =
-        err.response?.data?.message ||
-        (typeof err.response?.data === 'object' ? Object.values(err.response.data).join(', ') : 'Có lỗi xảy ra');
-      setError(errorMessage);
-      console.error('Auth Error:', err.response?.data || err.message); // Debug lỗi
+      const msg = err.response?.data?.message || 'Có lỗi xảy ra';
+      setError(msg);
     }
   };
 
   const handleGoogleSuccess = async (credentialResponse) => {
-    setError('');
-    setSuccess('');
-    setIsLoading(true);
     try {
-      const response = await axios.post('http://localhost:8080/api/auth/google', {
-        token: credentialResponse.credential,
+      const res = await axios.post('http://localhost:8080/api/auth/google', {
+        token: credentialResponse.credential
       });
-      console.log('Google Login API Response:', response.data); // Debug phản hồi API
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('role', response.data.role?.toUpperCase() || 'USER');
-
-      const meResponse = await axios.get('http://localhost:8080/api/auth/me', {
-        headers: { Authorization: `Bearer ${response.data.token}` },
-      });
-      console.log('User info from /me (Google):', meResponse.data); // Debug thông tin người dùng
-
-      const userData = {
-        fullName: meResponse.data.fullName || meResponse.data.email.split('@')[0],
-        role: meResponse.data.role?.toUpperCase() || 'USER',
-        id: meResponse.data.id,
-      };
-      setSuccess('Đăng nhập Google thành công!');
-      onAuthSuccess(userData);
-      setTimeout(() => onClose(), 1000);
+      await handleLoginSuccess(res.data.token, res.data.role);
     } catch (err) {
-      setIsLoading(false);
-      const errorMessage = err.response?.data?.message || 'Lỗi đăng nhập Google';
-      setError(errorMessage);
-      console.error('Google Login Error:', err.response?.data || err.message); // Debug lỗi
+      setError(err.response?.data?.message || 'Lỗi đăng nhập Google');
+      console.error('Google Login Error:', err);
     }
   };
 
@@ -124,7 +91,6 @@ const AuthModal = ({ show, onClose, onAuthSuccess }) => {
     e.preventDefault();
     setError('');
     setSuccess('');
-    setIsLoading(true);
 
     const email = e.target.elements.forgotEmail.value;
     try {
@@ -132,190 +98,86 @@ const AuthModal = ({ show, onClose, onAuthSuccess }) => {
       setSuccess('Yêu cầu đặt lại mật khẩu đã được gửi!');
       setShowForgotPassword(false);
     } catch (err) {
-      setIsLoading(false);
-      const errorMessage = err.response?.data?.message || 'Có lỗi xảy ra';
-      setError(errorMessage);
-      console.error('Forgot Password Error:', err.response?.data || err.message); // Debug lỗi
+      setError(err.response?.data?.message || 'Có lỗi xảy ra');
     }
   };
 
   return (
     <Modal show={show} onHide={onClose} centered>
       <Modal.Header closeButton>
-        <Modal.Title>Đăng nhập hoặc Đăng ký</Modal.Title>
+        <Modal.Title>Đăng nhập / Đăng ký</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         {error && <div className="alert alert-danger">{error}</div>}
         {success && <div className="alert alert-success">{success}</div>}
+
         <Tabs
-          id="auth-tabs"
           activeKey={key}
           onSelect={(k) => {
             setKey(k);
             setShowForgotPassword(false);
-            setError('');
-            setSuccess('');
           }}
           className="mb-3"
         >
           <Tab eventKey="login" title="Đăng nhập">
             {!showForgotPassword ? (
               <Form onSubmit={handleSubmit}>
-                <Form.Group className="mb-3" controlId="loginEmail">
+                <Form.Group className="mb-3">
                   <Form.Label>Email</Form.Label>
-                  <Form.Control
-                    type="email"
-                    name="loginEmail"
-                    placeholder="Nhập email"
-                    required
-                    disabled={isLoading}
-                  />
+                  <Form.Control type="email" name="loginEmail" required />
                 </Form.Group>
-                <Form.Group className="mb-3" controlId="loginPassword">
+                <Form.Group className="mb-3">
                   <Form.Label>Mật khẩu</Form.Label>
-                  <Form.Control
-                    type="password"
-                    name="loginPassword"
-                    placeholder="Nhập mật khẩu"
-                    required
-                    disabled={isLoading}
-                  />
+                  <Form.Control type="password" name="loginPassword" required />
                 </Form.Group>
-                <Button
-                  variant="primary"
-                  type="submit"
-                  className="w-100 auth-btn"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <span className="loading-spinner"></span> Đang xử lý...
-                    </>
-                  ) : (
-                    'Đăng nhập'
-                  )}
-                </Button>
-                <div className="forgot-password-container">
-                  <a
-                    href="#"
-                    className="forgot-password-link"
-                    onClick={() => setShowForgotPassword(true)}
-                  >
-                    Quên mật khẩu?
-                  </a>
+                <Button type="submit" variant="primary" className="w-100">Đăng nhập</Button>
+                <div className="text-center mt-2">
+                  <a href="#" onClick={() => setShowForgotPassword(true)}>Quên mật khẩu?</a>
                 </div>
               </Form>
             ) : (
               <Form onSubmit={handleForgotPassword}>
-                <Form.Group className="mb-3" controlId="forgotEmail">
+                <Form.Group className="mb-3">
                   <Form.Label>Email</Form.Label>
-                  <Form.Control
-                    type="email"
-                    name="forgotEmail"
-                    placeholder="Nhập email của bạn"
-                    required
-                    disabled={isLoading}
-                  />
+                  <Form.Control type="email" name="forgotEmail" required />
                 </Form.Group>
-                <Button
-                  variant="primary"
-                  type="submit"
-                  className="w-100 auth-btn"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <span className="loading-spinner"></span> Đang gửi...
-                    </>
-                  ) : (
-                    'Gửi yêu cầu đặt lại mật khẩu'
-                  )}
-                </Button>
-                <div className="forgot-password-container">
-                  <a
-                    href="#"
-                    className="forgot-password-link"
-                    onClick={() => setShowForgotPassword(false)}
-                  >
-                    Quay lại đăng nhập
-                  </a>
+                <Button type="submit" variant="primary" className="w-100">Gửi yêu cầu</Button>
+                <div className="text-center mt-2">
+                  <a href="#" onClick={() => setShowForgotPassword(false)}>Quay lại đăng nhập</a>
                 </div>
               </Form>
             )}
           </Tab>
+
           <Tab eventKey="register" title="Đăng ký">
             <Form onSubmit={handleSubmit}>
-              <Form.Group className="mb-3" controlId="registerUserName">
+              <Form.Group className="mb-3">
                 <Form.Label>Tên người dùng</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="registerUserName"
-                  placeholder="Nhập tên người dùng"
-                  required
-                  disabled={isLoading}
-                />
+                <Form.Control type="text" name="registerUserName" required />
               </Form.Group>
-              <Form.Group className="mb-3" controlId="registerName">
+              <Form.Group className="mb-3">
                 <Form.Label>Họ và tên</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="registerName"
-                  placeholder="Nhập họ và tên"
-                  required
-                  disabled={isLoading}
-                />
+                <Form.Control type="text" name="registerName" required />
               </Form.Group>
-              <Form.Group className="mb-3" controlId="registerEmail">
+              <Form.Group className="mb-3">
                 <Form.Label>Email</Form.Label>
-                <Form.Control
-                  type="email"
-                  name="registerEmail"
-                  placeholder="Nhập email"
-                  required
-                  disabled={isLoading}
-                />
+                <Form.Control type="email" name="registerEmail" required />
               </Form.Group>
-              <Form.Group className="mb-3" controlId="registerPassword">
+              <Form.Group className="mb-3">
                 <Form.Label>Mật khẩu</Form.Label>
-                <Form.Control
-                  type="password"
-                  name="registerPassword"
-                  placeholder="Nhập mật khẩu"
-                  required
-                  disabled={isLoading}
-                />
+                <Form.Control type="password" name="registerPassword" required />
               </Form.Group>
-              <Form.Group className="mb-3" controlId="registerConfirmPassword">
+              <Form.Group className="mb-3">
                 <Form.Label>Xác nhận mật khẩu</Form.Label>
-                <Form.Control
-                  type="password"
-                  name="registerConfirmPassword"
-                  placeholder="Xác nhận mật khẩu"
-                  required
-                  disabled={isLoading}
-                />
+                <Form.Control type="password" name="registerConfirmPassword" required />
               </Form.Group>
-              <Button
-                variant="primary"
-                type="submit"
-                className="w-100 auth-btn"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <span className="loading-spinner"></span> Đang xử lý...
-                  </>
-                ) : (
-                  'Đăng ký'
-                )}
-              </Button>
+              <Button type="submit" variant="primary" className="w-100">Đăng ký</Button>
             </Form>
           </Tab>
         </Tabs>
-        <div className="social-login-section mt-4">
-          <div className="divider">
-            <span>hoặc</span>
-          </div>
+
+        <div className="mt-4 text-center">
+          <h6>hoặc</h6>
           <GoogleOAuthProvider clientId="736882827867-gjjrd24l8vofkj87nhe8kt1q0d7t9ako.apps.googleusercontent.com">
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
@@ -323,7 +185,6 @@ const AuthModal = ({ show, onClose, onAuthSuccess }) => {
               theme="outline"
               size="large"
               width="100%"
-              disabled={isLoading}
             />
           </GoogleOAuthProvider>
         </div>

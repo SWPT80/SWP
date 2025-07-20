@@ -1,178 +1,122 @@
-import { useState, useEffect } from "react";
-import { Card, Button, Table, Modal, Badge } from "react-bootstrap";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import axios from "axios";
+import {
+  Card,
+  Button,
+  Table,
+  Modal,
+  Badge,
+} from "react-bootstrap";
 
-export function BookingsTable() {
-  const [selectedBooking, setSelectedBooking] = useState(null);
+export function BookingsTable({ hostId = 21 }) {
+  const [bookings, setBookings] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userServices, setUserServices] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [showInvoice, setShowInvoice] = useState(false);
-  const [data, setData] = useState([]);
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const [error, setError] = useState("");
 
-  const homestayId = 1; // Thay bằng homestayId thực tế từ AuthContext hoặc phiên người dùng
-  const token = localStorage.getItem('token'); // Thay bằng cơ chế lấy token thực tế
-
-  // Hàm định dạng ngày
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString("vi-VN");
-  };
-
-  // Lấy danh sách đặt phòng từ API
   useEffect(() => {
-    const fetchBookings = async () => {
-      try {
-        const response = await axios.get(`http://localhost:8080/api/bookings/homestay/${homestayId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const bookings = response.data.map((booking) => ({
-          id: booking.id,
-          name: booking.userName || "Khách hàng",
-          email: booking.userEmail || "N/A",
-          phone: booking.userPhone || "N/A",
-          roomType: booking.roomType || "Unknown",
-          roomNumber: booking.roomNumber,
-          status: booking.status,
-          services: booking.serviceDetails?.map((s) => s.serviceType?.serviceName || "Dịch vụ") || [],
-          checkIn: formatDate(booking.checkInDate),
-          checkOut: formatDate(booking.checkOutDate),
-          paidAmount: booking.totalAmount ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(booking.totalAmount) : "0",
-          dueAmount: "0", // Giả định không có khoản nợ, điều chỉnh nếu backend cung cấp
-          paymentStatus: booking.paymentStatus || "Pending",
-          paymentDate: formatDate(booking.paymentDate),
-        }));
-        setData(bookings);
+    if (!hostId) return;
 
-        // Kiểm tra bookingId từ tham số truy vấn
-        const bookingId = searchParams.get("bookingId");
-        if (bookingId) {
-          const booking = bookings.find((b) => b.id === parseInt(bookingId));
-          if (booking) {
-            setSelectedBooking(booking);
-            setShowModal(true);
-          }
-        }
-      } catch (error) {
-        console.error("Lỗi khi lấy danh sách đặt phòng:", error);
-      }
-    };
+    axios
+      .get("http://localhost:8080/api/reports/bookings/by-user", {
+        params: { hostId },
+      })
+      .then((res) => {
+        const updated = autoUpdateCheckOut(res.data);
+        setBookings(updated);
+      })
+      .catch(() => setError("Failed to load bookings"));
+  }, [hostId]);
 
-    fetchBookings();
-  }, [searchParams]);
+  const handleRowClick = async (booking) => {
+    setSelectedUser(booking);
+    setShowModal(true);
 
-  // Cập nhật trạng thái đặt phòng
-  const updateStatus = async (newStatus) => {
     try {
-      await axios.put(
-        `http://localhost:8080/api/bookings/${selectedBooking.id}/status`,
-        null,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          params: {
-            status: newStatus,
-          },
-        }
-      );
-      const updated = data.map((item) =>
-        item.id === selectedBooking.id ? { ...item, status: newStatus } : item
-      );
-      setData(updated);
-      setSelectedBooking({ ...selectedBooking, status: newStatus });
-    } catch (error) {
-      console.error("Lỗi khi cập nhật trạng thái:", error);
+      const res = await axios.get("http://localhost:8080/api/reports/bookings/user-service-detail", {
+        params: {
+          hostId,
+          userId: booking.userId,
+        },
+      });
+      setUserServices(res.data);
+    } catch (err) {
+      console.error("Error fetching service detail", err);
+      setUserServices([]);
     }
   };
 
-  // Xử lý nhấp vào hàng
-  const handleRowClick = (booking) => {
-    setSelectedBooking(booking);
-    setShowModal(true);
-    // Xóa tham số truy vấn bookingId khỏi URL
-    navigate("/host/bookings", { replace: true });
-  };
-
-  // Tự động cập nhật trạng thái khi ngày trả phòng đã qua
-  const autoUpdateCheckOut = () => {
+  const autoUpdateCheckOut = (data) => {
     const today = new Date();
-    const updated = data.map((item) => {
-      const checkOutDate = new Date(item.checkOut.split("/").reverse().join("-"));
-      if (item.status === "Booked" && today > checkOutDate) {
+    return data.map((item) => {
+      const checkOut = new Date(item.checkOutDate);
+      if (item.status === "Booked" && checkOut < today) {
         return { ...item, status: "Check Out" };
       }
       return item;
     });
-    setData(updated);
   };
 
-  useEffect(() => {
-    autoUpdateCheckOut();
-  }, [data]);
+  const updateStatus = (newStatus) => {
+    const updated = bookings.map((item) =>
+      item.userId === selectedUser.userId ? { ...item, status: newStatus } : item
+    );
+    setBookings(updated);
+    setSelectedUser({ ...selectedUser, status: newStatus });
+  };
 
   return (
     <>
       <Card className="mb-4">
-        <Card.Header as="h5">Danh sách đặt phòng</Card.Header>
+        <Card.Header as="h5">Booking List</Card.Header>
         <Card.Body>
+          {error && <div className="text-danger">{error}</div>}
+
           <Table hover bordered responsive>
             <thead>
               <tr>
-                <th>Tên</th>
-                <th>Loại phòng</th>
-                <th>Số phòng</th>
-                <th>Trạng thái</th>
-                <th>Nhận phòng</th>
-                <th>Trả phòng</th>
-                <th>Đã thanh toán</th>
-                <th>Ngày thanh toán</th>
-                <th>Còn nợ</th>
-                <th>Thanh toán</th>
+                <th>User ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Check In</th>
+                <th>Check Out</th>
+                <th>Room Type</th>
+                <th>Room Price</th>
+                <th>Total People</th>
+                <th>Total Amount</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
-              {data.map((booking) => (
+              {bookings.map((item, index) => (
                 <tr
-                  key={booking.id}
-                  onClick={() => handleRowClick(booking)}
+                  key={index}
+                  onClick={() => handleRowClick(item)}
                   style={{ cursor: "pointer" }}
                 >
-                  <td>{booking.name}</td>
-                  <td>{booking.roomType}</td>
-                  <td>{booking.roomNumber}</td>
-                  <td>{booking.paymentDate}</td>
+                  <td>{item.userId}</td>
+                  <td>{item.userName}</td>
+                  <td>{item.email}</td>
+                  <td>{item.checkInDate}</td>
+                  <td>{item.checkOutDate}</td>
+                  <td>{item.roomType}</td>
+                  <td>{item.roomPrice?.toLocaleString()}</td>
+                  <td>{item.totalPeople}</td>
+                  <td>{item.totalAmount?.toLocaleString()}</td>
                   <td>
                     <Badge
                       bg={
-                        booking.status === "Check In"
+                        item.status === "Check In"
                           ? "warning"
-                          : booking.status === "Booked" || booking.status === "PENDING"
+                          : item.status === "Booked"
                           ? "primary"
-                          : booking.status === "Check Out" || booking.status === "CONFIRMED"
-                          ? "success"
-                          : booking.status === "CANCELLED"
-                          ? "danger"
-                          : "secondary"
+                          : item.status === "Check Out"
+                          ? "secondary"
+                          : "danger"
                       }
                     >
-                      {booking.status === "PENDING" ? "Đang chờ" : booking.status === "CONFIRMED" ? "Đã xác nhận" : booking.status === "CANCELLED" ? "Đã hủy" : booking.status}
-                    </Badge>
-                  </td>
-                  <td>{booking.checkIn}</td>
-                  <td>{booking.checkOut}</td>
-                  <td>{booking.paidAmount}</td>
-                  <td>{booking.dueAmount}</td>
-                  <td>
-                    <Badge
-                      bg={
-                        booking.paymentStatus === "Success" || booking.paymentStatus === "APPROVED" ? "success" : "warning"
-                      }
-                    >
-                      {booking.paymentStatus === "APPROVED" ? "Đã thanh toán" : "Đang chờ"}
+                      {item.status}
                     </Badge>
                   </td>
                 </tr>
@@ -182,73 +126,54 @@ export function BookingsTable() {
         </Card.Body>
       </Card>
 
-      <Modal show={showModal} onHide={() => setShowModal(false)} centered>
+      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" centered>
         <Modal.Header closeButton>
-          <Modal.Title>{selectedBooking?.name}</Modal.Title>
+          <Modal.Title>Booking Detail - {selectedUser?.fullName}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <p><strong>Email:</strong> {selectedBooking?.email}</p>
-          <p><strong>Số điện thoại:</strong> {selectedBooking?.phone}</p>
-          <p><strong>Phòng:</strong> {selectedBooking?.roomType} - {selectedBooking?.roomNumber}</p>
-          <p><strong>Nhận phòng:</strong> {selectedBooking?.checkIn}</p>
-          <p><strong>Trả phòng:</strong> {selectedBooking?.checkOut}</p>
-          <p><strong>Đã thanh toán:</strong> {selectedBooking?.paidAmount}</p>
-          <p><strong>Còn nợ:</strong> {selectedBooking?.dueAmount}</p>
-          <p><strong>Dịch vụ:</strong> {selectedBooking?.services.join(", ")}</p>
-          <p><strong>Trạng thái:</strong> <Badge bg="info">{selectedBooking?.status === "PENDING" ? "Đang chờ" : selectedBooking?.status === "CONFIRMED" ? "Đã xác nhận" : selectedBooking?.status === "CANCELLED" ? "Đã hủy" : selectedBooking?.status}</Badge></p>
-          <p><strong>Ngày thanh toán:</strong> {selectedBooking?.paymentDate}</p>   
+          <p><strong>User ID:</strong> {selectedUser?.userId}</p>
+          <p><strong>Email:</strong> {selectedUser?.email}</p>
+          <p><strong>Full Name:</strong> {selectedUser?.userName}</p>
+          <p><strong>Check In:</strong> {selectedUser?.checkInDate}</p>
+          <p><strong>Check Out:</strong> {selectedUser?.checkOutDate}</p>
+          <p><strong>Room Type:</strong> {selectedUser?.roomType}</p>
+          <p><strong>Room Price:</strong> {selectedUser?.roomPrice?.toLocaleString()}</p>
+          <p><strong>Total People:</strong> {selectedUser?.totalPeople}</p>
+          <p><strong>Total Amount:</strong> {selectedUser?.totalAmount?.toLocaleString()}</p>
+          <p><strong>Status:</strong> <Badge bg="info">{selectedUser?.status}</Badge></p>
+
+          <h5 className="mt-3">Services Used:</h5>
+          {userServices.length === 0 ? (
+            <p>No services found</p>
+          ) : (
+            <ul>
+              {userServices.map((s, idx) => (
+                <li key={idx}>
+                  {s.serviceName} - {s.price} x {s.quantity} = {(s.price * s.quantity).toLocaleString()}
+                </li>
+              ))}
+            </ul>
+          )}
+
           <div className="d-flex gap-2 mt-3">
-            {selectedBooking?.status === "PENDING" && (
+            {selectedUser?.status === "Check In" && (
               <>
-                <Button variant="primary" onClick={() => updateStatus("CONFIRMED")}>Chấp nhận (Đã xác nhận)</Button>
-                <Button variant="danger" onClick={() => updateStatus("CANCELLED")}>Từ chối</Button>
+                <Button variant="primary" onClick={() => updateStatus("Booked")}>Chấp nhận (Booked)</Button>
+                <Button variant="danger" onClick={() => updateStatus("Cancelled")}>Từ chối</Button>
               </>
             )}
-            {selectedBooking?.status === "CONFIRMED" && (
-              <Button variant="secondary" disabled>Đã xác nhận</Button>
+            {selectedUser?.status === "Booked" && (
+              <Button variant="secondary" disabled>Booked</Button>
             )}
-            {selectedBooking?.status === "CANCELLED" && (
-              <Button variant="danger" disabled>Đã hủy</Button>
+            {selectedUser?.status === "Check Out" && (
+              <Button variant="success" disabled>Đã hoàn tất</Button>
             )}
           </div>
-
-          <Button
-            variant="info"
-            className="mt-3"
-            onClick={() => {
-              setShowModal(false);
-              setShowInvoice(true);
-            }}
-          >
-            Xem hóa đơn
-          </Button>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowModal(false)}>Đóng</Button>
         </Modal.Footer>
       </Modal>
-
-      {showInvoice && selectedBooking && (
-        <Card className="mt-4">
-          <Card.Header>
-            <h5>Hóa đơn của {selectedBooking.name}</h5>
-          </Card.Header>
-          <Card.Body>
-            <p><strong>Email:</strong> {selectedBooking.email}</p>
-            <p><strong>Số điện thoại:</strong> {selectedBooking.phone}</p>
-            <p><strong>Phòng:</strong> {selectedBooking.roomType} - {selectedBooking.roomNumber}</p>
-            <p><strong>Nhận phòng:</strong> {selectedBooking.checkIn}</p>
-            <p><strong>Trả phòng:</strong> {selectedBooking.checkOut}</p>
-            <p><strong>Đã thanh toán:</strong> {selectedBooking.paidAmount}</p>
-            <p><strong>Còn nợ:</strong> {selectedBooking.dueAmount}</p>
-            <p><strong>Trạng thái thanh toán:</strong> {selectedBooking.paymentStatus === "APPROVED" ? "Đã thanh toán" : "Đang chờ"}</p>
-            <p><strong>Dịch vụ:</strong> {selectedBooking.services.join(", ")}</p>
-            <Button variant="secondary" onClick={() => setShowInvoice(false)}>
-              Đóng hóa đơn
-            </Button>
-          </Card.Body>
-        </Card>
-      )}
     </>
   );
 }

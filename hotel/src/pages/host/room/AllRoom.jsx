@@ -1,206 +1,180 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Table,
-  Badge,
   Modal,
   Button,
   Form,
   Row,
   Col,
-  Image,
+  Container,
+  Card
 } from "react-bootstrap";
-
-// Dummy room data
-const initialRooms = [
-  {
-    id: 1,
-    image: "https://via.placeholder.com/40",
-    roomNo: "101",
-    roomType: "Delux",
-    ac: "AC",
-    meal: "All",
-    bed: 2,
-    status: "Booked",
-    rent: 25,
-    mobile: "1234567890",
-  },
-  {
-    id: 2,
-    image: "https://via.placeholder.com/40",
-    roomNo: "102",
-    roomType: "Super Delux",
-    ac: "Non AC",
-    meal: "Lunch",
-    bed: 3,
-    status: "Open",
-    rent: 50,
-    mobile: "1234567890",
-  },
-  {
-    id: 3,
-    image: "https://via.placeholder.com/40",
-    roomNo: "103",
-    roomType: "Super Delux",
-    ac: "AC",
-    meal: "All",
-    bed: 2,
-    status: "Booked",
-    rent: 31,
-    mobile: "1234567890",
-  },
-  {
-    id: 4,
-    image: "https://via.placeholder.com/40",
-    roomNo: "104",
-    roomType: "Delux",
-    ac: "Non AC",
-    meal: "Dinner",
-    bed: 3,
-    status: "Inactive",
-    rent: 31,
-    mobile: "1234567890",
-  },
-];
+import { useNavigate } from 'react-router-dom';
 
 export default function AllRoom() {
-  const [rooms, setRooms] = useState(initialRooms);
+  const api = 'http://localhost:8080/api/rooms';
+  const [hostId, setHostId] = useState(21);
+  const navigate = useNavigate();
+
+  const fetchRooms = async () => {
+    const res = await fetch(`${api}/host/${hostId}`);
+    const data = await res.json();
+    setRooms(data);
+  };
+
+  useEffect(() => {
+    fetchRooms();
+  }, [hostId]);
+
+  const [rooms, setRooms] = useState([]);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
-  const handleRowClick = (room) => {
-    setSelectedRoom({ ...room });
-    setShowModal(true);
+  const handleDelete = async (homestayId, roomId) => {
+    const res = await fetch(`${api}/${homestayId}/${roomId}`, {
+      method: 'DELETE',
+    });
+    if (res.ok) {
+      alert('Room deleted');
+      fetchRooms();
+    }
   };
 
   const updateField = (field, value) => {
     setSelectedRoom((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = () => {
-    const updated = rooms.map((r) =>
-      r.id === selectedRoom.id ? selectedRoom : r
-    );
-    setRooms(updated);
-    setShowModal(false);
-  };
+  const handleSave = async () => {
+    try {
+      const updateBody = {
+        roomType: selectedRoom.roomType,
+        roomCapacity: parseInt(selectedRoom.roomCapacity),
+        roomPrice: parseFloat(selectedRoom.roomPrice),
+        rating: parseFloat(selectedRoom.rating),
+        status: selectedRoom.status
+      };
 
-  const statusVariant = (status) => {
-    switch (status) {
-      case "Booked":
-        return "primary";
-      case "Open":
-        return "success";
-      case "Inactive":
-        return "warning";
-      default:
-        return "secondary";
+      const res = await fetch(`${api}/${selectedRoom.homestayId}/${selectedRoom.roomId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updateBody)
+      });
+
+      if (!res.ok) {
+        alert('Update failed!');
+        return;
+      }
+
+      alert('Room updated!');
+      setShowModal(false);
+      fetchRooms(); // reload danh sách
+
+    } catch (err) {
+      console.error("Update error:", err);
+      alert("An error occurred while updating room.");
     }
   };
 
+
   return (
-    <div className="container mt-4">
-      <h4 className="mb-3">All Rooms</h4>
-      <Table bordered hover responsive>
-        <thead>
-          <tr>
-            <th></th>
-            <th>Image</th>
-            <th>Room No</th>
-            <th>Room Type</th>
-            <th>AC/Non AC</th>
-            <th>Meal</th>
-            <th>Bed Capacity</th>
-            <th>Status</th>
-            <th>Rent</th>
-            <th>Mobile</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rooms.map((room) => (
-            <tr
-              key={room.id}
-              style={{ cursor: "pointer" }}
-              onClick={() => handleRowClick(room)}
-            >
-              <td>
-                <Form.Check type="checkbox" />
-              </td>
-              <td>
-                <Image src={room.image} roundedCircle width={40} height={40} />
-              </td>
-              <td>{room.roomNo}</td>
-              <td>{room.roomType}</td>
-              <td>{room.ac}</td>
-              <td>{room.meal}</td>
-              <td>{room.bed}</td>
-              <td>
-                <Badge bg={statusVariant(room.status)}>{room.status}</Badge>
-              </td>
-              <td>{room.rent}</td>
-              <td>{room.mobile}</td>
+    <Container className="mt-5">
+      <Card className="shadow p-4">
+        <h2 className="text-center mb-4">🏠 Manage Your Rooms</h2>
+        <Table responsive bordered hover className="align-middle text-center">
+          <thead className="table-primary">
+            <tr>
+              <th>Room ID</th>
+              <th>Type</th>
+              <th>Capacity</th>
+              <th>Price</th>
+              <th>Rating</th>
+              <th>Status</th>
+              <th>Images</th>
+              <th>Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </Table>
+          </thead>
+          <tbody>
+            {rooms.map((room) => (
+              <tr
+                key={`${room.homestayId}-${room.roomId}`}
+                onClick={() => {
+                  setSelectedRoom(room);
+                  setShowModal(true);
+                }}
+                style={{ cursor: 'pointer' }}
+              >
+                <td>{room.roomId}</td>
+                <td>{room.roomType}</td>
+                <td>{room.roomCapacity}</td>
+                <td>${room.roomPrice.toLocaleString()}</td>
+                <td>{room.rating}</td>
+                <td>
+                  <span className={`badge ${room.status ? 'bg-success' : 'bg-secondary'}`}>
+                    {room.status ? 'Active' : 'Inactive'}
+                  </span>
+                </td>
+                <td>
+                  {room.roomImages?.length > 0 ? (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', justifyContent: 'center' }}>
+                      {room.roomImages.map((img, index) => (
+                        <img
+                          key={index}
+                          src={img.url}
+                          alt={`room-${index}`}
+                          width={80}
+                          height={60}
+                          style={{ objectFit: 'cover', borderRadius: '4px' }}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <span>No image</span>
+                  )}
+                </td>
+                <td onClick={(e) => e.stopPropagation()}>
+                  <Button
+                    size="sm"
+                    variant="warning"
+                    className="me-2"
+                    onClick={() => navigate(`/host/rooms/edit/${room.homestayId}_${room.roomId}`, { state: room })}
+                  >
+                    ✏️ Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(room.homestayId, room.roomId);
+                    }}
+                  >
+                    🗑️ Delete
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      </Card>
 
       {/* Modal */}
       <Modal show={showModal} onHide={() => setShowModal(false)} centered>
         <Modal.Header closeButton>
-          <Modal.Title>Room #{selectedRoom?.roomNo}</Modal.Title>
+          <Modal.Title>Edit Room #{selectedRoom?.roomId}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form>
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Room No</Form.Label>
+                  <Form.Label>Room Type</Form.Label>
                   <Form.Control
                     type="text"
-                    value={selectedRoom?.roomNo || ""}
-                    onChange={(e) => updateField("roomNo", e.target.value)}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Room Type</Form.Label>
-                  <Form.Select
-                    value={selectedRoom?.roomType}
+                    value={selectedRoom?.roomType || ""}
                     onChange={(e) => updateField("roomType", e.target.value)}
-                  >
-                    <option>Delux</option>
-                    <option>Super Delux</option>
-                    <option>Double</option>
-                    <option>Vila</option>
-                    <option>Single</option>
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>AC/Non AC</Form.Label>
-                  <Form.Select
-                    value={selectedRoom?.ac}
-                    onChange={(e) => updateField("ac", e.target.value)}
-                  >
-                    <option>AC</option>
-                    <option>Non AC</option>
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Meal</Form.Label>
-                  <Form.Select
-                    value={selectedRoom?.meal}
-                    onChange={(e) => updateField("meal", e.target.value)}
-                  >
-                    <option>All</option>
-                    <option>Lunch</option>
-                    <option>Dinner</option>
-                    <option>Breakfast</option>
-                    <option>None</option>
-                  </Form.Select>
+                  />
                 </Form.Group>
               </Col>
               <Col md={6}>
@@ -208,42 +182,41 @@ export default function AllRoom() {
                   <Form.Label>Capacity</Form.Label>
                   <Form.Control
                     type="number"
-                    value={selectedRoom?.bed}
-                    onChange={(e) => updateField("bed", e.target.value)}
+                    value={selectedRoom?.roomCapacity || 0}
+                    onChange={(e) => updateField("roomCapacity", e.target.value)}
                   />
                 </Form.Group>
               </Col>
               <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Price</Form.Label>
+                  <Form.Control
+                    type="number"
+                    value={selectedRoom?.roomPrice || 0}
+                    onChange={(e) => updateField("roomPrice", e.target.value)}
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Rating</Form.Label>
+                  <Form.Control
+                    type="number"
+                    value={selectedRoom?.rating || 0}
+                    onChange={(e) => updateField("rating", e.target.value)}
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={12}>
                 <Form.Group className="mb-3">
                   <Form.Label>Status</Form.Label>
                   <Form.Select
                     value={selectedRoom?.status}
-                    onChange={(e) => updateField("status", e.target.value)}
+                    onChange={(e) => updateField("status", e.target.value === 'true')}
                   >
-                    <option>Booked</option>
-                    <option>Open</option>
-                    <option>Inactive</option>
+                    <option value={true}>Active</option>
+                    <option value={false}>Inactive</option>
                   </Form.Select>
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Rent</Form.Label>
-                  <Form.Control
-                    type="number"
-                    value={selectedRoom?.rent}
-                    onChange={(e) => updateField("rent", e.target.value)}
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Mobile</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={selectedRoom?.mobile}
-                    onChange={(e) => updateField("mobile", e.target.value)}
-                  />
                 </Form.Group>
               </Col>
             </Row>
@@ -258,6 +231,6 @@ export default function AllRoom() {
           </Button>
         </Modal.Footer>
       </Modal>
-    </div>
+    </Container>
   );
 }

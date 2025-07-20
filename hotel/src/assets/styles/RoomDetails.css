@@ -1,0 +1,94 @@
+.custom-modal-xl .modal-dialog {
+  max-width: 90vw !important;
+  width: 70vw;
+}
+
+.custom-modal-xl .modal-content {
+  min-height: 60vh;
+}
+
+/* Card dịch vụ bổ sung trong RoomDetails */
+.room-service-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 18px rgba(54, 19, 84, 0.08);
+  border: 1px solid #eee;
+  transition: box-shadow 0.2s, border-color 0.2s;
+  cursor: pointer;
+  margin-bottom: 18px;
+}
+
+.room-service-card:hover {
+  box-shadow: 0 8px 32px rgba(54, 19, 84, 0.18);
+  border-color: #ff6b35;
+}
+
+.room-service-card.selected {
+  border-left: 6px solid #ff6b35;
+  box-shadow: 0 8px 32px rgba(255, 107, 53, 0.18);
+}
+
+.room-service-card .card-body {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.room-service-card .card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #ff6b35;
+  margin-bottom: 8px;
+}
+
+.room-service-card .badge {
+  font-size: 14px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: #f5f7fa;
+  color: #333;
+  margin-left: 8px;
+  max-width: 70%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.room-service-card .card-text {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 10px;
+}
+
+.room-service-card .form-check {
+  margin-left: auto;
+  margin-right: 0;
+  display: flex;
+  align-items: center;
+}
+
+.room-service-card .form-check-input {
+  margin-left: 8px;
+  margin-right: 0;
+  accent-color: #ff6b35;
+}
+
+.room-service-card .form-check-label {
+  font-weight: 500;
+  color: #333;
+  margin-right: 8px;
+}
+
+/* Sửa lại bố cục card dịch vụ bổ sung */
+.room-service-card .d-flex.justify-content-between.align-items-center {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Đảm bảo nội dung không bị tràn */
+.room-service-card .card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
