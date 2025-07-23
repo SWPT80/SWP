@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Card, Button, Table, Modal, Badge } from "react-bootstrap";
-import { Client } from "@stomp/stompjs";
-import SockJS from "sockjs-client";
+import { useWebSocket } from "../../context/WebSocketContext";
 
 export function BookingsTable({ hostId = 21 }) {
   const [bookings, setBookings] = useState([]);
@@ -10,31 +9,7 @@ export function BookingsTable({ hostId = 21 }) {
   const [userServices, setUserServices] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState("");
-  const [stompClient, setStompClient] = useState(null);
-
-  // Kết nối WebSocket
-  useEffect(() => {
-    const socket = new SockJS("http://localhost:8080/ws");
-    const client = new Client({
-      webSocketFactory: () => socket,
-      reconnectDelay: 5000,
-      onConnect: () => {
-        client.subscribe(`/topic/notifications/${hostId}`, (message) => {
-          const notification = JSON.parse(message.body);
-          if (notification.type === "BOOKING_CREATED" || notification.type === "BOOKING_STATUS_UPDATE") {
-            // Làm mới danh sách đặt phòng
-            fetchBookings();
-          }
-        });
-      },
-    });
-    client.activate();
-    setStompClient(client);
-
-    return () => {
-      client.deactivate();
-    };
-  }, [hostId]);
+  const { subscribe } = useWebSocket();
 
   // Lấy danh sách đặt phòng
   const fetchBookings = async () => {
@@ -45,15 +20,24 @@ export function BookingsTable({ hostId = 21 }) {
       const updated = autoUpdateCheckOut(res.data);
       setBookings(updated);
     } catch (err) {
+      console.error("Fetch bookings failed", err);
       setError("Failed to load bookings");
     }
   };
 
-  useEffect(() => {
-    if (!hostId) return;
-    fetchBookings();
-  }, [hostId]);
+  // Tự động chuyển sang CHECKED_OUT nếu đã qua ngày
+  const autoUpdateCheckOut = (data) => {
+    const today = new Date();
+    return data.map((item) => {
+      const checkOut = new Date(item.checkOutDate);
+      if (item.status === "CONFIRMED" && checkOut < today) {
+        return { ...item, status: "CHECKED_OUT" };
+      }
+      return item;
+    });
+  };
 
+  // Xem chi tiết đặt phòng
   const handleRowClick = async (booking) => {
     setSelectedUser(booking);
     setShowModal(true);
@@ -69,17 +53,7 @@ export function BookingsTable({ hostId = 21 }) {
     }
   };
 
-  const autoUpdateCheckOut = (data) => {
-    const today = new Date();
-    return data.map((item) => {
-      const checkOut = new Date(item.checkOutDate);
-      if (item.status === "CONFIRMED" && checkOut < today) {
-        return { ...item, status: "CHECKED_OUT" };
-      }
-      return item;
-    });
-  };
-
+  // Cập nhật trạng thái đặt phòng
   const updateStatus = async (bookingId, newStatus) => {
     try {
       await axios.put(
@@ -96,9 +70,27 @@ export function BookingsTable({ hostId = 21 }) {
       setBookings(updated);
       setSelectedUser({ ...selectedUser, status: newStatus });
     } catch (err) {
+      console.error("Update status failed", err);
       setError("Failed to update status: " + err.message);
     }
   };
+
+  // Gọi khi component mount
+  useEffect(() => {
+    if (!hostId) return;
+    fetchBookings();
+
+    // 🧠 Lắng nghe thông báo WebSocket
+    subscribe(`/topic/notifications/${hostId}`, (message) => {
+      const notification = JSON.parse(message.body);
+      if (
+        notification.type === "BOOKING_CREATED" ||
+        notification.type === "BOOKING_STATUS_UPDATE"
+      ) {
+        fetchBookings();
+      }
+    });
+  }, [hostId, subscribe]);
 
   return (
     <>
@@ -143,10 +135,15 @@ export function BookingsTable({ hostId = 21 }) {
                   <td>
                     <Badge
                       bg={
-                        item.status === "PENDING" ? "warning" :
-                        item.status === "CONFIRMED" ? "primary" :
-                        item.status === "CANCELLED" ? "danger" :
-                        item.status === "CHECKED_OUT" ? "secondary" : "info"
+                        item.status === "PENDING"
+                          ? "warning"
+                          : item.status === "CONFIRMED"
+                          ? "primary"
+                          : item.status === "CANCELLED"
+                          ? "danger"
+                          : item.status === "CHECKED_OUT"
+                          ? "secondary"
+                          : "info"
                       }
                     >
                       {item.status}
@@ -159,6 +156,7 @@ export function BookingsTable({ hostId = 21 }) {
         </Card.Body>
       </Card>
 
+      {/* Modal chi tiết */}
       <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" centered>
         <Modal.Header closeButton>
           <Modal.Title>Booking Detail - {selectedUser?.userName}</Modal.Title>

@@ -59,6 +59,8 @@ import PaymentCheckout from "./pages/payment/Payment-checkout";
 import PaymentCallback from "./pages/payment/PaymentCallback";
 import BookingSuccess from "./pages/payment/BookingSuccess";
 import { AuthProvider } from './context/AuthContext';
+import { WebSocketProvider } from './context/WebSocketContext';
+
 //Become host
 import Profiles from "./components/ProfilePage";
 import BecomeHost from "./components/BecomeHost";
@@ -66,6 +68,9 @@ import ResetPassword from "./components/ResetPassword";
 function App() {
   return (
     <AuthProvider>
+      <WebSocketProvider>
+
+   
     <Router>
       <Routes>
         {/* Admin Routes */}
@@ -161,6 +166,7 @@ function App() {
         <Route path="*" element={<Navigate to="/404" replace />} /> */}
       </Routes>
     </Router>
+             </WebSocketProvider>
     </AuthProvider>
   );
 }

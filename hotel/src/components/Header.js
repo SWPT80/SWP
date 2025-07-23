@@ -8,6 +8,7 @@ import LanguageSelectorModal from './LanguageModal';
 import AuthModal from './LoginSignupForm';
 import axios from 'axios';
 import '../assets/styles/Header.css';
+import NotificationDropdown from './NotificationDropdown';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -199,50 +200,8 @@ const Header = () => {
               </div>
 
               {/* Notification Icon - Hiển thị khi đã đăng nhập */}
-              {user && (
-                <Dropdown show={notificationDropdownOpen} onToggle={() => setNotificationDropdownOpen(!notificationDropdownOpen)}>
-                  <Dropdown.Toggle
-                    as="div"
-                    style={{
-                      color: 'white',
-                      fontSize: '20px',
-                      cursor: 'pointer',
-                      padding: '10px',
-                      borderRadius: '50%',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      border: '1px solid rgba(255, 255, 255, 0.2)',
-                      marginRight: '10px',
-                      position: 'relative',
-                    }}
-                    ref={notificationDropdownRef}
-                  >
-                    <i className="fas fa-bell"></i>
-                    {unreadNotifications > 0 && (
-                      <span className="badge bg-danger" style={{
-                        position: 'absolute',
-                        top: '-10px',
-                        right: '-10px',
-                        fontSize: '5px',
-                        borderRadius: '50%',
-                        padding: '2px 6px'
-                      }}>{unreadNotifications}</span>
-                    )}
-                  </Dropdown.Toggle>
-                  <Dropdown.Menu align="end" style={{ minWidth: '300px' }}>
-                    <Dropdown.Header>Thông báo</Dropdown.Header>
-                    {unreadNotifications === 0 ? (
-                      <Dropdown.Item disabled>Không có thông báo mới</Dropdown.Item>
-                    ) : (
-                      <Dropdown.Item as={Link} to="/notifications" onClick={() => setNotificationDropdownOpen(false)}>
-                        Thông báo mới 1
-                      </Dropdown.Item>
-                    )}
-                    <Dropdown.Item as={Link} to="/notifications" onClick={() => setNotificationDropdownOpen(false)}>
-                      Xem tất cả thông báo
-                    </Dropdown.Item>
-                  </Dropdown.Menu>
-                </Dropdown>
-              )}
+             {user && <NotificationDropdown />}
+
 
               {/* Message Icon - Hiển thị khi đã đăng nhập */}
               {user && (
