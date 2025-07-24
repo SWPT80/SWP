@@ -56,7 +56,7 @@ const AllService = () => {
                   </h4>
                   <button
                     className="btn btn-primary"
-                    onClick={() => navigate('/pendingServices')}
+                    onClick={() => navigate('/admin/pending-services')}
                   >
                     <i className="fas fa-hourglass-half mr-1"></i>
                     Pending Services
@@ -115,9 +115,6 @@ const AllService = () => {
                             <div
                               className={`dropdown-menu dropdown-menu-right ${isOpen[s.id] ? 'show' : ''}`}
                             >
-                              <a className="dropdown-item" href={`/admin/edit-service/${s.id}`}>
-                                <i className="fas fa-pencil-alt"></i> Edit
-                              </a>
                               <button className="dropdown-item" onClick={() => handleDelete(s.id)}>
                                 <i className="fas fa-trash-alt"></i> Delete
                               </button>
@@ -141,22 +138,73 @@ const AllService = () => {
                 </span>
                 <nav>
                   <ul className="pagination mb-0">
-                    <li className={`page-item ${currentPage === 1 && 'disabled'}`}>
-                      <button className="page-link" onClick={() => changePage(currentPage - 1)}>
-                        «
-                      </button>
+                    {/* First & Previous */}
+                    <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                      <button className="page-link" onClick={() => changePage(1)}>«</button>
                     </li>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                      <li key={p} className={`page-item ${currentPage === p && 'active'}`}>
-                        <button className="page-link" onClick={() => changePage(p)}>
-                          {p}
-                        </button>
-                      </li>
-                    ))}
-                    <li className={`page-item ${currentPage === totalPages && 'disabled'}`}>
-                      <button className="page-link" onClick={() => changePage(currentPage + 1)}>
-                        »
-                      </button>
+                    <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                      <button className="page-link" onClick={() => changePage(currentPage - 1)}>‹</button>
+                    </li>
+
+                    {/* Page Numbers with Ellipsis */}
+                    {(() => {
+                      const pageItems = [];
+                      const maxPagesToShow = 5;
+                      let start = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+                      let end = start + maxPagesToShow - 1;
+
+                      if (end > totalPages) {
+                        end = totalPages;
+                        start = Math.max(1, end - maxPagesToShow + 1);
+                      }
+
+                      if (start > 1) {
+                        pageItems.push(
+                          <li key={1} className="page-item">
+                            <button className="page-link" onClick={() => changePage(1)}>1</button>
+                          </li>
+                        );
+                        if (start > 2) {
+                          pageItems.push(
+                            <li key="start-ellipsis" className="page-item disabled">
+                              <span className="page-link">...</span>
+                            </li>
+                          );
+                        }
+                      }
+
+                      for (let i = start; i <= end; i++) {
+                        pageItems.push(
+                          <li key={i} className={`page-item ${i === currentPage ? 'active' : ''}`}>
+                            <button className="page-link" onClick={() => changePage(i)}>{i}</button>
+                          </li>
+                        );
+                      }
+
+                      if (end < totalPages) {
+                        if (end < totalPages - 1) {
+                          pageItems.push(
+                            <li key="end-ellipsis" className="page-item disabled">
+                              <span className="page-link">...</span>
+                            </li>
+                          );
+                        }
+                        pageItems.push(
+                          <li key={totalPages} className="page-item">
+                            <button className="page-link" onClick={() => changePage(totalPages)}>{totalPages}</button>
+                          </li>
+                        );
+                      }
+
+                      return pageItems;
+                    })()}
+
+                    {/* Next & Last */}
+                    <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                      <button className="page-link" onClick={() => changePage(currentPage + 1)}>›</button>
+                    </li>
+                    <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                      <button className="page-link" onClick={() => changePage(totalPages)}>»</button>
                     </li>
                   </ul>
                 </nav>

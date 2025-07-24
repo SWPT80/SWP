@@ -5,26 +5,20 @@ import { useAuth } from '../../context/AuthContext';
 import axios from '../../utils/axiosConfig';
 
 const PaymentCallback = () => {
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, isLoading } = useAuth();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [message, setMessage] = useState('');
   const [status, setStatus] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingState, setIsLoading] = useState(true);
 
   useEffect(() => {
-    console.log('Token in localStorage:', localStorage.getItem('token'));
-    console.log('isLoggedIn:', isLoggedIn);
+    if (isLoading) return; // Đợi xác thực xong mới xử lý
+
     const fetchPaymentStatus = async () => {
       setIsLoading(true);
 
-      if (!isLoggedIn) {
-        setMessage('Vui lòng đăng nhập để xử lý thanh toán.');
-        setStatus('danger');
-        navigate('/admin/login');
-        setIsLoading(false);
-        return;
-      }
+      const token = localStorage.getItem('token');
 
       const vnpResponseCode = searchParams.get('vnp_ResponseCode');
       const vnpTxnRef = searchParams.get('vnp_TxnRef');
@@ -45,29 +39,35 @@ const PaymentCallback = () => {
           }
         });
         setMessage(response.data);
-        const isSuccess = vnpResponseCode === '00' || momoResultCode === '0';
-        setStatus(isSuccess ? 'success' : 'danger');
-        if (isSuccess) {
+        console.log('Payment callback response:', response.data);
+
+        // Sửa điều kiện chuyển hướng dựa vào response từ backend
+        if (
+          response.data?.success === true ||
+          response.data?.status === 'success' ||
+          vnpResponseCode === '00' ||
+          momoResultCode === '0'
+        ) {
+          setStatus('success');
           setTimeout(() => navigate('/booking-success'), 2000);
+        } else {
+          setStatus('danger');
         }
       } catch (error) {
         console.error('Error processing payment callback:', error);
         setMessage('Lỗi khi xử lý thanh toán. Vui lòng thử lại.');
         setStatus('danger');
-        if (error.response?.status === 401) {
-          navigate('/admin/login');
-        }
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchPaymentStatus();
-  }, [searchParams, navigate, isLoggedIn]);
+  }, [searchParams, navigate, isLoggedIn, isLoading]);
 
   return (
     <Container className="my-5 text-center">
-      {isLoading ? (
+      {isLoadingState ? (
         <div className="d-flex justify-content-center align-items-center" style={{ height: '50vh' }}>
           <Spinner animation="border" variant="primary" />
           <span className="ms-3">Đang xử lý thanh toán...</span>

@@ -97,21 +97,24 @@ const Header = ({ onToggleSidebar }) => {
           </Dropdown.Toggle>
 
           <Dropdown.Menu>
-            <div className="user-header">
-              <div className="avatar avatar-sm">
+            <div className="user-header text-center p-3 border-bottom">
+              <div className="avatar avatar-sm mb-2">
                 <img
                   src="/img/a1.jpg"
                   alt="User"
                   className="avatar-img rounded-circle"
+                  width="60"
+                  height="60"
                 />
               </div>
               <div className="user-text">
-                <h6>Soeng Souy</h6>
-                <p className="text-muted mb-0">Administrator</p>
+                <h6 className="mb-0">Soeng Souy</h6>
+                <small className="text-muted">Administrator</small>
               </div>
             </div>
-            <Dropdown.Item href="/profile">My Profile</Dropdown.Item>
-            <Dropdown.Item href="/login">Logout</Dropdown.Item>
+
+            <Dropdown.Item href="/admin/profile">Account Settings</Dropdown.Item>
+            <Dropdown.Item href="/admin/login">Logout</Dropdown.Item>
           </Dropdown.Menu>
         </Dropdown>
       </Nav>

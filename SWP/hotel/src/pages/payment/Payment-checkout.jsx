@@ -27,11 +27,7 @@ const PaymentCheckout = ({ bookingId, onClose, onPaymentSuccess }) => {
         return;
       }
 
-      if (!isLoggedIn) {
-        setError('Vui lòng đăng nhập để tiếp tục thanh toán.');
-        navigate('/admin/login');
-        return;
-      }
+
 
       try {
         setLoading(true);
@@ -101,11 +97,7 @@ const PaymentCheckout = ({ bookingId, onClose, onPaymentSuccess }) => {
       setIsProcessing(true);
       setPaymentStatus(null);
 
-      if (!isLoggedIn) {
-        setError('Vui lòng đăng nhập để thực hiện thanh toán.');
-        navigate('/admin/login');
-        return;
-      }
+
 
       const normalizedPaymentMethod = paymentMethod.toUpperCase().trim();
       const normalizedDepositPaymentMethod = depositPaymentMethod.toUpperCase().trim();
@@ -145,9 +137,7 @@ const PaymentCheckout = ({ bookingId, onClose, onPaymentSuccess }) => {
         : error.response?.data?.message || 'Thanh toán thất bại. Vui lòng thử lại.';
       setError(errorMessage);
       setPaymentStatus('error');
-      if (error.response?.status === 401) {
-        navigate('/admin/login');
-      }
+
     } finally {
       setIsProcessing(false);
     }

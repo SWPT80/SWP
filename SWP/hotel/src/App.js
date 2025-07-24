@@ -7,7 +7,7 @@ import PrivateRoute from "./routes/PrivateRoute";
 import Profiles from "./components/ProfilePage";
 import BecomeHost from "./components/BecomeHost";
 import ResetPassword from "./components/ResetPassword";
-
+import ReviewPage from './pages/ReviewPage';
 // Admin Pages
 import Dashboard from "./pages/admin/Dashboard";
 import AllBooking from "./pages/admin/All-booking";
@@ -17,8 +17,6 @@ import EditHost from "./pages/admin/Edit-hosts";
 import AllCustomer from "./pages/admin/All-customer";
 import EditCustomer from "./pages/admin/Edit-customer";
 import AllService from "./pages/admin/All-service";
-import EditService from "./pages/admin/Edit-service";
-import AddService from "./pages/admin/Add-service";
 import Invoices from "./pages/admin/Invoices";
 import Expenses from "./pages/admin/Expenses";
 import Activity from "./pages/admin/Activities";
@@ -56,6 +54,8 @@ import AddRoom from "./pages/host/room/AddRoom";
 import Room from "./pages/host/room/Room";
 import RoomPricing from "./pages/host/room/RoomPricing";
 import FacilitiesList from "./pages/host/FacilitiesList";
+import EditService from "./pages/host/EditService";
+import AddService from "./pages/host/AddService";
 
 // Payment Pages
 import PaymentCheckout from "./pages/payment/Payment-checkout";
@@ -88,8 +88,6 @@ function App() {
             <Route path="all-hosts" element={<AllHost />} />
             <Route path="edit-host/:id" element={<EditHost />} />
             <Route path="all-service" element={<AllService />} />
-            <Route path="edit-service/:id" element={<EditService />} />
-            <Route path="add-service" element={<AddService />} />
             <Route path="pending-services" element={<PendingServices />} />
             <Route path="invoices" element={<Invoices />} />
             <Route path="expenses" element={<Expenses />} />
@@ -114,6 +112,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/experience" element={<Experience />} />
             <Route path="/services" element={<Service />} />
+            <Route path="/review" element={<ReviewPage />} />
           </Route>
 
           {/* Host Routes */}
@@ -139,6 +138,8 @@ function App() {
             <Route path="reports" element={<CustomerReport />} />
             <Route path="billing" element={<BillingSystem />} />
             <Route path="services" element={<HostService />} />
+            <Route path="add-service" element={<AddService />} />
+            <Route path="edit-service/:id" element={<EditService />} />
             <Route path="occupancy" element={<Occupancy />} />
             <Route path="bookings" element={<HostBooking />} />
             <Route path="facilities" element={<FacilitiesList />} />

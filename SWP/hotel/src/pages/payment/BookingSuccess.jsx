@@ -23,11 +23,7 @@ const BookingSuccess = () => {
   useEffect(() => {
     const fetchBookingDetails = async () => {
       try {
-        if (!isLoggedIn) {
-          setError('Vui lòng đăng nhập để xem thông tin đặt phòng.');
-          navigate('/admin/login');
-          return;
-        }
+
 
         const queryParams = new URLSearchParams(location.search);
         const bookingId = queryParams.get('bookingId');
@@ -196,6 +192,13 @@ const BookingSuccess = () => {
               )}
 
               <div className="text-center mt-4">
+                <Button
+                  variant="success"
+                  onClick={() => navigate(`/review?bookingId=${bookingDetails.id}`)}
+                >
+                  Gửi đánh giá
+                </Button>
+                
                 <Button
                   variant="primary"
                   size="lg"

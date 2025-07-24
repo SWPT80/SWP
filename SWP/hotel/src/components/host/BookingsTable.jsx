@@ -1,12 +1,8 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import {
-  Card,
-  Button,
-  Table,
-  Modal,
-  Badge,
-} from "react-bootstrap";
+import { Card, Button, Table, Modal, Badge } from "react-bootstrap";
+import { Client } from "@stomp/stompjs";
+import SockJS from "sockjs-client";
 
 export function BookingsTable({ hostId = 21 }) {
   const [bookings, setBookings] = useState([]);
@@ -14,19 +10,48 @@ export function BookingsTable({ hostId = 21 }) {
   const [userServices, setUserServices] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState("");
+  const [stompClient, setStompClient] = useState(null);
+
+  // Kết nối WebSocket
+  useEffect(() => {
+    const socket = new SockJS("http://localhost:8080/ws");
+    const client = new Client({
+      webSocketFactory: () => socket,
+      reconnectDelay: 5000,
+      onConnect: () => {
+        client.subscribe(`/topic/notifications/${hostId}`, (message) => {
+          const notification = JSON.parse(message.body);
+          if (notification.type === "BOOKING_CREATED" || notification.type === "BOOKING_STATUS_UPDATE") {
+            // Làm mới danh sách đặt phòng
+            fetchBookings();
+          }
+        });
+      },
+    });
+    client.activate();
+    setStompClient(client);
+
+    return () => {
+      client.deactivate();
+    };
+  }, [hostId]);
+
+  // Lấy danh sách đặt phòng
+  const fetchBookings = async () => {
+    try {
+      const res = await axios.get(`http://localhost:8080/api/bookings/homestay/${hostId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      const updated = autoUpdateCheckOut(res.data);
+      setBookings(updated);
+    } catch (err) {
+      setError("Failed to load bookings");
+    }
+  };
 
   useEffect(() => {
     if (!hostId) return;
-
-    axios
-      .get("http://localhost:8080/api/reports/bookings/by-user", {
-        params: { hostId },
-      })
-      .then((res) => {
-        const updated = autoUpdateCheckOut(res.data);
-        setBookings(updated);
-      })
-      .catch(() => setError("Failed to load bookings"));
+    fetchBookings();
   }, [hostId]);
 
   const handleRowClick = async (booking) => {
@@ -34,13 +59,10 @@ export function BookingsTable({ hostId = 21 }) {
     setShowModal(true);
 
     try {
-      const res = await axios.get("http://localhost:8080/api/reports/bookings/user-service-detail", {
-        params: {
-          hostId,
-          userId: booking.userId,
-        },
+      const res = await axios.get(`http://localhost:8080/api/bookings/${booking.id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
-      setUserServices(res.data);
+      setUserServices(res.data.serviceDetails || []);
     } catch (err) {
       console.error("Error fetching service detail", err);
       setUserServices([]);
@@ -51,19 +73,31 @@ export function BookingsTable({ hostId = 21 }) {
     const today = new Date();
     return data.map((item) => {
       const checkOut = new Date(item.checkOutDate);
-      if (item.status === "Booked" && checkOut < today) {
-        return { ...item, status: "Check Out" };
+      if (item.status === "CONFIRMED" && checkOut < today) {
+        return { ...item, status: "CHECKED_OUT" };
       }
       return item;
     });
   };
 
-  const updateStatus = (newStatus) => {
-    const updated = bookings.map((item) =>
-      item.userId === selectedUser.userId ? { ...item, status: newStatus } : item
-    );
-    setBookings(updated);
-    setSelectedUser({ ...selectedUser, status: newStatus });
+  const updateStatus = async (bookingId, newStatus) => {
+    try {
+      await axios.put(
+        `http://localhost:8080/api/bookings/${bookingId}/status`,
+        null,
+        {
+          params: { status: newStatus },
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        }
+      );
+      const updated = bookings.map((item) =>
+        item.id === bookingId ? { ...item, status: newStatus } : item
+      );
+      setBookings(updated);
+      setSelectedUser({ ...selectedUser, status: newStatus });
+    } catch (err) {
+      setError("Failed to update status: " + err.message);
+    }
   };
 
   return (
@@ -72,7 +106,9 @@ export function BookingsTable({ hostId = 21 }) {
         <Card.Header as="h5">Booking List</Card.Header>
         <Card.Body>
           {error && <div className="text-danger">{error}</div>}
-
+          <Button onClick={fetchBookings} className="mb-3">
+            Tải lại
+          </Button>
           <Table hover bordered responsive>
             <thead>
               <tr>
@@ -107,13 +143,10 @@ export function BookingsTable({ hostId = 21 }) {
                   <td>
                     <Badge
                       bg={
-                        item.status === "Check In"
-                          ? "warning"
-                          : item.status === "Booked"
-                          ? "primary"
-                          : item.status === "Check Out"
-                          ? "secondary"
-                          : "danger"
+                        item.status === "PENDING" ? "warning" :
+                          item.status === "CONFIRMED" ? "primary" :
+                            item.status === "CANCELLED" ? "danger" :
+                              item.status === "CHECKED_OUT" ? "secondary" : "info"
                       }
                     >
                       {item.status}
@@ -128,7 +161,7 @@ export function BookingsTable({ hostId = 21 }) {
 
       <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" centered>
         <Modal.Header closeButton>
-          <Modal.Title>Booking Detail - {selectedUser?.fullName}</Modal.Title>
+          <Modal.Title>Booking Detail - {selectedUser?.userName}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <p><strong>User ID:</strong> {selectedUser?.userId}</p>
@@ -149,24 +182,32 @@ export function BookingsTable({ hostId = 21 }) {
             <ul>
               {userServices.map((s, idx) => (
                 <li key={idx}>
-                  {s.serviceName} - {s.price} x {s.quantity} = {(s.price * s.quantity).toLocaleString()}
+                  {s.serviceType?.serviceName} - {s.price?.toLocaleString()} x {s.quantity || 1} = {(s.price * (s.quantity || 1)).toLocaleString()}
                 </li>
               ))}
             </ul>
           )}
 
           <div className="d-flex gap-2 mt-3">
-            {selectedUser?.status === "Check In" && (
+            {selectedUser?.status === "PENDING" && (
               <>
-                <Button variant="primary" onClick={() => updateStatus("Booked")}>Chấp nhận (Booked)</Button>
-                <Button variant="danger" onClick={() => updateStatus("Cancelled")}>Từ chối</Button>
+                <Button variant="primary" onClick={() => updateStatus(selectedUser.id, "CONFIRMED")}>
+                  Chấp nhận
+                </Button>
+                <Button variant="danger" onClick={() => updateStatus(selectedUser.id, "CANCELLED")}>
+                  Từ chối
+                </Button>
               </>
             )}
-            {selectedUser?.status === "Booked" && (
-              <Button variant="secondary" disabled>Booked</Button>
+            {selectedUser?.status === "CONFIRMED" && (
+              <Button variant="secondary" disabled>
+                Đã xác nhận
+              </Button>
             )}
-            {selectedUser?.status === "Check Out" && (
-              <Button variant="success" disabled>Đã hoàn tất</Button>
+            {selectedUser?.status === "CHECKED_OUT" && (
+              <Button variant="success" disabled>
+                Đã hoàn tất
+              </Button>
             )}
           </div>
         </Modal.Body>

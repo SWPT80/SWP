@@ -33,7 +33,7 @@ const Dashboard = () => {
           <div className="page-header">
             <div className="row">
               <div className="col-sm-12 mt-5">
-                <h3 className="page-title mt-3">Hello Huy Hoang!</h3>
+                <h3 className="page-title mt-3">Hello Admin!</h3>
                 <ul className="breadcrumb">
                   <li className="breadcrumb-item active">Dashboard</li>
                 </ul>
