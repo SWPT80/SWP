@@ -1,197 +1,204 @@
 import React, { useEffect, useState } from "react";
-import { Tab, Tabs, Form, Button, Col, Row, Card, Alert, Modal } from "react-bootstrap";
-import axios from "../../utils/axiosConfig";
+import axios from "axios";
 
-const AdminProfile = () => {
-  const [admin, setAdmin] = useState({});
-  const [avatarPreview, setAvatarPreview] = useState(null);
-  const [avatarFile, setAvatarFile] = useState(null);
+const AdminAccountSettings = () => {
+  const [admin, setAdmin] = useState(null);
+  const [updateStatus, setUpdateStatus] = useState("");
+  const [passwordStatus, setPasswordStatus] = useState("");
   const [passwordData, setPasswordData] = useState({
-    currentPassword: "",
+    oldPassword: "",
     newPassword: "",
-    confirmPassword: "",
   });
-  const [message, setMessage] = useState(null);
-  const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
-    fetchAdminInfo();
+    const token = localStorage.getItem("token");
+    axios
+      .get("http://localhost:8080/api/admin/account/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => setAdmin(res.data))
+      .catch((err) => {
+        console.error("Error getting admin info:", err);
+        setUpdateStatus("Unable to get admin information.");
+      });
   }, []);
 
-  const fetchAdminInfo = async () => {
-    try {
-      const res = await axios.get("/api/admins/me");
-      setAdmin(res.data);
-    } catch (err) {
-      console.error("Failed to load admin info", err);
-    }
-  };
-
-  const handleInputChange = (e) => {
+  const handleChange = (e) => {
     setAdmin({ ...admin, [e.target.name]: e.target.value });
   };
 
-  const handleSaveProfile = async () => {
+  const handleSaveInfo = async () => {
     try {
-      await axios.put("/api/admins/me", admin);
-      setMessage("Thông tin đã được cập nhật thành công.");
-      setEditMode(false);
+      const token = localStorage.getItem("token");
+      await axios.put("http://localhost:8080/api/admin/account/update-profile", admin, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUpdateStatus("Profile updated successfully.");
+      setTimeout(() => setUpdateStatus(""), 3000);
     } catch (err) {
-      setMessage("Cập nhật thất bại.");
+      console.error(err);
+      setUpdateStatus("Error updating profile.");
+      setTimeout(() => setUpdateStatus(""), 3000);
     }
   };
 
-  const handleAvatarChange = (e) => {
-    const file = e.target.files[0];
-    setAvatarFile(file);
-    setAvatarPreview(URL.createObjectURL(file));
+  const handleChangePassword = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.put(
+        "http://localhost:8080/api/admin/account/change-password",
+        passwordData,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setPasswordStatus("Password changed successfully.");
+      setPasswordData({ oldPassword: "", newPassword: "" });
+      setTimeout(() => setPasswordStatus(""), 3000);
+    } catch (err) {
+      console.error(err);
+      setPasswordStatus("Password change failed.");
+      setTimeout(() => setPasswordStatus(""), 3000);
+    }
   };
 
-  const uploadAvatar = async () => {
-    if (!avatarFile) return;
-    const formData = new FormData();
-    formData.append("avatar", avatarFile);
-    try {
-      await axios.post("/api/admins/upload-avatar", formData);
-      setMessage("Ảnh đại diện đã được cập nhật.");
-      fetchAdminInfo();
-    } catch (err) {
-      setMessage("Lỗi khi cập nhật ảnh đại diện.");
-    }
+  const getAvatarPath = () => {
+    if (!admin || !admin.email) return "/images/admin/avatars/default-admin.jpg";
+
+    const email = admin.email.toLowerCase();
+
+    if (email === "hoangdhde180623@fpt.edu.vn") return "/images/admin/avatars/hahoang.jpg";
+    else if (email === "hoangndhde180637@fpt.edu.vn") return "/images/admin/avatars/huyhoang.jpg";
+    else if (email === "huyldnde180697@fpt.edu.vn") return "/images/admin/avatars/nhathuy.jpg";
+    else if (email === "datltde180619@fpt.edu.vn") return "/images/admin/avatars/thanhdat.jpg";
+    else if (email === "hoanglvmde180724@fpt.edu.vn") return "/images/admin/avatars/minhhoang.jpg";
+    else return "/images/admin/avatars/default-admin.jpg";
   };
 
-  const handlePasswordChange = async () => {
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setMessage("Mật khẩu mới không khớp.");
-      return;
-    }
-    try {
-      await axios.patch("/api/admins/change-password", passwordData);
-      setMessage("Mật khẩu đã được đổi thành công.");
-      setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
-    } catch (err) {
-      setMessage("Đổi mật khẩu thất bại.");
-    }
-  };
+  if (!admin) return <div>Loading information...</div>;
 
   return (
-    <div className="container py-4">
-      <h4 className="mb-4">Trang cá nhân quản trị viên</h4>
-      {message && <Alert variant="info">{message}</Alert>}
+    <div className="container mt-4">
+      <h3>Admin Account Settings</h3>
 
-      <div className="row">
-        <div className="col-md-3 text-center">
+      {/* Avatar for static display from public folder */}
+      <div className="mb-3">
+        <label className="form-label">Profile Picture</label>
+        <div>
           <img
-            src={avatarPreview || admin.avatarUrl || "/img/default-avatar.png"}
-            alt="Avatar"
-            className="rounded-circle mb-3"
-            width={130}
-            height={130}
+            src={getAvatarPath()}
+            alt="avatar"
+            width={100}
+            height={100}
+            className="rounded-circle border"
           />
-          <Form.Control type="file" accept="image/*" onChange={handleAvatarChange} className="mb-2" />
-          <Button variant="primary" size="sm" onClick={uploadAvatar}>
-            Cập nhật ảnh
-          </Button>
         </div>
+      </div>
 
-        <div className="col-md-9">
-          <Card className="mb-4">
-            <Card.Body>
-              <h5 className="d-flex justify-content-between">
-                <span>Thông tin cá nhân</span>
-                <Button variant="link" onClick={() => setEditMode(!editMode)}>
-                  <i className="fa fa-edit mr-1"></i> {editMode ? "Hủy" : "Chỉnh sửa"}
-                </Button>
-              </h5>
+      {/* Personal Info */}
+      <div className="mb-3">
+        <label>Full Name</label>
+        <input
+          type="text"
+          name="fullName"
+          className="form-control"
+          value={admin.fullName || ""}
+          onChange={handleChange}
+        />
+      </div>
+      <div className="mb-3">
+        <label>Email</label>
+        <input
+          type="email"
+          name="email"
+          className="form-control"
+          value={admin.email || ""}
+          onChange={handleChange}
+        />
+      </div>
+      <div className="mb-3">
+        <label>Phone Number</label>
+        <input
+          type="text"
+          name="phone"
+          className="form-control"
+          value={admin.phone || ""}
+          onChange={handleChange}
+        />
+      </div>
+      <div className="mb-3">
+        <label>Address</label>
+        <input
+          type="text"
+          name="address"
+          className="form-control"
+          value={admin.address || ""}
+          onChange={handleChange}
+        />
+      </div>
+      <div className="mb-3">
+        <label>Date of Birth</label>
+        <input
+          type="date"
+          name="birthdate"
+          className="form-control"
+          value={admin.birthdate || ""}
+          onChange={handleChange}
+        />
+      </div>
+      <button className="btn btn-success" onClick={handleSaveInfo}>
+        Save Changes
+      </button>
 
-              {!editMode ? (
-                <>
-                  <Row className="mb-2">
-                    <Col sm={3}>Họ tên</Col>
-                    <Col sm={9}>{admin.fullName}</Col>
-                  </Row>
-                  <Row className="mb-2">
-                    <Col sm={3}>Email</Col>
-                    <Col sm={9}>{admin.email}</Col>
-                  </Row>
-                  <Row className="mb-2">
-                    <Col sm={3}>Quyền</Col>
-                    <Col sm={9}>Administrator</Col>
-                  </Row>
-                </>
-              ) : (
-                <Form>
-                  <Row>
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Họ tên</Form.Label>
-                        <Form.Control
-                          type="text"
-                          name="fullName"
-                          value={admin.fullName || ""}
-                          onChange={handleInputChange}
-                        />
-                      </Form.Group>
-                    </Col>
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Email</Form.Label>
-                        <Form.Control type="email" value={admin.email || ""} disabled />
-                      </Form.Group>
-                    </Col>
-                  </Row>
-                  <Button variant="success" onClick={handleSaveProfile}>
-                    Lưu thay đổi
-                  </Button>
-                </Form>
-              )}
-            </Card.Body>
-          </Card>
-
-          <Card>
-            <Card.Body>
-              <h5>Đổi mật khẩu</h5>
-              <Form>
-                <Form.Group className="mb-2">
-                  <Form.Label>Mật khẩu hiện tại</Form.Label>
-                  <Form.Control
-                    type="password"
-                    value={passwordData.currentPassword}
-                    onChange={(e) =>
-                      setPasswordData({ ...passwordData, currentPassword: e.target.value })
-                    }
-                  />
-                </Form.Group>
-                <Form.Group className="mb-2">
-                  <Form.Label>Mật khẩu mới</Form.Label>
-                  <Form.Control
-                    type="password"
-                    value={passwordData.newPassword}
-                    onChange={(e) =>
-                      setPasswordData({ ...passwordData, newPassword: e.target.value })
-                    }
-                  />
-                </Form.Group>
-                <Form.Group className="mb-3">
-                  <Form.Label>Nhập lại mật khẩu mới</Form.Label>
-                  <Form.Control
-                    type="password"
-                    value={passwordData.confirmPassword}
-                    onChange={(e) =>
-                      setPasswordData({ ...passwordData, confirmPassword: e.target.value })
-                    }
-                  />
-                </Form.Group>
-                <Button variant="warning" onClick={handlePasswordChange}>
-                  Đổi mật khẩu
-                </Button>
-              </Form>
-            </Card.Body>
-          </Card>
+      {updateStatus && (
+        <div
+          className={`mt-3 alert ${updateStatus.includes("successfully") ? "alert-success" : "alert-danger"
+            }`}
+        >
+          {updateStatus}
         </div>
+      )}
+
+      {/* Change Password Section - In a Frame */}
+      <div className="mt-4 p-4 border rounded bg-light">
+        <h5 className="mb-3">Change Password</h5>
+        <div className="mb-3">
+          <label>Current Password</label>
+          <input
+            type="password"
+            className="form-control"
+            value={passwordData.oldPassword}
+            onChange={(e) =>
+              setPasswordData({ ...passwordData, oldPassword: e.target.value })
+            }
+          />
+        </div>
+        <div className="mb-3">
+          <label>New Password</label>
+          <input
+            type="password"
+            className="form-control"
+            value={passwordData.newPassword}
+            onChange={(e) =>
+              setPasswordData({ ...passwordData, newPassword: e.target.value })
+            }
+          />
+        </div>
+        <button className="btn btn-warning" onClick={handleChangePassword}>
+          Change Password
+        </button>
+
+        {passwordStatus && (
+          <div
+            className={`mt-3 alert ${passwordStatus.includes("successfully") ? "alert-success" : "alert-danger"
+              }`}
+          >
+            {passwordStatus}
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-export default AdminProfile;
+export default AdminAccountSettings;
