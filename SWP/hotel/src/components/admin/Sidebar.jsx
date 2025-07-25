@@ -46,7 +46,7 @@ const Sidebar = ({ isOpen }) => {
             </li>
 
             <li>
-              <Link to="/admin/expense-reports">
+              <Link to="/admin/reports">
                 <i className="far fa-table"></i> <span>Report</span>
               </Link>
             </li>

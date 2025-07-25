@@ -8,6 +8,8 @@ import Profiles from "./components/ProfilePage";
 import BecomeHost from "./components/BecomeHost";
 import ResetPassword from "./components/ResetPassword";
 import ReviewPage from './pages/ReviewPage';
+import ReportPage from './pages/ReportPage'; // ✅ Thêm dòng này
+
 // Admin Pages
 import Dashboard from "./pages/admin/Dashboard";
 import AllBooking from "./pages/admin/All-booking";
@@ -32,6 +34,7 @@ import Login from "./pages/admin/Login";
 import Register from "./pages/admin/Register";
 import Gallery from "./pages/admin/Gallery";
 import PendingServices from "./pages/admin/PendingServices";
+import ReportList from "./pages/admin/ReportManagement/ReportList";
 
 // Frontend Pages
 import Home from "./pages/Home";
@@ -61,6 +64,7 @@ import AddService from "./pages/host/AddService";
 import PaymentCheckout from "./pages/payment/Payment-checkout";
 import PaymentCallback from "./pages/payment/PaymentCallback";
 import BookingSuccess from "./pages/payment/BookingSuccess";
+
 import { AuthProvider } from './context/AuthContext';
 import SearchResults from "./components/Search/SearchResultsHome";
 import UserChatPage from "./components/Chat/ChatUsers";
@@ -97,6 +101,7 @@ function App() {
             <Route path="profile" element={<Profile />} />
             <Route path="gallery" element={<Gallery />} />
             <Route path="*" element={<Error404 />} />
+            <Route path="reports" element={<ReportList />} />
           </Route>
 
           {/* Authentication Routes (No Layout) */}
@@ -113,6 +118,7 @@ function App() {
             <Route path="/experience" element={<Experience />} />
             <Route path="/services" element={<Service />} />
             <Route path="/review" element={<ReviewPage />} />
+            <Route path="/report" element={<ReportPage />} /> {/* ✅ Dùng ReportPage */}
           </Route>
 
           {/* Host Routes */}
@@ -153,17 +159,11 @@ function App() {
             <Route path="/payment-callback" element={<PaymentCallback />} />
             <Route path="/booking-success" element={<BookingSuccess />} />
           </Route>
+
           <Route path="/chatuser" element={<UserChatPage />} />
-          {/* Error Routes */}
-          {/* <Route path="*" element={<Error404 />} /> */}
-
-          {/* Error Routes */}
           <Route path="*" element={<Error404 />} />
-
           <Route path="/profiles" element={<Profiles />} />
-
           <Route path="/become-host" element={<BecomeHost />} />
-
           <Route path="/reset-password" element={<ResetPassword />} />
         </Routes>
       </Router>

@@ -71,6 +71,18 @@ const BookingSuccess = () => {
     fetchBookingDetails();
   }, [location, isLoggedIn, navigate]);
 
+  const handleReport = () => {
+    navigate(`/report?bookingId=${bookingDetails.id}`, {
+      state: {
+        bookingId: bookingDetails.id,
+        userId: bookingDetails.user?.id,
+        homestayId: bookingDetails.homestay?.id,
+        roomNumber: bookingDetails.roomNumber,
+        services: bookingDetails.serviceDetails || [],
+      },
+    });
+  };
+
   const formattedAmount = (amount) =>
     new Intl.NumberFormat('vi-VN', {
       style: 'currency',
@@ -193,12 +205,19 @@ const BookingSuccess = () => {
 
               <div className="text-center mt-4">
                 <Button
+                  variant="danger"
+                  onClick={handleReport}
+                >
+                  Báo cáo vi phạm
+                </Button>
+
+                <Button
                   variant="success"
                   onClick={() => navigate(`/review?bookingId=${bookingDetails.id}`)}
                 >
                   Gửi đánh giá
                 </Button>
-                
+
                 <Button
                   variant="primary"
                   size="lg"
