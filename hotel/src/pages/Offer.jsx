@@ -92,11 +92,12 @@ const Offers = () => {
       setLoading(true);
       try {
         if (homestayId) {
+          
           // Lấy thông tin homestay
           const homestayResponse = await axios.get(`http://localhost:8080/api/homestays/${homestayId}`);
           const homestayData = homestayResponse.data;
           setHomestay(homestayData);
-
+          console.log("Homestay data:", homestayData);
           // Lấy danh sách phòng
           const roomsResponse = await axios.get(`http://localhost:8080/api/rooms/homestay/${homestayId}`);
           const rooms = roomsResponse.data;
@@ -106,6 +107,9 @@ const Offers = () => {
               const reviewsResponse = await axios.get(
                 `http://localhost:8080/api/reviews/room/${homestayId}/${room.roomNumber}`
               );
+              console.log("Rooms data:", rooms);
+              console.log("Homestay images detail:", homestayData.images);
+              console.log("First image object:", homestayData.images[0]);
               const reviews = reviewsResponse.data;
               const averageRating = reviews.length > 0
                 ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length

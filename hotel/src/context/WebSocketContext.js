@@ -1,3 +1,4 @@
+// context/WebSocketContext.js
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
@@ -8,16 +9,11 @@ const WebSocketContext = createContext();
 export const WebSocketProvider = ({ children }) => {
   const { user } = useAuth();
   const stompClientRef = useRef(null);
-  const [connected, setConnected] = useState(false);
-  const [notifications, setNotifications] = useState([]);
 
-  const subscribe = (topic, callback) => {
-    if (stompClientRef.current && connected) {
-      stompClientRef.current.subscribe(topic, callback);
-    } else {
-      console.warn('STOMP client chưa kết nối. Không thể subscribe topic:', topic);
-    }
-  };
+  const [connected, setConnected] = useState(false);
+  const [client, setClient] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [bookings, setBookings] = useState([]);
 
   useEffect(() => {
     if (!user) return;
@@ -27,26 +23,38 @@ export const WebSocketProvider = ({ children }) => {
 
     const stompClient = new Client({
       webSocketFactory: () => socket,
-      connectHeaders: { Authorization: `Bearer ${token}` },
+      connectHeaders: {
+        Authorization: `Bearer ${token}`,
+      },
+      reconnectDelay: 5000,
       onConnect: () => {
         setConnected(true);
-        console.log('WebSocket connected');
+        setClient(stompClient);
+        console.log('✅ WebSocket connected');
 
-        const topic = user.role === 'ADMIN'
-          ? `/topic/notifications`
-          : `/topic/notifications/${user.id}`;
+        const notificationTopic = `/topic/notifications/${user.id}`;
+        const bookingTopic = `/topic/bookings/user/${user.id}`;
 
-        stompClient.subscribe(topic, (message) => {
+        stompClient.subscribe(notificationTopic, (message) => {
           const notification = JSON.parse(message.body);
           setNotifications((prev) => [notification, ...prev]);
         });
+
+        stompClient.subscribe(bookingTopic, (message) => {
+          const newBooking = JSON.parse(message.body);
+          setBookings((prev) => [newBooking, ...prev]);
+        });
       },
       onDisconnect: () => {
+        console.log('❌ WebSocket disconnected');
         setConnected(false);
-        console.log('WebSocket disconnected');
+        setClient(null);
       },
       onStompError: (frame) => {
-        console.error('WebSocket error:', frame.headers['message']);
+        console.error('STOMP error:', frame.headers['message']);
+      },
+      onWebSocketError: (error) => {
+        console.error('WebSocket error:', error);
       },
     });
 
@@ -59,11 +67,25 @@ export const WebSocketProvider = ({ children }) => {
   }, [user]);
 
   return (
-    <WebSocketContext.Provider
-      value={{ stompClient: stompClientRef.current, connected, notifications, subscribe }}
-    >
-      {children}
-    </WebSocketContext.Provider>
-  );
+  <WebSocketContext.Provider
+    value={{
+      stompClient: client,
+      connected,
+      notifications,
+      bookings,
+      subscribe: (topic, callback) => {
+        if (client && connected) {
+          return client.subscribe(topic, callback);
+        } else {
+          console.warn("WebSocket client not ready");
+          return { unsubscribe: () => {} }; // fallback giả nếu chưa kết nối
+        }
+      },
+    }}
+  >
+    {children}
+  </WebSocketContext.Provider>
+);
 };
+
 export const useWebSocket = () => useContext(WebSocketContext);

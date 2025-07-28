@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { BookingsTable } from '../../components/host/BookingsTable';
 import { Container, Row, Col, Card, Dropdown } from 'react-bootstrap';
 import { Line } from 'react-chartjs-2';
 import {
@@ -26,69 +25,109 @@ export default function Dashboard() {
   const [roomChart, setRoomChart] = useState({ labels: [], datasets: [] });
   const [showAll, setShowAll] = useState(false);
   const [bookings, setBookings] = useState([]);
+  const [metrics, setMetrics] = useState({
+    totalBookings: 0,
+    availableRooms: 0,
+    revenue: 0,
+    rating: 4.5
+  });
+  const [loading, setLoading] = useState({
+    metrics: true,
+    bookings: true,
+    charts: true
+  });
 
-  const hostId = 21;
+  const hostId = 21; // Hoặc lấy từ context/authentication
 
   useEffect(() => {
-    const rangeLabel = {
-      day: 'Day ',
-      month: 'Month ',
-      year: 'Year '
-    };
-
-    const fillTimeLabels = (range) => {
-      if (range === 'day') {
-        return Array.from({ length: 31 }, (_, i) => `Day ${i + 1}`);
-      }
-      if (range === 'month') {
-        return Array.from({ length: 12 }, (_, i) => `Month ${i + 1}`);
-      }
-      if (range === 'year') {
-        const currentYear = new Date().getFullYear();
-        return Array.from({ length: 5 }, (_, i) => `Year ${currentYear - 4 + i}`);
-      }
-      return [];
-    };
-
-    const timeLabels = fillTimeLabels(timeRange);
-
-    const revenueUrl = activeTab === 'room'
-      ? `http://localhost:8080/api/reports/revenue/room?hostId=${hostId}&range=${timeRange}`
-      : `http://localhost:8080/api/reports/revenue/service?hostId=${hostId}&range=${timeRange}`;
-
-    axios.get(revenueUrl)
-      .then(res => {
-        const raw = res.data;
-        const map = new Map();
-        raw.forEach(item => {
-          map.set(`${rangeLabel[timeRange]}${item.time}`, item.totalRevenue);
+    const fetchMetrics = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`http://localhost:8080/api/bookings/host/${hostId}/metrics`, {
+          headers: { Authorization: `Bearer ${token}` }
         });
-        const values = timeLabels.map(label => map.get(label) || 0);
-        console.log("Revenue API result:", res.data);
+        setMetrics({
+          totalBookings: response.data.totalBookings,
+          availableRooms: response.data.availableRooms,
+          revenue: response.data.revenue,
+          rating: 4.5
+        });
+      } catch (error) {
+        console.error("Error fetching metrics:", error);
+      } finally {
+        setLoading(prev => ({ ...prev, metrics: false }));
+      }
+    };
+
+    const fetchBookings = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get('http://localhost:8080/api/bookings/with-user-info', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setBookings(response.data);
+      } catch (error) {
+        console.error("Error fetching bookings:", error.response?.data || error.message);
+      } finally {
+        setLoading(prev => ({ ...prev, bookings: false }));
+      }
+    };
+
+    const fetchCharts = async () => {
+      try {
+        const rangeLabel = {
+          day: 'Day ',
+          month: 'Month ',
+          year: 'Year '
+        };
+
+        const fillTimeLabels = (range) => {
+          if (range === 'day') return Array.from({ length: 31 }, (_, i) => `Day ${i + 1}`);
+          if (range === 'month') return Array.from({ length: 12 }, (_, i) => `Month ${i + 1}`);
+          if (range === 'year') {
+            const currentYear = new Date().getFullYear();
+            return Array.from({ length: 5 }, (_, i) => `Year ${currentYear - 4 + i}`);
+          }
+          return [];
+        };
+
+        const timeLabels = fillTimeLabels(timeRange);
+
+        // Fetch revenue data
+        const revenueUrl = activeTab === 'room'
+          ? `http://localhost:8080/api/reports/revenue/room?hostId=${hostId}&range=${timeRange}`
+          : `http://localhost:8080/api/reports/revenue/service?hostId=${hostId}&range=${timeRange}`;
+
+        const revenueRes = await axios.get(revenueUrl);
+        const revenueMap = new Map();
+        revenueRes.data.forEach(item => {
+          const label = `${rangeLabel[timeRange]}${item.time}`;
+          revenueMap.set(label, item.totalRevenue);
+        });
+        const revenueValues = timeLabels.map(label => revenueMap.get(label) || 0);
+        
         setRevenueChart({
           labels: timeLabels,
           datasets: [{
             label: 'Total Revenue',
-            data: values,
+            data: revenueValues,
             borderColor: activeTab === 'room' ? 'rgba(255, 105, 180, 1)' : 'rgba(255, 159, 64, 1)',
             backgroundColor: activeTab === 'room' ? 'rgba(255, 105, 180, 0.2)' : 'rgba(255, 159, 64, 0.2)',
             fill: true
           }]
         });
-      });
 
-    const bookingUrl = activeTab === 'room'
-      ? `http://localhost:8080/api/reports/count/bookings?hostId=${hostId}&range=${timeRange}`
-      : `http://localhost:8080/api/reports/count/services?hostId=${hostId}&range=${timeRange}`;
+        // Fetch booking/service data
+        const bookingUrl = activeTab === 'room'
+          ? `http://localhost:8080/api/reports/count/bookings?hostId=${hostId}&range=${timeRange}`
+          : `http://localhost:8080/api/reports/count/services?hostId=${hostId}&range=${timeRange}`;
 
-    axios.get(bookingUrl)
-      .then(res => {
-        const raw = res.data;
+        const bookingRes = await axios.get(bookingUrl);
         const labelSet = new Set();
         const typeSet = new Set();
         const grouped = {};
 
-        raw.forEach(item => {
+        bookingRes.data.forEach(item => {
           const time = item.day || item.time || item[0];
           const type = activeTab === 'room' ? item.roomType : item.serviceName;
           const count = parseInt(item.bookingCount || item[3]) || 0;
@@ -109,19 +148,16 @@ export default function Dashboard() {
         }));
 
         setRoomChart({ labels: timeLabels, datasets });
-      });
-
-    // Fetch bookings data
-    const token = localStorage.getItem('token');
-    axios.get('http://localhost:8080/api/bookings/with-user-info', {
-      headers: {
-        Authorization: `Bearer ${token}`
+      } catch (error) {
+        console.error("Error fetching chart data:", error);
+      } finally {
+        setLoading(prev => ({ ...prev, charts: false }));
       }
-    })
-      .then(res => setBookings(res.data))
-      .catch(err => {
-        console.error("Lỗi khi lấy danh sách booking:", err.response?.data || err.message);
-      });
+    };
+
+    fetchMetrics();
+    fetchBookings();
+    fetchCharts();
   }, [hostId, timeRange, activeTab]);
 
   const overallRating = 4.5;
@@ -134,6 +170,13 @@ export default function Dashboard() {
   ];
 
   const displayedBookings = showAll ? bookings : bookings.slice(0, 5);
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('vi-VN', { 
+      style: 'currency', 
+      currency: 'VND' 
+    }).format(amount);
+  };
 
   return (
     <div className="main-wrapper">
@@ -150,12 +193,29 @@ export default function Dashboard() {
             </div>
           </div>
 
+          {/* Metrics Cards */}
           <div className="row">
             {[
-              { title: 'Total Bookings', value: bookings.length, icon: 'user-plus' },
-              { title: 'Available Rooms', value: 180, icon: 'dollar-sign' },
-              { title: 'Revenue', value: 1538, icon: 'file-plus' },
-              { title: 'Rating', value: overallRating, icon: 'globe' }
+              { 
+                title: 'Total Bookings', 
+                value: loading.metrics ? '...' : metrics.totalBookings, 
+                icon: 'user-plus' 
+              },
+              { 
+                title: 'Available Rooms', 
+                value: loading.metrics ? '...' : metrics.availableRooms, 
+                icon: 'home' 
+              },
+              { 
+                title: 'Revenue', 
+                value: loading.metrics ? '...' : formatCurrency(metrics.revenue), 
+                icon: 'dollar-sign' 
+              },
+              { 
+                title: 'Rating', 
+                value: overallRating, 
+                icon: 'star' 
+              }
             ].map((card, index) => (
               <div className="col-xl-3 col-sm-6 col-12" key={index}>
                 <div className="cardDashboard board1 fill">
@@ -177,6 +237,7 @@ export default function Dashboard() {
             ))}
           </div>
 
+          {/* Charts Row */}
           <div className="row">
             <div className="col-md-12 col-lg-6">
               <div className="cardDashboard card-chart">
@@ -194,7 +255,15 @@ export default function Dashboard() {
                   </Dropdown>
                 </div>
                 <div className="cardDashboard-body">
-                  <Line data={revenueChart} options={{ maintainAspectRatio: false }} style={{ height: '300px' }} />
+                  {loading.charts ? (
+                    <div className="text-center py-5">Loading chart...</div>
+                  ) : (
+                    <Line 
+                      data={revenueChart} 
+                      options={{ maintainAspectRatio: false }} 
+                      style={{ height: '300px' }} 
+                    />
+                  )}
                 </div>
               </div>
             </div>
@@ -202,36 +271,52 @@ export default function Dashboard() {
               <div className="cardDashboard card-chart">
                 <div className="card-header">
                   <h4 className="card-title">{activeTab === 'room' ? 'Room Bookings' : 'Service Usage'}</h4>
-                  <Dropdown>
-                    <Dropdown.Toggle variant="secondary" size="sm">
-                      {timeRange.charAt(0).toUpperCase() + timeRange.slice(1)}
-                    </Dropdown.Toggle>
-                    <Dropdown.Menu>
-                      <Dropdown.Item onClick={() => setTimeRange('day')}>Day</Dropdown.Item>
-                      <Dropdown.Item onClick={() => setTimeRange('month')}>Month</Dropdown.Item>
-                      <Dropdown.Item onClick={() => setTimeRange('year')}>Year</Dropdown.Item>
-                    </Dropdown.Menu>
-                  </Dropdown>
+                  <div className="d-flex">
+                    <Dropdown className="mr-2">
+                      <Dropdown.Toggle variant="secondary" size="sm">
+                        {timeRange.charAt(0).toUpperCase() + timeRange.slice(1)}
+                      </Dropdown.Toggle>
+                      <Dropdown.Menu>
+                        <Dropdown.Item onClick={() => setTimeRange('day')}>Day</Dropdown.Item>
+                        <Dropdown.Item onClick={() => setTimeRange('month')}>Month</Dropdown.Item>
+                        <Dropdown.Item onClick={() => setTimeRange('year')}>Year</Dropdown.Item>
+                      </Dropdown.Menu>
+                    </Dropdown>
+                    <Dropdown>
+                      <Dropdown.Toggle variant="info" size="sm">
+                        {activeTab === 'room' ? 'Rooms' : 'Services'}
+                      </Dropdown.Toggle>
+                      <Dropdown.Menu>
+                        <Dropdown.Item onClick={() => setActiveTab('room')}>Rooms</Dropdown.Item>
+                        <Dropdown.Item onClick={() => setActiveTab('service')}>Services</Dropdown.Item>
+                      </Dropdown.Menu>
+                    </Dropdown>
+                  </div>
                 </div>
                 <div className="cardDashboard-body">
-                  <Line
-                    data={roomChart}
-                    options={{
-                      maintainAspectRatio: false,
-                      scales: {
-                        y: {
-                          beginAtZero: true,
-                          ticks: { stepSize: 1 }
+                  {loading.charts ? (
+                    <div className="text-center py-5">Loading chart...</div>
+                  ) : (
+                    <Line
+                      data={roomChart}
+                      options={{
+                        maintainAspectRatio: false,
+                        scales: {
+                          y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 }
+                          }
                         }
-                      }
-                    }}
-                    style={{ height: '300px' }}
-                  />
+                      }}
+                      style={{ height: '300px' }}
+                    />
+                  )}
                 </div>
               </div>
             </div>
           </div>
 
+          {/* Bookings Table */}
           <div className="row">
             <div className="col-md-12 d-flex">
               <div className="cardDashboard card-table flex-fill">
@@ -241,53 +326,62 @@ export default function Dashboard() {
                     type="button"
                     className="btn btn-primary float-right veiwbutton"
                     onClick={() => setShowAll(!showAll)}
+                    disabled={loading.bookings}
                   >
                     {showAll ? 'Show Less' : 'View All'}
                   </button>
                 </div>
                 <div className="cardDashboard-body">
-                  <div className="table-responsive">
-                    <table className="table table-hover table-center">
-                      <thead>
-                        <tr>
-                          <th>Booking ID</th>
-                          <th>Customer</th>
-                          <th>Room</th>
-                          <th>Check-in</th>
-                          <th>Check-out</th>
-                          <th>Total</th>
-                          <th>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {displayedBookings.map((b) => (
-                          <tr key={b.id}>
-                            <td>{b.id}</td>
-                            <td>{b.userId}</td>
-                            <td>{b.roomNumber}</td>
-                            <td>{b.checkInDate}</td>
-                            <td>{b.checkOutDate}</td>
-                            <td>{b.totalAmount?.toLocaleString()} VND</td>
-                            <td>
-                              <span className={`badge ${b.status === 'booked' ? 'badge-success' : 'badge-secondary'}`}>
-                                {b.status}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                        {bookings.length === 0 && (
+                  {loading.bookings ? (
+                    <div className="text-center py-5">Loading bookings...</div>
+                  ) : (
+                    <div className="table-responsive">
+                      <table className="table table-hover table-center">
+                        <thead>
                           <tr>
-                            <td colSpan="7" className="text-center">No bookings found</td>
+                            <th>Booking ID</th>
+                            <th>Customer</th>
+                            <th>Room</th>
+                            <th>Check-in</th>
+                            <th>Check-out</th>
+                            <th>Total</th>
+                            <th>Status</th>
                           </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody>
+                          {displayedBookings.map((b) => (
+                            <tr key={b.id}>
+                              <td>{b.id}</td>
+                              <td>{b.userFullName || `User ${b.userId}`}</td>
+                              <td>{b.roomNumber}</td>
+                              <td>{new Date(b.checkInDate).toLocaleDateString()}</td>
+                              <td>{new Date(b.checkOutDate).toLocaleDateString()}</td>
+                              <td>{formatCurrency(b.totalAmount)}</td>
+                              <td>
+                                <span className={`badge ${
+                                  b.status === 'CONFIRMED' ? 'badge-success' : 
+                                  b.status === 'CANCELLED' ? 'badge-danger' : 'badge-secondary'
+                                }`}>
+                                  {b.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                          {bookings.length === 0 && (
+                            <tr>
+                              <td colSpan="7" className="text-center">No bookings found</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
 
+          {/* Rating and Quick Actions */}
           <div className="row">
             <div className="col-md-12 col-lg-6">
               <div className="cardDashboard card-chart">
@@ -332,6 +426,7 @@ export default function Dashboard() {
             </div>
           </div>
 
+          {/* Chat Support */}
           <div className="row">
             <div className="col-12">
               <div className="cardDashboard card-chart">
@@ -339,12 +434,11 @@ export default function Dashboard() {
                   <h4 className="card-title">Chat Support</h4>
                 </div>
                 <div className="cardDashboard-body">
-                  <HostChatApp hostId={11}/>
+                  <HostChatApp hostId={hostId}/>
                 </div>
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>

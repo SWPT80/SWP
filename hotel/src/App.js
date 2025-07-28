@@ -38,7 +38,7 @@ import Experience from "./pages/Experience";
 import Service from "./pages/Service";
 import RoomDetails from "./pages/RoomDetails";
 import Offers from "./pages/Offer";
-
+import Booked from "./pages/Booked";
 // Host Pages
 import HostDashboard from "./pages/host/Dashboard";
 import Messages from "./pages/host/Messages";
@@ -154,7 +154,9 @@ function App() {
           <Route path="/checkout" element={<PaymentCheckout />} />
           <Route path="/payment-callback" element={<PaymentCallback />} />
           <Route path="/booking-success" element={<BookingSuccess />} />
+          <Route path="/booked" element={<Booked />} />
         </Route>
+        
         <Route path="/profiles" element={<Profiles/>} />
 
         <Route path="/become-host" element={<BecomeHost/>} />

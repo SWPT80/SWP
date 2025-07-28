@@ -1,8 +1,9 @@
 import React from 'react';
 import '../../assets/css/AdminHeader.css';
 import { Dropdown, Nav } from 'react-bootstrap';
-import 'bootstrap/dist/css/bootstrap.min.css'; // Import Bootstrap CSS
+import 'bootstrap/dist/css/bootstrap.min.css';
 import logo from '../../assets/images/logo.png';
+import NotificationDropdown from '../NotificationDropdown'; // Thêm dòng này
 
 const Header = ({ onToggleSidebar }) => {
   return (
@@ -18,77 +19,10 @@ const Header = ({ onToggleSidebar }) => {
       </div>
 
       <Nav className="user-menu">
-        {/* Notifications Dropdown */}
-        <Dropdown>
-          <Dropdown.Toggle variant="link" id="notifications-dropdown" className="nav-link">
-            <i className="fe fe-bell"></i>
-            <span className="badge badge-pill">3</span>
-          </Dropdown.Toggle>
+        {/* ✅ Đã thay thế chuông cứng bằng NotificationDropdown realtime */}
+        <NotificationDropdown theme="dark" />
 
-          <Dropdown.Menu className="notifications">
-            <div className="topnav-dropdown-header">
-              <span className="notification-title">Notifications</span>
-              <a href="#" className="clear-noti">Clear All</a>
-            </div>
-            <div className="noti-content">
-              <ul className="notification-list">
-                {[
-                  {
-                    name: "Carlson Tech",
-                    message: "has approved your estimate",
-                    avatar: "avatar-02.jpg",
-                    time: "4 mins ago",
-                  },
-                  {
-                    name: "International Software Inc",
-                    message: "has sent you an invoice in the amount of $218",
-                    avatar: "avatar-11.jpg",
-                    time: "6 mins ago",
-                  },
-                  {
-                    name: "John Hendry",
-                    message: "sent a cancellation request for Apple iPhone XR",
-                    avatar: "avatar-17.jpg",
-                    time: "8 mins ago",
-                  },
-                  {
-                    name: "Mercury Software Inc",
-                    message: "added a new product Apple MacBook Pro",
-                    avatar: "avatar-13.jpg",
-                    time: "12 mins ago",
-                  },
-                ].map((noti, idx) => (
-                  <li className="notification-message" key={idx}>
-                    <a href="#">
-                      <div className="media">
-                        <span className="avatar avatar-sm">
-                          <img
-                            className="avatar-img rounded-circle"
-                            alt="User"
-                            src={`/img/profiles/${noti.avatar}`}
-                          />
-                        </span>
-                        <div className="media-body">
-                          <p className="noti-details">
-                            <span className="noti-title">{noti.name}</span> {noti.message}
-                          </p>
-                          <p className="noti-time">
-                            <span className="notification-time">{noti.time}</span>
-                          </p>
-                        </div>
-                      </div>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="topnav-dropdown-footer">
-              <a href="#">View all Notifications</a>
-            </div>
-          </Dropdown.Menu>
-        </Dropdown>
-
-        {/* User Menu Dropdown */}
+        {/* User Menu Dropdown giữ nguyên */}
         <Dropdown>
           <Dropdown.Toggle variant="link" id="user-dropdown" className="nav-link">
             <span className="user-img">
