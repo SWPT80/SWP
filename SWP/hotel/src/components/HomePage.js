@@ -8,8 +8,8 @@ import Chatbox from './ChatBox/ChatBox';
 import ChatPopupManager from './Chat/ChatPopupManager';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
-// import ChatManager from './ChatBox/ChatManager ';
-// import CozeChat from './ChatBox/CozeChat';
+import ChatManager from './ChatBox/ChatManager ';
+import CozeChat from './ChatBox/CozeChat';
 
 const slides = [
   {
@@ -365,9 +365,8 @@ const HomePage = () => {
   return (
     <div>
       <HomeSlider />
-      {/* <ChatManager /> */}
       <Search />
-      {/* <CozeChat /> */}
+      <CozeChat />
       {/* Chat Integration - Chỉ hiển thị khi user đã đăng nhập */}
       {isLoggedIn && user && (
         <ChatPopupManager

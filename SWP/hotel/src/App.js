@@ -29,6 +29,7 @@ import Error404 from "./pages/admin/Error-404";
 import Gallery from "./pages/admin/Gallery";
 import PendingServices from "./pages/admin/PendingServices";
 import ReportList from "./pages/admin/ReportManagement/ReportList";
+import HostRequestAdminPage from "./pages/admin/HostRequestAdminPage";
 
 // Frontend Pages
 import Home from "./pages/Home";
@@ -63,6 +64,9 @@ import { AuthProvider } from './context/AuthContext';
 import SearchResults from "./components/Search/SearchResultsHome";
 import UserChatPage from "./components/Chat/ChatUsers";
 import { WebSocketProvider } from './context/WebSocketContext';
+import EmailVerificationPage from "./components/EmailVerificationPage";
+import FavoriteListPage from "./pages/FavoriteListPage";
+import FavoriteListDetail from "./components/FavoriteListDetail";
 function App() {
   return (
     <AuthProvider>
@@ -97,6 +101,7 @@ function App() {
               <Route path="gallery" element={<Gallery />} />
               <Route path="*" element={<Error404 />} />
               <Route path="reports" element={<ReportList />} />
+              <Route path="host-requests" element={<HostRequestAdminPage />} />
             </Route>
 
             {/* Frontend Routes */}
@@ -154,6 +159,9 @@ function App() {
             <Route path="/profiles" element={<Profiles />} />
             <Route path="/become-host" element={<BecomeHost />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/email-verified" element={<EmailVerificationPage />} />
+            <Route path="/wishlists" element={<FavoriteListPage />} />
+            <Route path="/wishlist/:id" element={<FavoriteListDetail />} />
           </Routes>
         </Router>
       </WebSocketProvider>

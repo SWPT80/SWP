@@ -21,7 +21,7 @@ public interface ReportBookingRepository extends JpaRepository<Booking, Integer>
         SUM(b.total_amount) AS totalRevenue
     FROM Bookings b
     JOIN Homestays h ON b.homestay_id = h.homestay_id
-    WHERE b.status = 'confirmed' AND h.host_id = :hostId
+    WHERE b.status = 'completed' AND h.host_id = :hostId
     GROUP BY DAY(b.check_out_date), b.homestay_id
     ORDER BY day, homestayId
 """, nativeQuery = true)
@@ -35,7 +35,7 @@ public interface ReportBookingRepository extends JpaRepository<Booking, Integer>
         SELECT MONTH(b.check_out_date), b.homestay_id, SUM(b.total_amount)
         FROM Bookings b
         JOIN Homestays h ON b.homestay_id = h.homestay_id
-        WHERE b.status = 'confirmed' AND h.host_id = :hostId
+        WHERE b.status = 'completed' AND h.host_id = :hostId
         GROUP BY MONTH(b.check_out_date), b.homestay_id
         ORDER BY MONTH(b.check_out_date), b.homestay_id
     """, nativeQuery = true)
@@ -46,7 +46,7 @@ public interface ReportBookingRepository extends JpaRepository<Booking, Integer>
         SELECT YEAR(b.check_out_date), b.homestay_id, SUM(b.total_amount)
         FROM Bookings b
         JOIN Homestays h ON b.homestay_id = h.homestay_id
-        WHERE b.status = 'confirmed' AND h.host_id = :hostId
+        WHERE b.status = 'completed' AND h.host_id = :hostId
         GROUP BY YEAR(b.check_out_date), b.homestay_id
         ORDER BY YEAR(b.check_out_date), b.homestay_id
     """, nativeQuery = true)
@@ -57,7 +57,7 @@ public interface ReportBookingRepository extends JpaRepository<Booking, Integer>
         SELECT DAY(b.check_out_date), b.homestay_id, b.room_number, SUM(b.total_amount)
         FROM Bookings b
         JOIN Homestays h ON b.homestay_id = h.homestay_id
-        WHERE b.status = 'confirmed' AND h.host_id = :hostId
+        WHERE b.status = 'completed' AND h.host_id = :hostId
         GROUP BY DAY(b.check_out_date), b.homestay_id, b.room_number
         ORDER BY DAY(b.check_out_date), b.homestay_id, b.room_number
     """, nativeQuery = true)
@@ -68,7 +68,7 @@ public interface ReportBookingRepository extends JpaRepository<Booking, Integer>
     SELECT MONTH(b.check_out_date), b.homestay_id, b.room_number, SUM(b.total_amount)
     FROM Bookings b
     JOIN Homestays h ON b.homestay_id = h.homestay_id
-    WHERE b.status = 'confirmed' AND h.host_id = :hostId
+    WHERE b.status = 'completed' AND h.host_id = :hostId
     GROUP BY MONTH(b.check_out_date), b.homestay_id, b.room_number
     ORDER BY MONTH(b.check_out_date), b.homestay_id, b.room_number
 """, nativeQuery = true)
@@ -79,7 +79,7 @@ public interface ReportBookingRepository extends JpaRepository<Booking, Integer>
     SELECT YEAR(b.check_out_date), b.homestay_id, b.room_number, SUM(b.total_amount)
     FROM Bookings b
     JOIN Homestays h ON b.homestay_id = h.homestay_id
-    WHERE b.status = 'confirmed' AND h.host_id = :hostId
+    WHERE b.status = 'completed' AND h.host_id = :hostId
     GROUP BY YEAR(b.check_out_date), b.homestay_id, b.room_number
     ORDER BY YEAR(b.check_out_date), b.homestay_id, b.room_number
 """, nativeQuery = true)
@@ -94,7 +94,7 @@ public interface ReportBookingRepository extends JpaRepository<Booking, Integer>
         FROM Bookings b
         JOIN Rooms r ON b.homestay_id = r.homestay_id AND b.room_number = r.room_number
         JOIN Homestays h ON b.homestay_id = h.homestay_id
-        WHERE b.status = 'confirmed' AND h.host_id = :hostId
+        WHERE b.status = 'completed' AND h.host_id = :hostId
         GROUP BY DAY(b.check_out_date), b.homestay_id, r.type
         ORDER BY DAY(b.check_out_date), b.homestay_id, r.type
     """, nativeQuery = true)
@@ -106,7 +106,7 @@ public interface ReportBookingRepository extends JpaRepository<Booking, Integer>
         FROM Bookings b
         JOIN Rooms r ON b.homestay_id = r.homestay_id AND b.room_number = r.room_number
         JOIN Homestays h ON b.homestay_id = h.homestay_id
-        WHERE b.status = 'confirmed' AND h.host_id = :hostId
+        WHERE b.status = 'completed' AND h.host_id = :hostId
         GROUP BY MONTH(b.check_out_date), b.homestay_id, r.type
         ORDER BY MONTH(b.check_out_date), b.homestay_id, r.type
     """, nativeQuery = true)
@@ -118,7 +118,7 @@ public interface ReportBookingRepository extends JpaRepository<Booking, Integer>
         FROM Bookings b
         JOIN Rooms r ON b.homestay_id = r.homestay_id AND b.room_number = r.room_number
         JOIN Homestays h ON b.homestay_id = h.homestay_id
-        WHERE b.status = 'confirmed' AND h.host_id = :hostId
+        WHERE b.status = 'completed' AND h.host_id = :hostId
         GROUP BY YEAR(b.check_out_date), b.homestay_id, r.type
         ORDER BY YEAR(b.check_out_date), b.homestay_id, r.type
     """, nativeQuery = true)

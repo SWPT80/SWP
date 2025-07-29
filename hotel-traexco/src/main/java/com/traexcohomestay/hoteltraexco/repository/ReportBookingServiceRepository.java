@@ -20,7 +20,7 @@ public interface ReportBookingServiceRepository extends JpaRepository<BookingSer
         JOIN Service s ON bs.service_id = s.service_id
         JOIN ServiceType st ON s.type_id = st.type_id
         JOIN Homestays h ON b.homestay_id = h.homestay_id
-        WHERE b.status = 'confirmed' AND h.host_id = :hostId
+        WHERE b.status = 'completed' AND h.host_id = :hostId
         GROUP BY DAY(b.check_out_date), h.homestay_id, st.service_name
         ORDER BY DAY(b.check_out_date), h.homestay_id, st.service_name
     """, nativeQuery = true)
@@ -34,7 +34,7 @@ public interface ReportBookingServiceRepository extends JpaRepository<BookingSer
     JOIN Service s ON bs.service_id = s.service_id
     JOIN ServiceType st ON s.type_id = st.type_id
     JOIN Homestays h ON b.homestay_id = h.homestay_id -- sửa đúng JOIN
-    WHERE b.status = 'confirmed' AND h.host_id = :hostId
+    WHERE b.status = 'completed' AND h.host_id = :hostId
     GROUP BY MONTH(b.check_out_date), h.homestay_id, st.service_name
     ORDER BY MONTH(b.check_out_date), h.homestay_id, st.service_name
 """, nativeQuery = true)
@@ -48,7 +48,7 @@ public interface ReportBookingServiceRepository extends JpaRepository<BookingSer
     JOIN Service s ON bs.service_id = s.service_id
     JOIN ServiceType st ON s.type_id = st.type_id
     JOIN Homestays h ON b.homestay_id = h.homestay_id -- sửa đúng JOIN
-    WHERE b.status = 'confirmed' AND h.host_id = :hostId
+    WHERE b.status = 'completed' AND h.host_id = :hostId
     GROUP BY YEAR(b.check_out_date), h.homestay_id, st.service_name
     ORDER BY YEAR(b.check_out_date), h.homestay_id, st.service_name
 """, nativeQuery = true)
@@ -62,7 +62,7 @@ public interface ReportBookingServiceRepository extends JpaRepository<BookingSer
         JOIN Service s ON bs.service_id = s.service_id
         JOIN ServiceType st ON s.type_id = st.type_id
         JOIN Homestays h ON b.homestay_id = h.homestay_id
-        WHERE b.status = 'confirmed' AND h.host_id = :hostId
+        WHERE b.status = 'completed' AND h.host_id = :hostId
         GROUP BY DAY(b.check_out_date), h.homestay_id, st.service_name
         ORDER BY DAY(b.check_out_date), h.homestay_id, st.service_name
     """, nativeQuery = true)
@@ -76,7 +76,7 @@ public interface ReportBookingServiceRepository extends JpaRepository<BookingSer
     JOIN Service s ON bs.service_id = s.service_id
     JOIN ServiceType st ON s.type_id = st.type_id
     JOIN Homestays h ON b.homestay_id = h.homestay_id -- sửa đúng JOIN
-    WHERE b.status = 'confirmed' AND h.host_id = :hostId
+    WHERE b.status = 'completed' AND h.host_id = :hostId
     GROUP BY MONTH(b.check_out_date), h.homestay_id, st.service_name
     ORDER BY MONTH(b.check_out_date), h.homestay_id, st.service_name
 """, nativeQuery = true)
@@ -90,7 +90,7 @@ public interface ReportBookingServiceRepository extends JpaRepository<BookingSer
     JOIN Service s ON bs.service_id = s.service_id
     JOIN ServiceType st ON s.type_id = st.type_id
     JOIN Homestays h ON b.homestay_id = h.homestay_id -- sửa đúng JOIN
-    WHERE b.status = 'confirmed' AND h.host_id = :hostId
+    WHERE b.status = 'completed' AND h.host_id = :hostId
     GROUP BY YEAR(b.check_out_date), h.homestay_id, st.service_name
     ORDER BY YEAR(b.check_out_date), h.homestay_id, st.service_name
 """, nativeQuery = true)

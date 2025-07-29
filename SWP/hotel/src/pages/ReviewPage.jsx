@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import axios from '../utils/axiosConfig';
-import ReviewForm from '../components/ReviewForm';
+import ReviewForm from './ReviewForm';
 
 const ReviewPage = () => {
     const location = useLocation();

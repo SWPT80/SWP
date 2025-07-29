@@ -19,8 +19,6 @@ const items = [
     icon: Home,
     submenu: [
       { title: 'All Rooms', url: '/host/rooms' },
-      { title: 'Add Room', url: '/host/rooms/add' },
-      { title: 'Edit Room', url: '/host/rooms/edit/:id' }, // fix: "edi" -> "edit"
       { title: 'Room Pricing', url: '/host/rooms/pricing' },
     ],
   },

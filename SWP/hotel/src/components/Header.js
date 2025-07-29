@@ -302,6 +302,9 @@ const Header = () => {
                       <Dropdown.Item as={Link} to="/booked" onClick={() => setUserDropdownOpen(false)} style={{ color: '#333', padding: '12px 20px' }}>
                         <i className="fas fa-calendar-check me-2"></i>Đặt phòng của tôi
                       </Dropdown.Item>
+                      <Dropdown.Item as={Link} to="/wishlists" onClick={() => setUserDropdownOpen(false)} style={{ color: '#333', padding: '12px 20px' }}>
+                        <i className="fas fa-heart me-2"></i>Danh sách yêu thích
+                      </Dropdown.Item>  
                       <Dropdown.Item as={Link} to="/become-host" onClick={() => setUserDropdownOpen(false)} style={{ color: '#333', padding: '12px 20px' }}>
                         <i className="fas fa-home me-2"></i>Trở thành Host
                       </Dropdown.Item>

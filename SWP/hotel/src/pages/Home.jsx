@@ -9,6 +9,7 @@ import '../assets/styles/Explore.css';
 import '../assets/styles/RoomCarousel.css';
 import hue from '../assets/images/hue.jpg';
 import { Link } from 'react-router-dom';
+import FavoriteHeart from '../components/FavoriteHeart';
 
 // Định nghĩa mảng địa điểm ban đầu (số lượng sẽ được cập nhật)
 const initialDestinations = [
@@ -67,7 +68,7 @@ const ExploreVietnam = ({ destinations, onDestinationClick }) => {
 };
 
 // RoomCarousel Component
-const RoomCarousel = ({ title, homestays }) => {
+const RoomCarousel = ({ title, homestays, userId }) => {
   const scrollRef = useRef();
 
   const scroll = (direction) => {
@@ -89,22 +90,34 @@ const RoomCarousel = ({ title, homestays }) => {
         </button>
         <div ref={scrollRef} className="carousel-scroll">
           {homestays.map((homestay, index) => (
-            <Link
+            <div
               key={homestay.id || index}
-              to={`/offer?homestayId=${homestay.id}`}
               className="room-card"
-              style={{ textDecoration: 'none' }}
+              style={{ textDecoration: 'none', position: 'relative' }}
             >
-              <img
-                src={homestay.images?.[0]?.imageUrl || '/images/default.jpg'}
-                alt={homestay.homestayName || 'Homestay'}
-                className="room-image"
+              {/* ✅ Tách FavoriteHeart ra ngoài Link để tránh redirect */}
+              <FavoriteHeart
+                userId={userId}
+                targetId={homestay.id}
+                targetType="homestay"
               />
-              <div className="room-info">
-                <h3 className="room-title">{homestay.homestayName}</h3>
-                <p className="room-location">{homestay.location}</p>
-              </div>
-            </Link>
+
+              {/* ✅ Bao phần nội dung còn lại bằng Link */}
+              <Link
+                to={`/offer?homestayId=${homestay.id}`}
+                style={{ display: 'block', textDecoration: 'none' }}
+              >
+                <img
+                  src={homestay.images?.[0]?.imageUrl || '/images/default.jpg'}
+                  alt={homestay.homestayName || 'Homestay'}
+                  className="room-image"
+                />
+                <div className="room-info">
+                  <h3 className="room-title">{homestay.homestayName}</h3>
+                  <p className="room-location">{homestay.location}</p>
+                </div>
+              </Link>
+            </div>
           ))}
         </div>
         <button className="nav-button nav-right" onClick={() => scroll('right')}>
@@ -123,6 +136,7 @@ const HomeContent = () => {
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const userId = localStorage.getItem('userId'); // thêm dòng này trong HomeContent
 
   useEffect(() => {
     const fetchHomestays = async () => {

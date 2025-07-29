@@ -17,4 +17,7 @@ public class HomestayDTO {
     private List<HomestayImageDTO> images;
     private Float latitude;
     private Float longitude;
+
+    // Thêm trường mới để lưu khoảng cách
+    private Double distance;
 }

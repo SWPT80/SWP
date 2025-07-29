@@ -9,6 +9,8 @@ import '../assets/styles/Explore.css';
 import '../assets/styles/RoomCarousel.css';
 import hue from '../assets/images/hue.jpg';
 import { useNavigate } from 'react-router-dom';
+import FavoriteHeart from '../components/FavoriteHeart';
+import { useAuth } from '../context/AuthContext';
 
 // Định nghĩa mảng địa điểm ban đầu (số lượng sẽ được cập nhật)
 const initialExperienceDestinations = [
@@ -92,7 +94,7 @@ const ExploreExperiences = ({ onDestinationClick, destinations }) => {
 };
 
 // ExperienceCarousel Component
-const ExperienceCarousel = ({ title, experiences }) => {
+const ExperienceCarousel = ({ title, experiences, userId }) => {
   const navigate = useNavigate();
   const scrollRef = useRef();
 
@@ -123,16 +125,23 @@ const ExperienceCarousel = ({ title, experiences }) => {
               key={index}
               className="room-card"
               onClick={() => handleExperienceClick(experience.homestayId)}
-              style={{ cursor: 'pointer' }}
+              style={{ cursor: 'pointer', position: 'relative' }}
             >
+              {/* Icon trái tim */}
+              <FavoriteHeart
+                userId={userId}
+                targetId={experience.id}
+                targetType="experience"
+              />
+
               <img
-                src={experience.images?.[0]?.imageUrl || '/images/placeholder.jpg'}
-                alt={experience.specialNotes || 'Trải nghiệm'}
+                src={experience.images?.[0]?.imageUrl}
+                alt={experience.specialNotes || 'Trải Nghiệm'}
                 className="room-image"
               />
               <div className="room-info">
                 <h3 className="room-title">{experience.specialNotes}</h3>
-                <p className="room-location">{experience.price.toLocaleString('vi-VN')} VND</p>
+                <p className="room-location">{experience.price?.toLocaleString('vi-VN')} VND</p>
               </div>
             </div>
           ))}
@@ -153,6 +162,8 @@ const ExperienceContent = () => {
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { user } = useAuth();
+  const userId = user?.id;
 
   useEffect(() => {
     const fetchData = async () => {

@@ -23,8 +23,6 @@ const BookingSuccess = () => {
   useEffect(() => {
     const fetchBookingDetails = async () => {
       try {
-
-
         const queryParams = new URLSearchParams(location.search);
         const bookingId = queryParams.get('bookingId');
         const txnRef = queryParams.get('txnRef') || queryParams.get('orderId');

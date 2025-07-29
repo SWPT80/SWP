@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -33,23 +34,19 @@ public class HomestayServiceImpl implements HomestayService {
     @Override
     @Transactional(readOnly = true)
     public List<HomestayDTO> getAllHomestays() {
-        return homestayRepository.findAll().stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+        return homestayRepository.findAll().stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<HomestayDTO> getAllHomestaysPaged(Pageable pageable) {
-        return homestayRepository.findAll(pageable)
-                .map(this::convertToDTO);
+        return homestayRepository.findAll(pageable).map(this::convertToDTO);
     }
 
     @Override
     @Transactional(readOnly = true)
     public HomestayDTO getHomestayById(Integer id) {
-        Homestay homestay = homestayRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Homestay not found with id: " + id));
+        Homestay homestay = homestayRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Homestay not found with id: " + id));
         return convertToDTO(homestay);
     }
 //
@@ -98,8 +95,7 @@ public class HomestayServiceImpl implements HomestayService {
 
     @Override
     public HomestayDTO updateHomestay(Integer id, HomestayDTO homestayDTO) {
-        Homestay homestay = homestayRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Homestay not found"));
+        Homestay homestay = homestayRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Homestay not found"));
 
         homestay.setHomestayName(homestayDTO.getHomestayName());
         homestay.setAddress(homestayDTO.getAddress());
@@ -125,24 +121,20 @@ public class HomestayServiceImpl implements HomestayService {
 
     @Override
     public void deleteHomestay(Integer id) {
-        Homestay homestay = homestayRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Homestay not found with id: " + id));
+        Homestay homestay = homestayRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Homestay not found with id: " + id));
         homestayRepository.delete(homestay);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<HomestayDTO> searchHomestays(String name) {
-        return homestayRepository.findByHomestayNameContainingIgnoreCase(name).stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+        return homestayRepository.findByHomestayNameContainingIgnoreCase(name).stream().map(this::convertToDTO).collect(Collectors.toList());
     }
+
     @Override
     @Transactional(readOnly = true)
     public List<HomestayDTO> searchByLocation(String location) {
-        return homestayRepository.findByLocationContainingIgnoreCase(location).stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+        return homestayRepository.findByLocationContainingIgnoreCase(location).stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
     private String buildFullAddress(HomestayDTO dto) {
@@ -249,5 +241,45 @@ public class HomestayServiceImpl implements HomestayService {
             dto.setLocation(h.getLocation());
             return dto;
         }).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<HomestayDTO> getNearbyHomestays(double userLatitude, double userLongitude) {
+        logger.info("Tính khoảng cách đến homestays từ vị trí: lat={}, lng={}", userLatitude, userLongitude);
+        if (!isValidCoordinate(userLatitude, userLongitude)) {
+            logger.error("Tọa độ người dùng không hợp lệ: lat={}, lng={}", userLatitude, userLongitude);
+            return List.of();
+        }
+
+        List<Homestay> homestays = homestayRepository.findAll();
+        return homestays.stream().map(homestay -> {
+            HomestayDTO dto = convertToDTO(homestay);
+            if (homestay.getLatitude() != null && homestay.getLongitude() != null) {
+                double distance = calculateDistance(userLatitude, userLongitude, homestay.getLatitude(), homestay.getLongitude());
+                if (homestay.getLocation().contains("Đà Lạt") && userLatitude >= 15.0 && userLatitude <= 17.0 && distance < 500) {
+                    logger.warn("Khoảng cách đến homestay {} tại Đà Lạt bất thường: {} km", homestay.getHomestayId(), distance);
+                }
+                dto.setDistance(distance);
+                logger.debug("Khoảng cách từ ({}, {}) đến homestay {}: {} km", userLatitude, userLongitude, homestay.getHomestayId(), distance);
+            }
+            return dto;
+        }).filter(dto -> dto.getDistance() != null && dto.getDistance() != Double.MAX_VALUE).sorted(Comparator.comparing(HomestayDTO::getDistance)).collect(Collectors.toList());
+    }
+
+    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+        if (!isValidCoordinate(lat1, lon1) || !isValidCoordinate(lat2, lon2)) {
+            logger.warn("Tọa độ không hợp lệ: lat1={}, lon1={}, lat2={}, lon2={}", lat1, lon1, lat2, lon2);
+            return Double.MAX_VALUE;
+        }
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return 6371 * c; // Khoảng cách tính bằng km
+    }
+
+    private boolean isValidCoordinate(double lat, double lon) {
+        return !Double.isNaN(lat) && !Double.isNaN(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
     }
 }

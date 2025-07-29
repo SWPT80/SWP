@@ -3,6 +3,14 @@ import { Link } from 'react-router-dom';
 import '../../assets/css/Sidebar.css';
 
 const Sidebar = ({ isOpen }) => {
+  const [openMenus, setOpenMenus] = useState({});
+
+  const toggleMenu = (menuKey) => {
+    setOpenMenus((prev) => ({
+      ...prev,
+      [menuKey]: !prev[menuKey],
+    }));
+  };
   return (
     <div className={`sidebar-wrapper ${isOpen ? 'open' : 'closed'}`} id="sidebar">
       <div className="sidebar-inner slimscroll">
@@ -27,10 +35,19 @@ const Sidebar = ({ isOpen }) => {
               </Link>
             </li>
 
-            <li>
-              <Link to="/admin/all-hosts">
-                <i className="fas fa-user-shield"></i> <span>All Hosts</span>
-              </Link>
+            {/* Host */}
+            <li className={`submenu ${openMenus.hosts ? 'open' : ''}`}>
+              <a href="#" onClick={() => toggleMenu('hosts')}>
+                <i className="fas fa-user-shield"></i> <span>Hosts</span> <span className="menu-arrow"></span>
+              </a>
+              <ul className="submenu_class" style={{ display: openMenus.hosts ? 'block' : 'none' }}>
+                <li>
+                  <Link to="/admin/all-hosts">
+                    <i className="fas fa-user-shield"></i> <span>All Hosts</span>
+                  </Link>
+                </li>
+                <li><Link to="/admin/host-requests">Browse Hosts</Link></li>
+              </ul>
             </li>
 
             <li>

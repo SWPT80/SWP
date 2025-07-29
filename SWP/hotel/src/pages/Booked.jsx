@@ -26,12 +26,14 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import ReviewForm from './ReviewForm';
 
 const Booked = () => {
     const { isLoggedIn, user } = useAuth();
     const { bookings: realTimeBookings } = useWebSocket();
     const navigate = useNavigate();
 
+    const [activeReviewBookingId, setActiveReviewBookingId] = useState(null);
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -176,28 +178,40 @@ const Booked = () => {
         }
     };
 
-    const handleSubmitReport = async () => {
-        if (!reportType || !reportContent.trim()) {
-            showToast('Vui lòng điền đầy đủ thông tin báo cáo', 'error');
-            return;
-        }
+    // const handleSubmitReport = async () => {
+    //     if (!reportType || !reportContent.trim()) {
+    //         showToast('Vui lòng điền đầy đủ thông tin báo cáo', 'error');
+    //         return;
+    //     }
 
-        try {
-            await axios.post('/api/reports', {
-                bookingId: selectedBooking.id,
-                type: reportType,
-                content: reportContent,
-                homestayId: selectedBooking.homestayId
-            });
+    //     try {
+    //         await axios.post('/api/reports', {
+    //             bookingId: selectedBooking.id,
+    //             type: reportType,
+    //             content: reportContent,
+    //             homestayId: selectedBooking.homestayId
+    //         });
 
-            showToast('Gửi báo cáo thành công', 'success');
-            setShowReportModal(false);
-            setReportType('');
-            setReportContent('');
-        } catch (err) {
-            console.error('Lỗi khi gửi báo cáo:', err);
-            showToast('Không thể gửi báo cáo. Vui lòng thử lại.', 'error');
-        }
+    //         showToast('Gửi báo cáo thành công', 'success');
+    //         setShowReportModal(false);
+    //         setReportType('');
+    //         setReportContent('');
+    //     } catch (err) {
+    //         console.error('Lỗi khi gửi báo cáo:', err);
+    //         showToast('Không thể gửi báo cáo. Vui lòng thử lại.', 'error');
+    //     }
+    // };
+
+    const handleReport = (booking) => {
+        navigate(`/report?bookingId=${booking.id}`, {
+            state: {
+                bookingId: booking.id,
+                userId: booking.user?.id,
+                homestayId: booking.homestay?.id,
+                roomNumber: booking.roomNumber,
+                services: booking.serviceDetails || [],
+            },
+        });
     };
 
     const handleSendMessage = async () => {
@@ -229,26 +243,26 @@ const Booked = () => {
         setShowReviewModal(true);
     };
 
-    const handleSubmitReview = async () => {
-        if (reviewRating === 0 || !reviewContent.trim()) {
-            showToast('Vui lòng chọn số sao và nhập nội dung', 'error');
-            return;
-        }
+    // const handleSubmitReview = async () => {
+    //     if (reviewRating === 0 || !reviewContent.trim()) {
+    //         showToast('Vui lòng chọn số sao và nhập nội dung', 'error');
+    //         return;
+    //     }
 
-        try {
-            await axios.post('/api/reviews', {
-                bookingId: selectedBooking.id,
-                rating: reviewRating,
-                content: reviewContent
-            });
-            showToast('Đánh giá thành công', 'success');
-            setShowReviewModal(false);
-            fetchBookings();
-        } catch (err) {
-            console.error('Lỗi khi gửi đánh giá:', err);
-            showToast('Không thể gửi đánh giá. Vui lòng thử lại.', 'error');
-        }
-    };
+    //     try {
+    //         await axios.post('/api/reviews', {
+    //             bookingId: selectedBooking.id,
+    //             rating: reviewRating,
+    //             content: reviewContent
+    //         });
+    //         showToast('Đánh giá thành công', 'success');
+    //         setShowReviewModal(false);
+    //         fetchBookings();
+    //     } catch (err) {
+    //         console.error('Lỗi khi gửi đánh giá:', err);
+    //         showToast('Không thể gửi đánh giá. Vui lòng thử lại.', 'error');
+    //     }
+    // };
 
     const getStatusBadge = (status, checkInDate, checkOutDate) => {
         const now = new Date();
@@ -440,7 +454,7 @@ const Booked = () => {
                                                             </Button>
                                                         )}
 
-                                                        <Button
+                                                        {/* <Button
                                                             variant="outline-warning"
                                                             size="sm"
                                                             onClick={() => {
@@ -450,6 +464,10 @@ const Booked = () => {
                                                         >
                                                             <i className="bi bi-flag me-1"></i>
                                                             Báo cáo
+                                                        </Button> */}
+
+                                                        <Button variant="danger" onClick={() => handleReport(booking)}>
+                                                            Báo cáo vi phạm
                                                         </Button>
 
                                                         <Button
@@ -490,7 +508,7 @@ const Booked = () => {
             )}
 
             {/* Modal gửi báo cáo */}
-            <Modal show={showReportModal} onHide={() => setShowReportModal(false)} centered>
+            {/* <Modal show={showReportModal} onHide={() => setShowReportModal(false)} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Gửi báo cáo</Modal.Title>
                 </Modal.Header>
@@ -528,7 +546,7 @@ const Booked = () => {
                         Gửi báo cáo
                     </Button>
                 </Modal.Footer>
-            </Modal>
+            </Modal> */}
 
             {/* Modal nhắn tin với host */}
             <Modal show={showMessageModal} onHide={() => setShowMessageModal(false)} centered>
@@ -564,40 +582,18 @@ const Booked = () => {
                     <Modal.Title>Đánh giá đặt phòng</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    <Form.Group className="mb-3 text-center">
-                        <Form.Label>Chọn số sao</Form.Label>
-                        <div className="d-flex justify-content-center">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                                <i
-                                    key={star}
-                                    className={`fa${reviewRating >= star ? 's' : 'r'} fa-star fs-2 mx-1`}
-                                    style={{ color: '#ffc107', cursor: 'pointer' }}
-                                    onClick={() => setReviewRating(star)}
-                                />
-                            ))}
-                        </div>
-                    </Form.Group>
-
-                    <Form.Group className="mb-3">
-                        <Form.Label>Nội dung đánh giá</Form.Label>
-                        <Form.Control
-                            as="textarea"
-                            rows={5}
-                            value={reviewContent}
-                            onChange={(e) => setReviewContent(e.target.value)}
-                            placeholder="Chia sẻ trải nghiệm của bạn..."
+                    {selectedBooking && (
+                        <ReviewForm
+                            bookingId={selectedBooking.id}
+                            userId={selectedBooking.userId}
+                            services={selectedBooking.serviceDetails?.map((service) => ({
+                                id: service.id,
+                                name: service.serviceType?.serviceName || `Dịch vụ #${service.id}`,
+                            }))}
+                            onSuccess={() => setShowReviewModal(false)}
                         />
-                    </Form.Group>
+                    )}
                 </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowReviewModal(false)}>
-                        Hủy
-                    </Button>
-                    <Button variant="success" onClick={handleSubmitReview}>
-                        <i className="bi bi-star me-1"></i>
-                        Gửi đánh giá
-                    </Button>
-                </Modal.Footer>
             </Modal>
         </Container>
     );

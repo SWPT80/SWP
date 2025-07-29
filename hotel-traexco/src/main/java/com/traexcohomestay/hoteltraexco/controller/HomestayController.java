@@ -133,4 +133,14 @@ public class HomestayController {
             return ResponseEntity.status(500).body("Lỗi cập nhật tọa độ: " + e.getMessage());
         }
     }
+
+    @GetMapping("/nearby")
+    public ResponseEntity<List<HomestayDTO>> getNearbyHomestays(
+            @RequestParam double userLatitude,
+            @RequestParam double userLongitude) {
+        logger.info("Lấy danh sách homestay gần vị trí: lat={}, lng={} [{}]",
+                userLatitude, userLongitude, java.time.LocalDateTime.now());
+        List<HomestayDTO> homestays = homestayService.getNearbyHomestays(userLatitude, userLongitude);
+        return ResponseEntity.ok(homestays);
+    }
 }

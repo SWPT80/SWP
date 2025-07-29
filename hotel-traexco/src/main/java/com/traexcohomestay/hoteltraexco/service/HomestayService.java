@@ -15,4 +15,6 @@ public interface HomestayService {
     List<HomestayDTO> searchHomestays(String name);
     List<HomestayDTO> searchByLocation(String location);
     List<HomestayDTO> getHomestaysByHostId(int hostId);
+    // Thêm phương thức mới để lấy homestays gần vị trí người dùng
+    List<HomestayDTO> getNearbyHomestays(double userLatitude, double userLongitude);
 }
