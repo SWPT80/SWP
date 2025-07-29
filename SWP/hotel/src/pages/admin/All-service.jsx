@@ -6,7 +6,6 @@ const PAGE_SIZE = 10;
 
 const AllService = () => {
   const [services, setServices] = useState([]);
-  const [isOpen, setIsOpen] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
 
@@ -16,20 +15,6 @@ const AllService = () => {
       .then((res) => setServices(res.data))
       .catch((err) => console.error('Lỗi lấy danh sách dịch vụ:', err));
   }, []);
-
-  const toggleDropdown = (id) =>
-    setIsOpen((prev) => ({ ...prev, [id]: !prev[id] }));
-
-  const handleDelete = (id) => {
-    if (!window.confirm('Bạn có chắc muốn xóa dịch vụ này?')) return;
-    axios
-      .delete(`http://localhost:8080/api/services/${id}`)
-      .then(() => setServices((prev) => prev.filter((s) => s.id !== id)))
-      .catch((err) => {
-        console.error('Lỗi khi xóa service:', err);
-        alert('Xóa thất bại.');
-      });
-  };
 
   const totalPages = Math.ceil(services.length / PAGE_SIZE) || 1;
   const visibleServices = services.slice(
@@ -48,12 +33,12 @@ const AllService = () => {
         <div className="content container-fluid">
           <div className="page-header">
             <div className="row align-items-center">
-              <div className="col">
-                <div className="mt-5 d-flex justify-content-between align-items-center">
-                  <h4 className="card-title mb-0">
-                    <i className="fas fa-concierge-bell text-primary mr-2"></i>
-                    All Services
-                  </h4>
+              <div className="col-md-6 d-flex align-items-center">
+                <h4 className="card-title mt-2">
+                  <i className="fas fa-concierge-bell text-primary mr-2"></i>
+                  All Services
+                </h4>
+                <div className="col-md-6 text-end">
                   <button
                     className="btn btn-primary"
                     onClick={() => navigate('/admin/pending-services')}
@@ -78,7 +63,6 @@ const AllService = () => {
                       <th><i className="fas fa-dollar-sign text-success mr-1"></i>Price</th>
                       <th><i className="far fa-sticky-note text-secondary mr-1"></i>Notes</th>
                       <th><i className="fas fa-info-circle text-muted mr-1"></i>Status</th>
-                      <th className="text-right"><i className="fas fa-cogs text-muted mr-1"></i>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -103,23 +87,6 @@ const AllService = () => {
                               <i className="fas fa-times-circle mr-1"></i>Inactive
                             </span>
                           )}
-                        </td>
-                        <td className="text-right">
-                          <div className="dropdown">
-                            <button
-                              className="action-icon btn"
-                              onClick={() => toggleDropdown(s.id)}
-                            >
-                              <i className="fas fa-ellipsis-v"></i>
-                            </button>
-                            <div
-                              className={`dropdown-menu dropdown-menu-right ${isOpen[s.id] ? 'show' : ''}`}
-                            >
-                              <button className="dropdown-item" onClick={() => handleDelete(s.id)}>
-                                <i className="fas fa-trash-alt"></i> Delete
-                              </button>
-                            </div>
-                          </div>
                         </td>
                       </tr>
                     ))}

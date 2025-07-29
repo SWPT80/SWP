@@ -8,6 +8,7 @@ import LanguageSelectorModal from './LanguageModal';
 import AuthModal from './LoginSignupForm';
 import axios from 'axios';
 import '../assets/styles/Header.css';
+import NotificationDropdown from './NotificationDropdown';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -25,12 +26,15 @@ const Header = () => {
   const [messageDropdownOpen, setMessageDropdownOpen] = useState(false);
   const notificationDropdownRef = useRef(null);
   const messageDropdownRef = useRef(null);
+
   const handleDropdownClick = (e) => {
-    e.stopPropagation(); if (e.target.tagName === 'A') {
+    e.stopPropagation();
+    if (e.target.tagName === 'A') {
       setUserDropdownOpen(false); // Đóng dropdown
       navigate(e.target.getAttribute('href')); // Chuyển trang
     }
   };
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (userDropdownRef.current && !userDropdownRef.current.contains(event.target)) {
@@ -46,6 +50,7 @@ const Header = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
   useEffect(() => {
     const fetchUser = async () => {
       const token = localStorage.getItem('token');
@@ -81,16 +86,6 @@ const Header = () => {
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target)) {
-        setUserDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const handleLanguageSelect = (code) => {
@@ -151,11 +146,13 @@ const Header = () => {
               <Nav.Link as={Link} to="/offer" className="main_nav_item" style={{ color: 'white', fontSize: '16px', fontWeight: 500, textTransform: 'uppercase', padding: '10px 15px' }}>
                 Offers
               </Nav.Link>
-              <Nav.Link as={Link} to="/offer" className="main_nav_item" style={{ color: 'white', fontSize: '16px', fontWeight: 500, textTransform: 'uppercase', padding: '10px 15px' }}>
-                Booked
-              </Nav.Link>
 
-
+              {/* Chỉ hiển thị link Booked khi đã đăng nhập */}
+              {user && (
+                <Nav.Link as={Link} to="/booked" className="main_nav_item" style={{ color: 'white', fontSize: '16px', fontWeight: 500, textTransform: 'uppercase', padding: '10px 15px' }}>
+                  Booked
+                </Nav.Link>
+              )}
             </Nav>
             <div className="right_nav d-flex align-items-center">
               {/* Become Host Button */}
@@ -199,50 +196,7 @@ const Header = () => {
               </div>
 
               {/* Notification Icon - Hiển thị khi đã đăng nhập */}
-              {user && (
-                <Dropdown show={notificationDropdownOpen} onToggle={() => setNotificationDropdownOpen(!notificationDropdownOpen)}>
-                  <Dropdown.Toggle
-                    as="div"
-                    style={{
-                      color: 'white',
-                      fontSize: '20px',
-                      cursor: 'pointer',
-                      padding: '10px',
-                      borderRadius: '50%',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      border: '1px solid rgba(255, 255, 255, 0.2)',
-                      marginRight: '10px',
-                      position: 'relative',
-                    }}
-                    ref={notificationDropdownRef}
-                  >
-                    <i className="fas fa-bell"></i>
-                    {unreadNotifications > 0 && (
-                      <span className="badge bg-danger" style={{
-                        position: 'absolute',
-                        top: '-10px',
-                        right: '-10px',
-                        fontSize: '5px',
-                        borderRadius: '50%',
-                        padding: '2px 6px'
-                      }}>{unreadNotifications}</span>
-                    )}
-                  </Dropdown.Toggle>
-                  <Dropdown.Menu align="end" style={{ minWidth: '300px' }}>
-                    <Dropdown.Header>Thông báo</Dropdown.Header>
-                    {unreadNotifications === 0 ? (
-                      <Dropdown.Item disabled>Không có thông báo mới</Dropdown.Item>
-                    ) : (
-                      <Dropdown.Item as={Link} to="/notifications" onClick={() => setNotificationDropdownOpen(false)}>
-                        Thông báo mới 1
-                      </Dropdown.Item>
-                    )}
-                    <Dropdown.Item as={Link} to="/notifications" onClick={() => setNotificationDropdownOpen(false)}>
-                      Xem tất cả thông báo
-                    </Dropdown.Item>
-                  </Dropdown.Menu>
-                </Dropdown>
-              )}
+              {user && <NotificationDropdown />}
 
               {/* Message Icon - Hiển thị khi đã đăng nhập */}
               {user && (
@@ -290,7 +244,6 @@ const Header = () => {
                 </Dropdown>
               )}
 
-
               {/* User Dropdown */}
               <Dropdown show={userDropdownOpen} onToggle={() => setUserDropdownOpen(!userDropdownOpen)}>
                 <Dropdown.Toggle
@@ -320,7 +273,7 @@ const Header = () => {
                   align="end"
                   className="user_dropdown"
                   ref={userDropdownRef}
-                  onClick={handleDropdownClick} // Thêm sự kiện này
+                  onClick={handleDropdownClick}
                   style={{
                     background: 'rgba(255, 255, 255, 0.95)',
                     backdropFilter: 'blur(10px)',
@@ -333,7 +286,7 @@ const Header = () => {
                 >
                   {user ? (
                     <>
-                      <Dropdown.Item as={Link} to="/profile" onClick={() => setUserDropdownOpen(false)} style={{ color: '#333', padding: '12px 20px' }}>
+                      <Dropdown.Item as={Link} to="/profiles" onClick={() => setUserDropdownOpen(false)} style={{ color: '#333', padding: '12px 20px' }}>
                         <i className="fas fa-user me-2"></i>{user.fullName}
                       </Dropdown.Item>
                       {user.role === 'ADMIN' && (
@@ -346,17 +299,14 @@ const Header = () => {
                           <i className="fas fa-home me-2"></i>Trang quản trị Host
                         </Dropdown.Item>
                       )}
+                      <Dropdown.Item as={Link} to="/booked" onClick={() => setUserDropdownOpen(false)} style={{ color: '#333', padding: '12px 20px' }}>
+                        <i className="fas fa-calendar-check me-2"></i>Đặt phòng của tôi
+                      </Dropdown.Item>
                       <Dropdown.Item as={Link} to="/become-host" onClick={() => setUserDropdownOpen(false)} style={{ color: '#333', padding: '12px 20px' }}>
                         <i className="fas fa-home me-2"></i>Trở thành Host
                       </Dropdown.Item>
                       <Dropdown.Item as={Link} to="/find-host" onClick={() => setUserDropdownOpen(false)} style={{ color: '#333', padding: '12px 20px' }}>
                         <i className="fas fa-search me-2"></i>Tìm Host
-                      </Dropdown.Item>
-                      <Dropdown.Item as={Link} to="/notifications" onClick={() => setUserDropdownOpen(false)} style={{ color: '#333', padding: '12px 20px' }}>
-                        <i className="fas fa-bell me-2"></i>Thông báo {unreadNotifications > 0 && <span className="badge bg-danger ms-2">{unreadNotifications}</span>}
-                      </Dropdown.Item>
-                      <Dropdown.Item as={Link} to="/messages" onClick={() => setUserDropdownOpen(false)} style={{ color: '#333', padding: '12px 20px' }}>
-                        <i className="fas fa-envelope me-2"></i>Tin nhắn {unreadMessages > 0 && <span className="badge bg-danger ms-2">{unreadMessages}</span>}
                       </Dropdown.Item>
                       <Dropdown.Divider />
                       <Dropdown.Item onClick={handleLogout} style={{ color: '#d9534f', padding: '12px 20px' }}>
@@ -402,6 +352,9 @@ const Header = () => {
             <li className="menu_item"><Link to="/" onClick={() => setIsMenuOpen(false)}>Home</Link></li>
             <li className="menu_item"><Link to="/about" onClick={() => setIsMenuOpen(false)}>About Us</Link></li>
             <li className="menu_item"><Link to="/offers" onClick={() => setIsMenuOpen(false)}>Offers</Link></li>
+            {user && (
+              <li className="menu_item"><Link to="/booked" onClick={() => setIsMenuOpen(false)}>Booked</Link></li>
+            )}
             <li className="menu_item"><Link to="/news" onClick={() => setIsMenuOpen(false)}>News</Link></li>
             <li className="menu_item"><Link to="/contact" onClick={() => setIsMenuOpen(false)}>Contact</Link></li>
             {user ? (

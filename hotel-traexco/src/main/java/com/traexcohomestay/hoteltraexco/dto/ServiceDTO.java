@@ -14,7 +14,7 @@ public class ServiceDTO {
     private Integer typeId;
     private BigDecimal price;
     private String specialNotes;
-    private Boolean status;
+    private String status;
     private List<ServiceImageDTO> images;
     private ServiceTypeDTO serviceType;
 }

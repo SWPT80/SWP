@@ -35,23 +35,19 @@ public class ServiceServiceImpl implements ServiceService {
     @Override
     @Transactional(readOnly = true)
     public List<ServiceDTO> getAllServices() {
-        return serviceRepository.findAll().stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+        return serviceRepository.findAll().stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<ServiceDTO> getAllServicesPaged(Pageable pageable) {
-        return serviceRepository.findAll(pageable)
-                .map(this::convertToDTO);
+        return serviceRepository.findAll(pageable).map(this::convertToDTO);
     }
 
     @Override
     @Transactional(readOnly = true)
     public ServiceDTO getServiceById(Integer id) {
-        com.traexcohomestay.hoteltraexco.model.Service service = serviceRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id));
+        com.traexcohomestay.hoteltraexco.model.Service service = serviceRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id));
         return convertToDTO(service);
     }
 
@@ -64,21 +60,18 @@ public class ServiceServiceImpl implements ServiceService {
 
     @Override
     public ServiceDTO updateService(Integer id, ServiceDTO serviceDTO) {
-        com.traexcohomestay.hoteltraexco.model.Service service = serviceRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id));
+        com.traexcohomestay.hoteltraexco.model.Service service = serviceRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id));
 
         service.setPrice(serviceDTO.getPrice());
         service.setSpecialNotes(serviceDTO.getSpecialNotes());
         service.setStatus(serviceDTO.getStatus());
 
         // Update Homestay
-        Homestay homestay = homestayRepository.findById(serviceDTO.getHomestayId())
-                .orElseThrow(() -> new ResourceNotFoundException("Homestay not found with id: " + serviceDTO.getHomestayId()));
+        Homestay homestay = homestayRepository.findById(serviceDTO.getHomestayId()).orElseThrow(() -> new ResourceNotFoundException("Homestay not found with id: " + serviceDTO.getHomestayId()));
         service.setHomestay(homestay);
 
         // Update ServiceType
-        ServiceType serviceType = serviceTypeRepository.findById(serviceDTO.getTypeId())
-                .orElseThrow(() -> new ResourceNotFoundException("ServiceType not found with id: " + serviceDTO.getTypeId()));
+        ServiceType serviceType = serviceTypeRepository.findById(serviceDTO.getTypeId()).orElseThrow(() -> new ResourceNotFoundException("ServiceType not found with id: " + serviceDTO.getTypeId()));
         service.setServiceType(serviceType);
 
         // Update images
@@ -101,17 +94,14 @@ public class ServiceServiceImpl implements ServiceService {
 
     @Override
     public void deleteService(Integer id) {
-        com.traexcohomestay.hoteltraexco.model.Service service = serviceRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id));
+        com.traexcohomestay.hoteltraexco.model.Service service = serviceRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id));
         serviceRepository.delete(service);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<ServiceDTO> findByHomestayId(Integer homestayId) {
-        return serviceRepository.findByHomestay_HomestayId(homestayId).stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+        return serviceRepository.findByHomestay_HomestayId(homestayId).stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
     private ServiceDTO convertToDTO(com.traexcohomestay.hoteltraexco.model.Service service) {
@@ -155,13 +145,11 @@ public class ServiceServiceImpl implements ServiceService {
         service.setStatus(dto.getStatus());
 
         // Set Homestay
-        Homestay homestay = homestayRepository.findById(dto.getHomestayId())
-                .orElseThrow(() -> new ResourceNotFoundException("Homestay not found with id: " + dto.getHomestayId()));
+        Homestay homestay = homestayRepository.findById(dto.getHomestayId()).orElseThrow(() -> new ResourceNotFoundException("Homestay not found with id: " + dto.getHomestayId()));
         service.setHomestay(homestay);
 
         // Set ServiceType
-        ServiceType serviceType = serviceTypeRepository.findById(dto.getTypeId())
-                .orElseThrow(() -> new ResourceNotFoundException("ServiceType not found with id: " + dto.getTypeId()));
+        ServiceType serviceType = serviceTypeRepository.findById(dto.getTypeId()).orElseThrow(() -> new ResourceNotFoundException("ServiceType not found with id: " + dto.getTypeId()));
         service.setServiceType(serviceType);
 
         // Set images
@@ -178,5 +166,27 @@ public class ServiceServiceImpl implements ServiceService {
         }
 
         return service;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ServiceDTO> getServicesByStatus(String status) {
+        return serviceRepository.findByStatus(status).stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
+
+    @Override
+    public ServiceDTO updateStatus(Integer id, String newStatus) {
+        com.traexcohomestay.hoteltraexco.model.Service service = serviceRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id));
+
+        service.setStatus(newStatus);
+        com.traexcohomestay.hoteltraexco.model.Service updated = serviceRepository.save(service);
+        return convertToDTO(updated);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ServiceDTO> findByHostId(Integer hostId) {
+        List<com.traexcohomestay.hoteltraexco.model.Service> services = serviceRepository.findByHomestay_Host_Id(hostId); // cần liên kết
+        return services.stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 }

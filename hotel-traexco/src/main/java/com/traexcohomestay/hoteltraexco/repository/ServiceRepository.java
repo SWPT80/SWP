@@ -19,7 +19,7 @@ public interface ServiceRepository extends JpaRepository<Service, Integer> {
     // Phương thức kiểm tra tồn tại service bằng ID
     boolean existsById(Integer id);
 
-    // Có thể thêm các phương thức tìm kiếm khác nếu cần
-    // List<Service> findByNameContaining(String name);
-    // List<Service> findByPriceBetween(BigDecimal minPrice, BigDecimal maxPrice);
+    List<Service> findByStatus(String status);
+
+    List<Service> findByHomestay_Host_Id(Integer hostId);
 }

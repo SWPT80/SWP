@@ -6,8 +6,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, Integer> {
     Page<Notification> findByUserId(Integer userId, Pageable pageable);
     Page<Notification> findByUserIdAndType(Integer userId, String type, Pageable pageable);
+    List<Notification> findByUserIdOrderByCreatedAtDesc(Integer userId);
+    List<Notification> findByUserId(Integer userId);
 }

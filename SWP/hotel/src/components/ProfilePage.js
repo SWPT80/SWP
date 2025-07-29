@@ -1,12 +1,13 @@
-// Profile.js
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Tabs, Tab, Form, Button, Table, Pagination, Collapse, Alert, Spinner } from 'react-bootstrap';
-import axios from 'axios';
+import axios from '../utils/axiosConfig';
+import { useAuth } from '../context/AuthContext';
 import '../assets/styles/Profile.css';
 
 const Profiles = () => {
   const navigate = useNavigate();
+  const { user, isLoggedIn, checkAuth } = useAuth();
   const [activeTab, setActiveTab] = useState('general');
   const [userData, setUserData] = useState({
     userId: '',
@@ -23,6 +24,7 @@ const Profiles = () => {
     invoices: [],
     trips: [],
     bookings: [],
+    vouchers: [],
   });
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -47,52 +49,68 @@ const Profiles = () => {
   const itemsPerPage = 2;
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    console.log('Token from localStorage in Profile:', token);
-    if (!token) {
-      alert('Vui lòng đăng nhập để truy cập trang này!');
-      navigate('/login');
-      return;
-    }
-
     const fetchData = async () => {
+      const token = localStorage.getItem('token');
+
+
       setLoading(true);
       setError('');
       try {
-        const response = await axios.get('http://localhost:8080/api/user/profile', {
+        // Kiểm tra lại trạng thái đăng nhập
+        await checkAuth();
+
+        // Lấy thông tin hồ sơ người dùng
+        const profileResponse = await axios.get('http://localhost:8080/api/user/profile', {
           headers: { Authorization: `Bearer ${token}` },
         });
-        console.log('Profile API Response:', response.data);
-        if (response.data && typeof response.data === 'object') {
+        console.log('Profile API Response:', profileResponse.data);
+
+        // Lấy danh sách mã giảm giá của người dùng
+        const vouchersResponse = await axios.get(`http://localhost:8080/api/vouchers/user/${user.userId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        console.log('Vouchers API Response:', vouchersResponse.data);
+
+        if (profileResponse.data && typeof profileResponse.data === 'object') {
           setUserData({
-            userId: response.data.userId || '',
-            userName: response.data.userName || '',
-            fullName: response.data.fullName || '',
-            email: response.data.email || '',
-            phone: response.data.phone || '',
-            birthdate: response.data.birthdate || '',
-            address: response.data.address || '',
-            role: response.data.role || 'user',
-            status: response.data.status ? 'active' : 'inactive',
+            userId: profileResponse.data.userId || '',
+            userName: profileResponse.data.userName || '',
+            fullName: profileResponse.data.fullName || '',
+            email: profileResponse.data.email || '',
+            phone: profileResponse.data.phone || '',
+            birthdate: profileResponse.data.birthdate || '',
+            address: profileResponse.data.address || '',
+            role: profileResponse.data.role || 'user',
+            status: profileResponse.data.status ? 'active' : 'inactive',
             profilePhoto: 'https://bootdey.com/img/Content/avatar/avatar1.png',
-            emailConfirmed: response.data.emailConfirmed || false,
-            invoices: response.data.invoices || [],
-            trips: response.data.trips || [],
-            bookings: response.data.bookings || [],
+            emailConfirmed: profileResponse.data.emailConfirmed || false,
+            invoices: profileResponse.data.invoices || [],
+            trips: profileResponse.data.trips || [],
+            bookings: profileResponse.data.bookings || [],
+            vouchers: vouchersResponse.data || [],
           });
         } else {
           throw new Error('Dữ liệu trả về từ server không hợp lệ');
         }
       } catch (err) {
         console.error('Lỗi khi lấy dữ liệu:', err.response ? err.response.data : err.message);
-        setError('Không thể tải thông tin profile: ' + (err.response?.data?.message || err.message));
+        let errorMessage = 'Không thể tải thông tin hồ sơ hoặc mã giảm giá';
+        if (err.response?.status === 401) {
+          errorMessage = 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.';
+          localStorage.removeItem('token');
+          await checkAuth();
+          navigate('/admin/login');
+        } else if (err.response?.status === 500) {
+          errorMessage = 'Lỗi server. Vui lòng thử lại sau hoặc liên hệ hỗ trợ.';
+        }
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [navigate]);
+  }, [navigate, user, isLoggedIn, checkAuth]);
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -156,6 +174,7 @@ const Profiles = () => {
       setSuccess('Cập nhật hồ sơ thành công!');
     } catch (err) {
       setError(err.response?.data?.message || 'Lỗi khi cập nhật hồ sơ');
+
     } finally {
       setLoading(false);
     }
@@ -250,6 +269,13 @@ const Profiles = () => {
                 onClick={() => setActiveTab('bookings')}
               >
                 Đơn Đặt Phòng
+              </Button>
+              <Button
+                variant="link"
+                className={`list-group-item list-group-item-action ${activeTab === 'vouchers' ? 'active' : ''}`}
+                onClick={() => setActiveTab('vouchers')}
+              >
+                Mã Giảm Giá
               </Button>
             </div>
           </Col>
@@ -491,6 +517,41 @@ const Profiles = () => {
                       </div>
                     ))}
                   {renderPagination()}
+                </div>
+              </Tab>
+              <Tab eventKey="vouchers" title="Mã Giảm Giá">
+                <div className="card-body pb-2">
+                  <h6 className="mb-4">Mã Giảm Giá Của Bạn</h6>
+                  <Table className="voucher-table">
+                    <thead>
+                      <tr>
+                        <th>Mã giảm giá</th>
+                        <th>Giảm giá</th>
+                        <th>Homestay áp dụng</th>
+                        <th>Điều kiện</th>
+                        <th>Mã đặt phòng</th>
+                        <th>Trạng thái</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {userData.vouchers.length > 0 ? (
+                        userData.vouchers.map((voucher) => (
+                          <tr key={voucher.voucherId}>
+                            <td>{voucher.voucherName}</td>
+                            <td>{voucher.discount * 100}%</td>
+                            <td>{voucher.homestayName || 'Tất cả homestay'}</td>
+                            <td>{voucher.condition || 'Không có điều kiện'}</td>
+                            <td>{voucher.bookingId || 'N/A'}</td>
+                            <td>{voucher.status || 'Hợp lệ'}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="6" className="text-center">Bạn chưa có mã giảm giá nào.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </Table>
                 </div>
               </Tab>
             </Tabs>

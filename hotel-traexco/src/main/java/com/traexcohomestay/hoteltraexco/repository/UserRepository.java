@@ -14,9 +14,13 @@ import java.util.Optional;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Integer> {
+    long countByRole(String role);
+
     List<User> findByIdIn(List<Integer> ids);
 
     Optional<User> findByEmail(String email);
+
+    Optional<User> findByUserName(String userName);
 
     Optional<User> findByResetToken(String token);
 

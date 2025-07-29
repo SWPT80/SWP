@@ -11,6 +11,5 @@ public interface HomestaysRepository extends JpaRepository<Homestay, Integer> {
     Optional<Homestay> findByHostId(Integer hostId);
     List<Homestay> findByHomestayNameContainingIgnoreCase(String name);
     List<Homestay> findByLocationContainingIgnoreCase(String location);
+    Optional<Homestay> findById(Integer homestayId);
 }
-
-

@@ -57,4 +57,14 @@ public class AdminUserController {
     public ResponseEntity<List<User>> getCustomers() {
         return ResponseEntity.ok(userManagement.getCustomers());
     }
+
+    @GetMapping("/count/hosts")
+    public ResponseEntity<Long> countHosts() {
+        return ResponseEntity.ok(userManagement.countHosts());
+    }
+
+    @GetMapping("/count/customers")
+    public ResponseEntity<Long> countCustomers() {
+        return ResponseEntity.ok(userManagement.countCustomers());
+    }
 }

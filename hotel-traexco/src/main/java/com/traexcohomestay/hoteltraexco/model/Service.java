@@ -34,7 +34,7 @@ public class Service {
 
     @ColumnDefault("1")
     @Column(name = "status")
-    private Boolean status;
+    private String status;
 
     @Nationalized
     @Column(name = "special_notes", length = 500)

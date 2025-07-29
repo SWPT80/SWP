@@ -41,19 +41,13 @@ public class ChatController {
     private UserRepository userRepository;
 
     @PostMapping(value = "/conversation", produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8")
-    public ResponseEntity<ConversationDTO> startConversation(
-            @RequestParam Integer customerId,
-            @RequestParam Integer hostId,
-            @RequestParam Integer homestayId) {
-        Conversation conversation = chatService.getOrCreateConversation(customerId, hostId, homestayId);
+    public ResponseEntity<ConversationDTO> startConversation(@RequestParam Integer customerId, @RequestParam Integer hostId) {
+        Conversation conversation = chatService.getOrCreateConversation(customerId, hostId);
         return ResponseEntity.ok(new ConversationDTO(conversation.getConversationId()));
     }
 
     @PostMapping(value = "/message", produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8")
-    public ResponseEntity<?> sendMessage(
-            @RequestParam Integer conversationId,
-            @RequestParam Integer senderId,
-            @RequestParam String content) {
+    public ResponseEntity<?> sendMessage(@RequestParam Integer conversationId, @RequestParam Integer senderId, @RequestParam String content) {
 
         if (conversationId == null || senderId == null || content == null || content.trim().isEmpty()) {
             return ResponseEntity.badRequest().body("Thiếu tham số");
@@ -93,9 +87,7 @@ public class ChatController {
     @GetMapping(value = "/messages/{conversationId}", produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8")
     public ResponseEntity<List<MessageDTO>> getMessages(@PathVariable int conversationId) {
         List<Message> messages = chatService.getMessages(conversationId);
-        List<MessageDTO> dtoList = messages.stream()
-                .map(m -> new MessageDTO(m.getId(), m.getSender().getId(), m.getContent(), m.getSentAt()))
-                .toList();
+        List<MessageDTO> dtoList = messages.stream().map(m -> new MessageDTO(m.getId(), m.getSender().getId(), m.getContent(), m.getSentAt())).toList();
         return ResponseEntity.ok(dtoList);
     }
 
@@ -107,18 +99,14 @@ public class ChatController {
     }
 
     @GetMapping(value = "/messages/received", produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8")
-    public ResponseEntity<?> getReceivedMessages(
-            @RequestParam int conversationId,
-            @RequestParam int receiverId) {
+    public ResponseEntity<?> getReceivedMessages(@RequestParam int conversationId, @RequestParam int receiverId) {
         Optional<Conversation> conversationOpt = chatService.getConversationById(conversationId);
         if (!conversationOpt.isPresent()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy cuộc trò chuyện");
         }
 
         List<Message> messages = chatService.getMessages(conversationId);
-        List<Message> receivedMessages = messages.stream()
-                .filter(m -> m.getSender().getId() != receiverId)
-                .toList();
+        List<Message> receivedMessages = messages.stream().filter(m -> m.getSender().getId() != receiverId).toList();
         return ResponseEntity.ok(receivedMessages);
     }
 
@@ -127,6 +115,7 @@ public class ChatController {
         List<User> users = chatService.getUsersForHost(hostId);
         return ResponseEntity.ok(users);
     }
+
     @GetMapping(value = "/hosts-booked", produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8")
     public ResponseEntity<?> getHostsUserBooked(@RequestParam int userId) {
         List<Object[]> results = conversationRepo.findHostAndHomestayByUserBooking(userId);
@@ -142,4 +131,47 @@ public class ChatController {
         return ResponseEntity.ok(hosts);
     }
 
+    @GetMapping(value = "/messages/last", produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8")
+    public ResponseEntity<?> getLastMessage(@RequestParam int userId, @RequestParam(required = false) Integer homestayId) {
+
+        if (homestayId == null) {
+            return ResponseEntity.badRequest().body("homestayId không hợp lệ");
+        }
+
+        Optional<MessageDTO> messageOpt = chatService.getLastMessage(userId, homestayId);
+
+        return messageOpt.map(ResponseEntity::ok).orElse(ResponseEntity.noContent().build());
+    }
+
+    @GetMapping("/users/homestay")
+    public ResponseEntity<List<MessageDTO>> getUsersForHost(@RequestParam int hostId, @RequestParam int homestayId) {
+        try {
+            List<MessageDTO> users = chatService.getUsersWithHomestaysForHost(hostId, homestayId);
+            System.out.println("🔥 API called - hostId: " + hostId + ", homestayId: " + homestayId);
+            System.out.println("📊 Found " + users.size() + " users");
+            return ResponseEntity.ok(users);
+        } catch (Exception e) {
+            System.err.println("❌ Error in getUsersForHost: " + e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // API để lấy homestay info theo userId cho ChatPopupManager
+    @GetMapping("/user/{userId}/homestay-info")
+    public ResponseEntity<Map<String, Object>> getUserHomestayInfo(@PathVariable Long userId) {
+        try {
+            Map<String, Object> homestayInfo = chatService.getHomestayInfoByUserId(userId);
+
+            if (homestayInfo.isEmpty()) {
+                System.out.println("⚠️ No homestay info found for userId: " + userId);
+                return ResponseEntity.noContent().build();
+            }
+
+            System.out.println("✅ Homestay info for userId " + userId + ": " + homestayInfo);
+            return ResponseEntity.ok(homestayInfo);
+        } catch (Exception e) {
+            System.err.println("❌ Error getting homestay info: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }

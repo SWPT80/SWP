@@ -88,15 +88,31 @@ const AllCustomer = () => {
                   <i className="fas fa-users text-primary mr-2"></i>All Customers
                 </h4>
               </div>
-              <div className="col-md-6 text-right">
-                <div className="position-relative" style={{ maxWidth: '300px', display: 'inline-block' }}>
-                  <i className="fas fa-search position-absolute" style={{ top: '10px', left: '10px', opacity: 0.6 }}></i>
+              <div className="col-md-6 text-end">
+                <div
+                  className="position-relative d-inline-block"
+                  style={{ maxWidth: '300px', width: '100%' }}
+                >
+                  <i
+                    className="bi bi-search position-absolute"
+                    style={{
+                      top: '50%',
+                      left: '12px',
+                      transform: 'translateY(-50%)',
+                      color: '#888',
+                      fontSize: '16px',
+                    }}
+                  ></i>
                   <input
                     type="text"
-                    className="form-control pl-4"
+                    className="form-control ps-5 py-2 rounded-pill border border-secondary-subtle"
                     placeholder="Tìm kiếm theo tên..."
                     value={searchKeyword}
                     onChange={handleSearchChange}
+                    style={{
+                      width: '100%',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
+                    }}
                   />
                 </div>
               </div>
@@ -195,7 +211,7 @@ const AllCustomer = () => {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 

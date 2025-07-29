@@ -5,6 +5,11 @@ import '../assets/styles/HomePage.css';
 import '../assets/styles/Search.css';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Chatbox from './ChatBox/ChatBox';
+import ChatPopupManager from './Chat/ChatPopupManager';
+import { useAuth } from '../context/AuthContext';
+import axios from 'axios';
+// import ChatManager from './ChatBox/ChatManager ';
+// import CozeChat from './ChatBox/CozeChat';
 
 const slides = [
   {
@@ -81,6 +86,16 @@ const HomeSlider = () => {
 };
 
 const Search = () => {
+  const [checkInDate, setCheckInDate] = useState("");
+  const handleCheckInChange = (e) => {
+    const selectedDate = e.target.value;
+    setCheckInDate(selectedDate);
+
+    // Nếu check-out nhỏ hơn hoặc bằng check-in thì reset
+    if (checkOutRef.current?.value && checkOutRef.current.value <= selectedDate) {
+      checkOutRef.current.value = "";
+    }
+  };
   const [serviceDropdownOpen, setServiceDropdownOpen] = useState(false);
   const serviceInputRef = useRef(null);
   const serviceOptionsRef = useRef(null);
@@ -105,15 +120,13 @@ const Search = () => {
 
   const handleTabClick = (tabId) => {
     setActiveTab(tabId);
-    switch (tabId) {
-      case 'trải nghiệm':
-        navigate('/experience');
-        break;
-      case 'dịch vụ':
-        navigate('/services');
-        break;
-      default:
-        navigate('/');
+
+    if (tabId === 'trải nghiệm' && location.pathname !== '/experience') {
+      navigate('/experience');
+    } else if (tabId === 'dịch vụ' && location.pathname !== '/services') {
+      navigate('/services');
+    } else if (tabId === 'nhà' && location.pathname !== '/') {
+      navigate('/');
     }
   };
 
@@ -203,11 +216,21 @@ const Search = () => {
               </div>
               <div className="search_item">
                 <div>Check in</div>
-                <input ref={checkInRef} type="date" className="search_input check_in" />
+                <input
+                  ref={checkInRef}
+                  type="date"
+                  className="search_input check_in"
+                  onChange={handleCheckInChange} // 👈 Gắn vào đây
+                />
               </div>
               <div className="search_item">
                 <div>Check out</div>
-                <input ref={checkOutRef} type="date" className="search_input check_out" />
+                <input
+                  ref={checkOutRef}
+                  type="date"
+                  className="search_input check_out"
+                  min={checkInDate} // 👈 Giới hạn ngày nhỏ nhất là ngày check-in
+                />
               </div>
               <div className="search_button" onClick={handleSearch}>
                 <button type="button">search</button>
@@ -278,12 +301,81 @@ const Search = () => {
   );
 };
 
+const handleMessageHost = (host) => {
+  window.dispatchEvent(new CustomEvent("open-chat", {
+    detail: {
+      id: `${host.userId}-${host.homestayId}`,
+      userId: host.userId,
+      homestayId: host.homestayId,
+      fullname: host.fullname,
+      avatar: host.avatar,
+    }
+  }));
+};
+
 const HomePage = () => {
+  const [hostList, setHostList] = useState([]);
+  const { user, isLoggedIn } = useAuth();
+
+  // Lấy danh sách host để chat
+  useEffect(() => {
+    if (!user || !isLoggedIn) return;
+
+    const fetchChatList = async () => {
+      try {
+        // Lấy danh sách host đã book hoặc có thể chat
+        const response = await axios.get(`http://localhost:8080/api/chat/hosts-booked?userId=${user.id}`);
+        const data = response.data;
+
+        const formatted = data.map((host) => ({
+          id: `${host.hostId}-${host.homestayId}`,
+          userId: host.hostId,
+          homestayId: host.homestayId,
+          fullname: host.fullname,
+          avatar: host.avatar || "",
+        }));
+
+        setHostList(formatted);
+      } catch (error) {
+        console.error("Lỗi khi tải danh sách chat:", error);
+
+        // Dữ liệu mẫu nếu API lỗi hoặc chưa có dữ liệu
+        setHostList([
+          {
+            id: "1-1",
+            userId: 1,
+            homestayId: 1,
+            fullname: "Nguyễn Văn A - Host",
+            avatar: "https://ui-avatars.com/api/?name=Nguyen+Van+A&background=0084ff&color=fff"
+          },
+          {
+            id: "2-2",
+            userId: 2,
+            homestayId: 2,
+            fullname: "Trần Thị B - Host",
+            avatar: "https://ui-avatars.com/api/?name=Tran+Thi+B&background=0084ff&color=fff"
+          }
+        ]);
+      }
+    };
+
+    fetchChatList();
+  }, [user, isLoggedIn]);
+
   return (
     <div>
       <HomeSlider />
-      <Chatbox />
+      {/* <ChatManager /> */}
       <Search />
+      {/* <CozeChat /> */}
+      {/* Chat Integration - Chỉ hiển thị khi user đã đăng nhập */}
+      {isLoggedIn && user && (
+        <ChatPopupManager
+          currentUserId={user.id}
+          listToChatWith={hostList}
+          type="userToHost"
+        />
+      )}
     </div>
   );
 };

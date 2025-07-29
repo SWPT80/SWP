@@ -5,8 +5,8 @@ const PAGE_SIZE = 10;
 
 const AllBooking = () => {
   const [bookings, setBookings] = useState([]);
-  const [isOpen, setIsOpen] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -24,23 +24,19 @@ const AllBooking = () => {
       });
   }, []);
 
-  const toggleDropdown = (id) => {
-    setIsOpen((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
+  // Lọc bookings theo searchTerm (không phân biệt hoa thường)
+  const filteredBookings = bookings.filter((b) => {
+    const term = searchTerm.toLowerCase();
+    return (
+      b.homestayName?.toLowerCase().includes(term) ||
+      b.userFullName?.toLowerCase().includes(term) ||
+      b.roomNumber?.toString().toLowerCase().includes(term)
+    );
+  });
 
-  const handleDelete = (id) => {
-    if (!window.confirm('Bạn có chắc muốn xóa booking này?')) return;
-    axios
-      .delete(`http://localhost:8080/api/bookings/${id}`)
-      .then(() => setBookings((prev) => prev.filter((b) => b.id !== id)))
-      .catch((err) => {
-        console.error('Lỗi khi xóa booking:', err);
-        alert('Xóa thất bại.');
-      });
-  };
+  const totalPages = Math.ceil(filteredBookings.length / PAGE_SIZE) || 1;
 
-  const totalPages = Math.ceil(bookings.length / PAGE_SIZE) || 1;
-  const visibleBookings = bookings.slice(
+  const visibleBookings = filteredBookings.slice(
     (currentPage - 1) * PAGE_SIZE,
     currentPage * PAGE_SIZE
   );
@@ -58,9 +54,40 @@ const AllBooking = () => {
             <div className="row align-items-center">
               <div className="col">
                 <h4 className="card-title mt-2">
-                  <i className="fas fa-clipboard-list text-primary mr-2"></i>
+                  <i className="fas fa-clipboard-list text-primary me-2"></i>
                   All Bookings
                 </h4>
+              </div>
+              <div className="col-md-6 text-end">
+                <div
+                  className="position-relative d-inline-block"
+                  style={{ maxWidth: '300px', width: '100%' }}
+                >
+                  <i
+                    className="bi bi-search position-absolute"
+                    style={{
+                      top: '50%',
+                      left: '12px',
+                      transform: 'translateY(-50%)',
+                      color: '#888',
+                      fontSize: '16px',
+                    }}
+                  ></i>
+                  <input
+                    type="text"
+                    className="form-control ps-5 py-2 rounded-pill border border-secondary-subtle"
+                    placeholder="Tìm kiếm theo khách hàng, homestay, phòng..."
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setCurrentPage(1); // Reset về trang đầu khi search
+                    }}
+                    style={{
+                      width: '100%',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
+                    }}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -74,54 +101,33 @@ const AllBooking = () => {
                       <thead>
                         <tr>
                           <th>Booking ID</th>
+                          <th>Homestay Name</th>
                           <th>Customer</th>
                           <th>Room</th>
                           <th>Check‑in</th>
                           <th>Check‑out</th>
                           <th>Total</th>
                           <th>Status</th>
-                          <th className="text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {visibleBookings.map((b) => (
-                          <tr key={b.id}>
-                            <td>{b.id}</td>
-                            <td>{b.userFullName || 'N/A'}</td>
-                            <td>{b.roomNumber || 'N/A'}</td>
-                            <td>{b.checkInDate}</td>
-                            <td>{b.checkOutDate}</td>
-                            <td>{b.totalAmount?.toLocaleString()} VND</td>
-                            <td>{b.status}</td>
-                            <td className="text-right">
-                              <div className="dropdown">
-                                <button
-                                  className="action-icon btn"
-                                  onClick={() => toggleDropdown(b.id)}
-                                >
-                                  <i className="fas fa-ellipsis-v"></i>
-                                </button>
-                                <div
-                                  className={`dropdown-menu dropdown-menu-right ${isOpen[b.id] ? 'show' : ''}`}
-                                >
-                                  <a className="dropdown-item" href={`/admin/edit-booking/${b.id}`}>
-                                    <i className="fas fa-pencil-alt"></i> Edit
-                                  </a>
-                                  <button
-                                    className="dropdown-item"
-                                    onClick={() => handleDelete(b.id)}
-                                  >
-                                    <i className="fas fa-trash-alt"></i> Delete
-                                  </button>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                        {visibleBookings.length === 0 && (
+                        {visibleBookings.length > 0 ? (
+                          visibleBookings.map((b) => (
+                            <tr key={b.id}>
+                              <td>{b.id}</td>
+                              <td>{b.homestayName}</td>
+                              <td>{b.userFullName || 'N/A'}</td>
+                              <td>{b.roomNumber || 'N/A'}</td>
+                              <td>{b.checkInDate}</td>
+                              <td>{b.checkOutDate}</td>
+                              <td>{b.totalAmount?.toLocaleString()} VND</td>
+                              <td>{b.status}</td>
+                            </tr>
+                          ))
+                        ) : (
                           <tr>
                             <td colSpan="8" className="text-center">
-                              No bookings found
+                              Không tìm thấy booking nào
                             </td>
                           </tr>
                         )}
@@ -130,11 +136,16 @@ const AllBooking = () => {
                   </div>
 
                   <div className="d-flex justify-content-between align-items-center mt-3">
-                    <span>Page {currentPage} / {totalPages}</span>
+                    <span>
+                      Page {currentPage} / {totalPages}
+                    </span>
                     <nav>
                       <ul className="pagination mb-0">
                         <li className={`page-item ${currentPage === 1 && 'disabled'}`}>
-                          <button className="page-link" onClick={() => changePage(currentPage - 1)}>
+                          <button
+                            className="page-link"
+                            onClick={() => changePage(currentPage - 1)}
+                          >
                             «
                           </button>
                         </li>
@@ -146,7 +157,10 @@ const AllBooking = () => {
                           </li>
                         ))}
                         <li className={`page-item ${currentPage === totalPages && 'disabled'}`}>
-                          <button className="page-link" onClick={() => changePage(currentPage + 1)}>
+                          <button
+                            className="page-link"
+                            onClick={() => changePage(currentPage + 1)}
+                          >
                             »
                           </button>
                         </li>

@@ -2,6 +2,8 @@ package com.traexcohomestay.hoteltraexco.service;
 
 import com.traexcohomestay.hoteltraexco.dto.BookingDTO;
 import com.traexcohomestay.hoteltraexco.dto.NotificationDTO;
+import com.traexcohomestay.hoteltraexco.dto.ServiceDTO;
+import com.traexcohomestay.hoteltraexco.dto.ServiceTypeDTO;
 import com.traexcohomestay.hoteltraexco.exception.ResourceNotFoundException;
 import com.traexcohomestay.hoteltraexco.model.*;
 import com.traexcohomestay.hoteltraexco.repository.*;
@@ -14,9 +16,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,17 +41,7 @@ public class BookingServiceImpl implements BookingService {
     private final NotificationService notificationService;
 
     @Autowired
-    public BookingServiceImpl(
-            BookingRepository bookingRepository,
-            UserRepository userRepository,
-            RoomRepository roomRepository,
-            BookingServiceService bookingServiceService,
-            NotificationRepository notificationRepository,
-            CancellationPolicyRepository cancellationPolicyRepository,
-            HomestayRepository homestayRepository,
-            ServiceRepository serviceRepository,
-            SimpMessagingTemplate messagingTemplate,
-            NotificationService notificationService) {
+    public BookingServiceImpl(BookingRepository bookingRepository, UserRepository userRepository, RoomRepository roomRepository, BookingServiceService bookingServiceService, NotificationRepository notificationRepository, CancellationPolicyRepository cancellationPolicyRepository, HomestayRepository homestayRepository, ServiceRepository serviceRepository, SimpMessagingTemplate messagingTemplate, NotificationService notificationService) {
         this.bookingRepository = bookingRepository;
         this.userRepository = userRepository;
         this.roomRepository = roomRepository;
@@ -66,36 +61,25 @@ public class BookingServiceImpl implements BookingService {
             logger.error("BookingDTO is null");
             throw new IllegalArgumentException("BookingDTO is null");
         }
-        if (bookingDTO.getUserId() == null || bookingDTO.getHomestayId() == null ||
-                bookingDTO.getRoomNumber() == null || bookingDTO.getCheckInDate() == null ||
-                bookingDTO.getCheckOutDate() == null || bookingDTO.getAdults() == null ||
-                bookingDTO.getChildren() == null || bookingDTO.getTotalPeople() == null ||
-                bookingDTO.getTotalAmount() == null) {
+        if (bookingDTO.getUserId() == null || bookingDTO.getHomestayId() == null || bookingDTO.getRoomNumber() == null || bookingDTO.getCheckInDate() == null || bookingDTO.getCheckOutDate() == null || bookingDTO.getAdults() == null || bookingDTO.getChildren() == null || bookingDTO.getTotalPeople() == null || bookingDTO.getTotalAmount() == null) {
             logger.error("Missing required fields in bookingDTO: {}", bookingDTO);
             throw new IllegalArgumentException("All required fields must be provided");
         }
 
-        User user = userRepository.findById(bookingDTO.getUserId())
-                .orElseThrow(() -> {
-                    logger.error("User not found with id: {}", bookingDTO.getUserId());
-                    return new ResourceNotFoundException("User not found with id: " + bookingDTO.getUserId());
-                });
+        User user = userRepository.findById(bookingDTO.getUserId()).orElseThrow(() -> {
+            logger.error("User not found with id: {}", bookingDTO.getUserId());
+            return new ResourceNotFoundException("User not found with id: " + bookingDTO.getUserId());
+        });
         logger.info("Found user: {}", user);
 
         RoomId roomId = new RoomId(bookingDTO.getHomestayId(), bookingDTO.getRoomNumber());
-        Room room = roomRepository.findById(roomId)
-                .orElseThrow(() -> {
-                    logger.error("Room not found with homestayId: {} and roomNumber: {}", bookingDTO.getHomestayId(), bookingDTO.getRoomNumber());
-                    return new ResourceNotFoundException("Room not found with homestayId: " + bookingDTO.getHomestayId() + " and roomNumber: " + bookingDTO.getRoomNumber());
-                });
+        Room room = roomRepository.findById(roomId).orElseThrow(() -> {
+            logger.error("Room not found with homestayId: {} and roomNumber: {}", bookingDTO.getHomestayId(), bookingDTO.getRoomNumber());
+            return new ResourceNotFoundException("Room not found with homestayId: " + bookingDTO.getHomestayId() + " and roomNumber: " + bookingDTO.getRoomNumber());
+        });
         logger.info("Found room: {}", room);
-        // Kiểm tra phòng trống
-        List<Booking> conflictingBookings = bookingRepository.findByRooms_Id_HomestayIdAndRooms_Id_RoomNumber(
-                        bookingDTO.getHomestayId(), bookingDTO.getRoomNumber()).stream()
-                .filter(b -> b.getStatus().equals("CONFIRMED") &&
-                        (bookingDTO.getCheckInDate().isBefore(b.getCheckOutDate()) &&
-                                bookingDTO.getCheckOutDate().isAfter(b.getCheckInDate())))
-                .collect(Collectors.toList());
+
+        List<Booking> conflictingBookings = bookingRepository.findByRooms_Id_HomestayIdAndRooms_Id_RoomNumber(bookingDTO.getHomestayId(), bookingDTO.getRoomNumber()).stream().filter(b -> b.getStatus().equals("CONFIRMED") && (bookingDTO.getCheckInDate().isBefore(b.getCheckOutDate()) && bookingDTO.getCheckOutDate().isAfter(b.getCheckInDate()))).collect(Collectors.toList());
         if (!conflictingBookings.isEmpty()) {
             throw new IllegalStateException("Phòng không khả dụng trong khoảng thời gian yêu cầu");
         }
@@ -113,26 +97,17 @@ public class BookingServiceImpl implements BookingService {
         BigDecimal serviceTotal = BigDecimal.ZERO;
         List<String> serviceIds = bookingDTO.getServices() != null ? bookingDTO.getServices() : new ArrayList<>();
         if (!serviceIds.isEmpty()) {
-            List<com.traexcohomestay.hoteltraexco.model.Service> services = serviceIds.stream()
-                    .map(id -> serviceRepository.findById(Integer.valueOf(id))
-                            .orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id)))
-                    .collect(Collectors.toList());
-            serviceTotal = services.stream()
-                    .map(com.traexcohomestay.hoteltraexco.model.Service::getPrice)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            List<com.traexcohomestay.hoteltraexco.model.Service> services = serviceIds.stream().map(id -> serviceRepository.findById(Integer.valueOf(id)).orElseThrow(() -> new ResourceNotFoundException("Service not found with id: " + id))).collect(Collectors.toList());
+            serviceTotal = services.stream().map(com.traexcohomestay.hoteltraexco.model.Service::getPrice).reduce(BigDecimal.ZERO, BigDecimal::add);
         }
         booking.setTotalAmount(bookingDTO.getTotalAmount().add(serviceTotal));
         try {
             Booking savedBooking = bookingRepository.save(booking);
             logger.info("Saved booking ID: {}", savedBooking.getId());
 
-            // Tạo thông báo cho chủ homestay
-            Homestay homestay = homestayRepository.findById(bookingDTO.getHomestayId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Homestay not found with id: " + bookingDTO.getHomestayId()));
+            Homestay homestay = homestayRepository.findById(bookingDTO.getHomestayId()).orElseThrow(() -> new ResourceNotFoundException("Homestay not found with id: " + bookingDTO.getHomestayId()));
 
-            // Tìm host dựa trên hostId trong Homestay và role HOST
-            User host = userRepository.findHostById(homestay.getHostId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Host not found for homestay: " + homestay.getHomestayId()));
+            User host = userRepository.findHostById(homestay.getHostId()).orElseThrow(() -> new ResourceNotFoundException("Host not found for homestay: " + homestay.getHomestayId()));
             Notification notification = new Notification();
             notification.setUser(host);
             notification.setMessage("Đặt phòng mới: Booking #" + savedBooking.getId() + " cho phòng " + bookingDTO.getRoomNumber());
@@ -142,7 +117,6 @@ public class BookingServiceImpl implements BookingService {
             notificationRepository.save(notification);
             logger.info("Created notification for host: {}", host.getId());
 
-            // Gửi thông báo thời gian thực và Email/SMS cho host
             NotificationDTO notificationDTO = new NotificationDTO();
             notificationDTO.setId(notification.getId());
             notificationDTO.setUserId(host.getId());
@@ -153,22 +127,8 @@ public class BookingServiceImpl implements BookingService {
             messagingTemplate.convertAndSend("/topic/notifications/" + host.getId(), notificationDTO);
             notificationService.sendEmail(host, notification);
 
-
-            BookingDTO result = new BookingDTO();
-            result.setId(savedBooking.getId());
-            result.setUserId(savedBooking.getUser().getId());
-            result.setHomestayId(savedBooking.getRooms().getId().getHomestayId());
-            result.setRoomNumber(savedBooking.getRooms().getId().getRoomNumber());
-            result.setCheckInDate(savedBooking.getCheckInDate());
-            result.setCheckOutDate(savedBooking.getCheckOutDate());
-            result.setAdults(savedBooking.getAdults());
-            result.setChildren(savedBooking.getChildren());
-            result.setTotalPeople(savedBooking.getTotalPeople());
-            result.setTotalAmount(savedBooking.getTotalAmount());
-            result.setStatus(savedBooking.getStatus());
-
+            BookingDTO result = convertToDTO(savedBooking);
             bookingServiceService.processServices(savedBooking, serviceIds, result);
-
             logger.info("Returning BookingDTO: {}", result);
             return result;
         } catch (Exception e) {
@@ -186,10 +146,17 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<BookingDTO> getBookingsByHost(Integer hostId) {
+        logger.info("Fetching bookings for hostId: {}", hostId);
+        List<Booking> bookings = bookingRepository.findByRoomsHomestayHostId(hostId);
+        return bookings.stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
+
+    @Override
     public BookingDTO updateBookingStatus(Integer bookingId, String status) {
         logger.info("Updating booking ID: {} to status: {}", bookingId, status);
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
+        Booking booking = bookingRepository.findById(bookingId).orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
 
         if (!List.of("PENDING", "CONFIRMED", "CANCELLED").contains(status)) {
             throw new IllegalArgumentException("Invalid status: " + status);
@@ -198,7 +165,6 @@ public class BookingServiceImpl implements BookingService {
         booking.setStatus(status);
         Booking updatedBooking = bookingRepository.save(booking);
 
-        // Tạo thông báo cho khách
         User customer = updatedBooking.getUser();
         Notification notification = new Notification();
         notification.setUser(customer);
@@ -214,7 +180,6 @@ public class BookingServiceImpl implements BookingService {
         notificationRepository.save(notification);
         logger.info("Created notification for customer: {}", customer.getId());
 
-        // Gửi thông báo thời gian thực và Email/SMS cho khách
         NotificationDTO notificationDTO = new NotificationDTO();
         notificationDTO.setId(notification.getId());
         notificationDTO.setUserId(customer.getId());
@@ -225,21 +190,29 @@ public class BookingServiceImpl implements BookingService {
         messagingTemplate.convertAndSend("/topic/notifications/" + customer.getId(), notificationDTO);
         notificationService.sendEmail(customer, notification);
 
-
         return convertToDTO(updatedBooking);
     }
 
     @Override
     public BookingDTO cancelBooking(Integer bookingId) {
         logger.info("Cancelling booking ID: {}", bookingId);
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
+        Booking booking = bookingRepository.findById(bookingId).orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
 
         if (booking.getStatus().equals("CANCELLED")) {
             throw new IllegalStateException("Booking is already cancelled");
         }
 
-        long daysUntilCheckIn = ChronoUnit.DAYS.between(Instant.now(), booking.getCheckInDate().atStartOfDay());
+        if (booking.getRooms() == null || booking.getRooms().getId() == null) {
+            throw new IllegalStateException("Phòng không hợp lệ trong đặt phòng.");
+        }
+
+        if (booking.getCheckInDate() == null) {
+            throw new IllegalStateException("Ngày nhận phòng không hợp lệ.");
+        }
+
+        // Tính số ngày trước ngày check-in
+        long daysUntilCheckIn = ChronoUnit.DAYS.between(Instant.now(), booking.getCheckInDate().atStartOfDay(ZoneId.systemDefault()).toInstant());
+
         Integer homestayId = booking.getRooms().getId().getHomestayId();
 
         List<CancellationPolicy> policies = cancellationPolicyRepository.findByHomestayId(homestayId);
@@ -254,12 +227,10 @@ public class BookingServiceImpl implements BookingService {
         booking.setStatus("CANCELLED");
         Booking updatedBooking = bookingRepository.save(booking);
 
-        Homestay homestay = homestayRepository.findById(homestayId)
-                .orElseThrow(() -> new ResourceNotFoundException("Homestay not found with id: " + homestayId));
+        // Thông báo host
+        Homestay homestay = homestayRepository.findById(homestayId).orElseThrow(() -> new ResourceNotFoundException("Homestay not found with id: " + homestayId));
+        User host = userRepository.findHostById(homestay.getHostId()).orElseThrow(() -> new ResourceNotFoundException("Host not found for homestay: " + homestayId));
 
-        // Tìm host dựa trên hostId trong Homestay và role HOST
-        User host = userRepository.findHostById(homestay.getHostId())
-                .orElseThrow(() -> new ResourceNotFoundException("Host not found for homestay: " + homestay.getHomestayId()));
         Notification hostNotification = new Notification();
         hostNotification.setUser(host);
         hostNotification.setMessage("Đặt phòng #" + bookingId + " đã bị hủy, hoàn tiền " + refundPercentage + "%");
@@ -267,20 +238,11 @@ public class BookingServiceImpl implements BookingService {
         hostNotification.setStatus(false);
         hostNotification.setCreatedAt(Instant.now());
         notificationRepository.save(hostNotification);
-        logger.info("Created cancellation notification for host: {}", host.getId());
 
-        // Gửi thông báo thời gian thực và Email/SMS cho host
-        NotificationDTO hostNotificationDTO = new NotificationDTO();
-        hostNotificationDTO.setId(hostNotification.getId());
-        hostNotificationDTO.setUserId(host.getId());
-        hostNotificationDTO.setMessage(hostNotification.getMessage());
-        hostNotificationDTO.setType(hostNotification.getType());
-        hostNotificationDTO.setStatus(hostNotification.getStatus());
-        hostNotificationDTO.setCreatedAt(hostNotification.getCreatedAt());
-        messagingTemplate.convertAndSend("/topic/notifications/" + host.getId(), hostNotificationDTO);
+        messagingTemplate.convertAndSend("/topic/notifications/" + host.getId(), buildNotificationDTO(hostNotification));
         notificationService.sendEmail(host, hostNotification);
 
-
+        // Thông báo khách
         User customer = updatedBooking.getUser();
         Notification customerNotification = new Notification();
         customerNotification.setUser(customer);
@@ -289,29 +251,29 @@ public class BookingServiceImpl implements BookingService {
         customerNotification.setStatus(false);
         customerNotification.setCreatedAt(Instant.now());
         notificationRepository.save(customerNotification);
-        logger.info("Created cancellation notification for customer: {}", customer.getId());
 
-        // Gửi thông báo thời gian thực và Email/SMS cho khách
-        NotificationDTO customerNotificationDTO = new NotificationDTO();
-        customerNotificationDTO.setId(customerNotification.getId());
-        customerNotificationDTO.setUserId(customer.getId());
-        customerNotificationDTO.setMessage(customerNotification.getMessage());
-        customerNotificationDTO.setType(customerNotification.getType());
-        customerNotificationDTO.setStatus(customerNotification.getStatus());
-        customerNotificationDTO.setCreatedAt(customerNotification.getCreatedAt());
-        messagingTemplate.convertAndSend("/topic/notifications/" + customer.getId(), customerNotificationDTO);
+        messagingTemplate.convertAndSend("/topic/notifications/" + customer.getId(), buildNotificationDTO(customerNotification));
         notificationService.sendEmail(customer, customerNotification);
-
 
         return convertToDTO(updatedBooking);
     }
 
-    private BookingDTO convertToDTO(Booking booking) {
+    @Override
+    public BookingDTO convertToDTO(Booking booking) {
         BookingDTO dto = new BookingDTO();
         dto.setId(booking.getId());
         dto.setUserId(booking.getUser().getId());
-        dto.setHomestayId(booking.getRooms().getId().getHomestayId());
-        dto.setRoomNumber(booking.getRooms().getId().getRoomNumber());
+        dto.setUserName(booking.getUser().getFullName());
+        dto.setEmail(booking.getUser().getEmail());
+
+        // Room & Homestay
+        Room room = booking.getRooms();
+        Homestay homestay = room.getHomestay();
+        dto.setHomestayName(homestay != null ? homestay.getHomestayName() : null);
+        dto.setHomestayId(room.getId().getHomestayId());
+        dto.setRoomNumber(room.getId().getRoomNumber());
+        dto.setRoomType(room.getType());
+        dto.setRoomPrice(room.getPrice());
         dto.setCheckInDate(booking.getCheckInDate());
         dto.setCheckOutDate(booking.getCheckOutDate());
         dto.setAdults(booking.getAdults());
@@ -320,25 +282,72 @@ public class BookingServiceImpl implements BookingService {
         dto.setTotalAmount(booking.getTotalAmount());
         dto.setStatus(booking.getStatus());
 
+        // Room Images
+        if (room.getRoomImages() != null) {
+            List<String> roomImgUrls = room.getRoomImages().stream().map(RoomImage::getImageUrl).collect(Collectors.toList());
+            dto.setRoomImages(roomImgUrls);
+        }
+
+        // Homestay Images
+        if (homestay.getImages() != null) {
+            List<String> homestayImgUrls = homestay.getImages().stream().map(HomestayImage::getImageUrl).collect(Collectors.toList());
+            dto.setHomestayImages(homestayImgUrls);
+        }
+
+        // Dịch vụ
         if (booking.getBookingServices() != null && !booking.getBookingServices().isEmpty()) {
-            List<String> serviceIds = booking.getBookingServices().stream()
-                    .map(bs -> String.valueOf(bs.getService().getId()))
-                    .collect(Collectors.toList());
+            List<ServiceDTO> serviceDTOs = booking.getBookingServices().stream().map(bs -> {
+                ServiceDTO serviceDTO = new ServiceDTO();
+                serviceDTO.setId(bs.getService().getId());
+                serviceDTO.setPrice(bs.getService().getPrice());
+                serviceDTO.setSpecialNotes(bs.getService().getSpecialNotes());
+
+                if (bs.getService().getServiceType() != null) {
+                    ServiceTypeDTO typeDTO = new ServiceTypeDTO();
+                    typeDTO.setServiceName(bs.getService().getServiceType().getServiceName());
+                    serviceDTO.setServiceType(typeDTO);
+                }
+                return serviceDTO;
+            }).collect(Collectors.toList());
+            dto.setServiceDetails(serviceDTOs);
+            List<String> serviceIds = serviceDTOs.stream().map(s -> String.valueOf(s.getId())).collect(Collectors.toList());
             dto.setServices(serviceIds);
         }
 
         return dto;
     }
 
+    private NotificationDTO buildNotificationDTO(Notification notification) {
+        NotificationDTO dto = new NotificationDTO();
+        dto.setId(notification.getId());
+        dto.setUserId(notification.getUser().getId());
+        dto.setMessage(notification.getMessage());
+        dto.setType(notification.getType());
+        dto.setStatus(notification.getStatus());
+        dto.setCreatedAt(notification.getCreatedAt());
+        return dto;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Object> getHostMetrics(Integer hostId) {
+        Map<String, Object> metrics = new HashMap<>();
+        metrics.put("totalBookings", bookingRepository.countByRoomsHomestayHostId(hostId));
+        metrics.put("availableRooms", roomRepository.countByHomestayHostIdAndStatus(hostId, true));
+        metrics.put("revenue", bookingRepository.sumRevenueByHostId(hostId));
+        return metrics;
+    }
+
+    @Override
+    public List<BookingDTO> getBookingsByUser(Integer userId) {
+        List<Booking> bookings = bookingRepository.findByUserId(userId);
+        return bookings.stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
+
+    @Override
     public List<Booking> getBookingsWithServicesByUserId(int userId) {
-        List<Booking> bookings = bookingRepository.findAll()
-                .stream()
-                .filter(b -> b.getUserId() == userId)
-                .collect(Collectors.toList());
-
-        // Lazy loading fix if needed
+        List<Booking> bookings = bookingRepository.findByUserId(userId);
         bookings.forEach(booking -> booking.getBookingServices().size());
-
         return bookings;
     }
 }

@@ -3,11 +3,14 @@ package com.traexcohomestay.hoteltraexco.controller;
 import com.traexcohomestay.hoteltraexco.dto.NotificationDTO;
 import com.traexcohomestay.hoteltraexco.exception.ResourceNotFoundException;
 import com.traexcohomestay.hoteltraexco.model.Notification;
+import com.traexcohomestay.hoteltraexco.model.User;
 import com.traexcohomestay.hoteltraexco.repository.NotificationRepository;
+import com.traexcohomestay.hoteltraexco.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,6 +22,9 @@ public class NotificationController {
 
     @Autowired
     private NotificationRepository notificationRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<NotificationDTO>> getNotificationsByUser(
@@ -80,5 +86,22 @@ public class NotificationController {
         dto.setStatus(notification.getStatus());
         dto.setCreatedAt(notification.getCreatedAt());
         return dto;
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<List<NotificationDTO>> getMyNotifications(Authentication authentication) {
+        String username = authentication.getName(); // Đây chính là email
+
+        // Dùng username làm email
+        User user = userRepository.findByEmail(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + username));
+
+        List<Notification> notifications = notificationRepository.findByUserId(user.getId());
+
+        List<NotificationDTO> notificationDTOs = notifications.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(notificationDTOs);
     }
 }

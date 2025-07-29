@@ -21,10 +21,11 @@ public class Review {
     @JoinColumn(name = "user_id")
     private User user;
 
-
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "homestay_id", nullable = false)
+    private Homestay homestay;
 
     @ColumnDefault("getdate()")
     @Column(name = "created_at")
     private LocalDateTime createdAt;
-
 }

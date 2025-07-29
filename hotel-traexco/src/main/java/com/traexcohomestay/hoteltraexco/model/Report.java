@@ -14,16 +14,13 @@ import java.time.Instant;
 @Table(name = "Reports")
 public class Report {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "report_id", nullable = false)
     private Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "receiver_id")
-    private User receiver;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumns({
@@ -59,4 +56,12 @@ public class Report {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
+    @Column(name = "action_taken")
+    private String actionTaken;
+
+    @Column(name = "resolution_note")
+    private String resolutionNote;
+
+    @Column(name = "resolved_at")
+    private Instant resolvedAt;
 }

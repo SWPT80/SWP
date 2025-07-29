@@ -13,9 +13,13 @@ import java.util.List;
 public class BookingDTO {
     private Integer id;
     private Integer userId;
+    private String userName;
+    private String email;
     private Integer homestayId;
     private String homestayName;
     private String roomNumber;
+    private String roomType;
+    private BigDecimal roomPrice;
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate checkInDate;
     @JsonFormat(pattern = "yyyy-MM-dd")
@@ -27,7 +31,8 @@ public class BookingDTO {
     private String status;
     private List<String> services;
     private List<ServiceDTO> serviceDetails;
-
+    private List<String> roomImages;
+    private List<String> homestayImages;
     public List<ServiceDTO> getServiceDetails() {
         return serviceDetails;
     }

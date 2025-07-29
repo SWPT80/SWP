@@ -163,9 +163,22 @@ public class BookingController {
     }
 
     @PutMapping("/{bookingId}/cancel")
-    @PreAuthorize("hasRole('USER') and #bookingId == @bookingRepository.findById(#bookingId).get().user.id or hasRole('ADMIN')")
-    public ResponseEntity<?> cancelBooking(@PathVariable Integer bookingId) {
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    public ResponseEntity<?> cancelBooking(@PathVariable Integer bookingId, Authentication authentication) {
         try {
+            String email = authentication.getName();
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+            Booking booking = bookingRepository.findById(bookingId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
+
+            // Kiểm tra quyền huỷ: người tạo booking hoặc admin
+            if (!booking.getUser().getId().equals(user.getId()) && !user.getRole().equals("ADMIN")) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body("Bạn không có quyền hủy đặt phòng này.");
+            }
+
             BookingDTO cancelledBooking = bookingService.cancelBooking(bookingId);
             return ResponseEntity.ok(cancelledBooking);
         } catch (ResourceNotFoundException e) {
@@ -173,7 +186,8 @@ public class BookingController {
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Lỗi khi hủy đặt phòng");
+            e.printStackTrace(); // Log lỗi rõ ràng hơn
+            return ResponseEntity.internalServerError().body("Lỗi khi hủy đặt phòng: " + e.getMessage());
         }
     }
 
@@ -216,5 +230,26 @@ public class BookingController {
         }
 
         return dto;
+    }
+
+    @GetMapping("/host/{hostId}")
+    @PreAuthorize("hasRole('HOST') and #hostId == authentication.principal.id or hasRole('ADMIN')")
+    public ResponseEntity<List<BookingDTO>> getBookingsByHost(@PathVariable Integer hostId) {
+        List<BookingDTO> bookings = bookingService.getBookingsByHost(hostId);
+        return ResponseEntity.ok(bookings);
+    }
+
+    @GetMapping("/host/{hostId}/metrics")
+    @PreAuthorize("hasRole('HOST') and #hostId == authentication.principal.id or hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> getHostMetrics(@PathVariable Integer hostId) {
+        Map<String, Object> metrics = bookingService.getHostMetrics(hostId);
+        System.out.println("Metrics data: " + metrics);
+        return ResponseEntity.ok(metrics);
+    }
+    @GetMapping("/user/{userId}")
+    @PreAuthorize("hasRole('USER') and #userId == authentication.principal.id or hasRole('ADMIN')")
+    public ResponseEntity<List<BookingDTO>> getBookingsByUser(@PathVariable Integer userId) {
+        List<BookingDTO> bookings = bookingService.getBookingsByUser(userId);
+        return ResponseEntity.ok(bookings);
     }
 }

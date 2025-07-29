@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="507ebea0-593e-4bf0-a65b-edd17b25efc0" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/SWP/hotel/src/App.js" beforeDir="false" afterPath="$PROJECT_DIR$/SWP/hotel/src/App.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SWP/hotel/src/assets/styles/Search.css" beforeDir="false" afterPath="$PROJECT_DIR$/SWP/hotel/src/assets/styles/Search.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SWP/hotel/src/components/Header.js" beforeDir="false" afterPath="$PROJECT_DIR$/SWP/hotel/src/components/Header.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SWP/hotel/src/components/LoginSignupForm.js" beforeDir="false" afterPath="$PROJECT_DIR$/SWP/hotel/src/components/LoginSignupForm.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SWP/hotel/src/components/ProfilePage.js" beforeDir="false" afterPath="$PROJECT_DIR$/SWP/hotel/src/components/ProfilePage.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SWP/hotel/src/components/admin/Header.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/SWP/hotel/src/components/admin/Header.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SWP/hotel/src/components/host/DashboardHeader.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/SWP/hotel/src/components/host/DashboardHeader.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SWP/hotel/src/pages/Booked.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/SWP/hotel/src/pages/Booked.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SWP/hotel/src/pages/admin/All-booking.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/SWP/hotel/src/pages/admin/All-booking.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SWP/hotel/src/pages/admin/All-customer.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/SWP/hotel/src/pages/admin/All-customer.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SWP/hotel/src/pages/admin/All-hosts.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/SWP/hotel/src/pages/admin/All-hosts.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SWP/hotel/src/pages/admin/All-service.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/SWP/hotel/src/pages/admin/All-service.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SWP/hotel/src/pages/admin/Dashboard.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/SWP/hotel/src/pages/admin/Dashboard.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SWP/hotel/src/pages/admin/PendingServices.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/SWP/hotel/src/pages/admin/PendingServices.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SWP/hotel/src/pages/admin/ReportManagement/ReportList.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/SWP/hotel/src/pages/admin/ReportManagement/ReportList.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SWP/hotel/src/pages/host/BillingSystem.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/SWP/hotel/src/pages/host/BillingSystem.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SWP/hotel/src/pages/host/Booking.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/SWP/hotel/src/pages/host/Booking.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SWP/hotel/src/pages/host/Dashboard.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/SWP/hotel/src/pages/host/Dashboard.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SWP/hotel/src/pages/payment/BookingSuccess.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/SWP/hotel/src/pages/payment/BookingSuccess.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SWP/hotel/src/utils/axiosConfig.js" beforeDir="false" afterPath="$PROJECT_DIR$/SWP/hotel/src/utils/axiosConfig.js" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 4
+}]]></component>
+  <component name="ProjectId" id="30VhvOCu4IOmZilwqFZfInPJTTK" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "project-merge",
+    "last_opened_file_path": "H:/FPT/homestay-project-merge"
+  }
+}]]></component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="507ebea0-593e-4bf0-a65b-edd17b25efc0" name="Changes" comment="" />
+      <created>1753718877456</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1753718877456</updated>
+    </task>
+    <servers />
+  </component>
+</project>

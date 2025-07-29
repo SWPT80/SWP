@@ -7,6 +7,7 @@ const AllHost = () => {
     const [hosts, setHosts] = useState([]);
     const [openIndex, setOpenIndex] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
+    const [searchKeyword, setSearchKeyword] = useState('');
 
     useEffect(() => {
         const token = localStorage.getItem("token");
@@ -46,8 +47,19 @@ const AllHost = () => {
             });
     };
 
-    const totalPages = Math.ceil(hosts.length / PAGE_SIZE) || 1;
-    const visibleHosts = hosts.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+    const handleSearchChange = (e) => {
+        setSearchKeyword(e.target.value);
+        setCurrentPage(1);
+    };
+
+    const filteredHosts = hosts.filter((h) =>
+        h.fullName?.toLowerCase().includes(searchKeyword.toLowerCase()) ||
+        h.userName?.toLowerCase().includes(searchKeyword.toLowerCase()) ||
+        h.email?.toLowerCase().includes(searchKeyword.toLowerCase())
+    );
+
+    const totalPages = Math.ceil(filteredHosts.length / PAGE_SIZE) || 1;
+    const visibleHosts = filteredHosts.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
     const changePage = (page) => {
         if (page < 1 || page > totalPages) return;
@@ -60,10 +72,38 @@ const AllHost = () => {
                 <div className="content container-fluid">
                     <div className="page-header">
                         <div className="row align-items-center">
-                            <div className="col">
+                            <div className="col-md-6">
                                 <h4 className="card-title mt-2">
                                     <i className="fas fa-users-cog text-warning mr-2"></i>All Hosts
                                 </h4>
+                            </div>
+                            <div className="col-md-6 text-end">
+                                <div
+                                    className="position-relative d-inline-block"
+                                    style={{ maxWidth: '300px', width: '100%' }}
+                                >
+                                    <i
+                                        className="bi bi-search position-absolute"
+                                        style={{
+                                            top: '50%',
+                                            left: '12px',
+                                            transform: 'translateY(-50%)',
+                                            color: '#888',
+                                            fontSize: '16px',
+                                        }}
+                                    ></i>
+                                    <input
+                                        type="text"
+                                        className="form-control ps-5 py-2 rounded-pill border border-secondary-subtle"
+                                        placeholder="Tìm kiếm theo tên..."
+                                        value={searchKeyword}
+                                        onChange={handleSearchChange}
+                                        style={{
+                                            width: '100%',
+                                            boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
+                                        }}
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -154,7 +194,6 @@ const AllHost = () => {
                                             </ul>
                                         </nav>
                                     </div>
-
                                 </div>
                             </div>
                         </div>
@@ -166,3 +205,4 @@ const AllHost = () => {
 };
 
 export default AllHost;
+

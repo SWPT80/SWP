@@ -33,7 +33,7 @@ const AuthModal = ({ show, onClose, onAuthSuccess }) => {
       else navigate('/', { replace: true });
     } catch (error) {
       console.error('Lỗi khi gọi /me:', error);
-      setError('Không lấy được thông tin người dùng.');
+      setError('Tài khoản bạn đã bị vô hiệu hóa.');
     }
   };
 
@@ -70,7 +70,7 @@ const AuthModal = ({ show, onClose, onAuthSuccess }) => {
         await handleLoginSuccess(res.data.token, res.data.role);
       }
     } catch (err) {
-      const msg = err.response?.data?.message || 'Có lỗi xảy ra';
+      const msg = err.response?.data?.message || 'Tài khoản bạn đã bị vô hiệu hóa.';
       setError(msg);
     }
   };

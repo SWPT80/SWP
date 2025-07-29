@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "../../utils/axiosConfig";
-import { Pagination, Form, Row, Col } from "react-bootstrap";
+import { Form, Row, Col } from "react-bootstrap";
 
 const PAGE_SIZE = 10;
 
@@ -17,11 +17,12 @@ const PendingServices = () => {
   }, []);
 
   useEffect(() => {
-    const filtered = pendingServices.filter(s =>
+    const filtered = pendingServices.filter((s) =>
       (searchHomestayId === "" ||
         s.homestayId?.toString().includes(searchHomestayId) ||
         homestayMap[s.homestayId]?.toLowerCase().includes(searchHomestayId.toLowerCase())) &&
-      (searchType === "" || s.serviceType?.serviceName.toLowerCase().includes(searchType.toLowerCase()))
+      (searchType === "" ||
+        s.serviceType?.serviceName.toLowerCase().includes(searchType.toLowerCase()))
     );
     setFilteredServices(filtered);
     setCurrentPage(1);
@@ -40,8 +41,8 @@ const PendingServices = () => {
   };
 
   const fetchHomestayNames = async (services) => {
-    const uniqueIds = [...new Set(services.map(s => s.homestayId).filter(id => id))];
-    const promises = uniqueIds.map(id => axios.get(`/api/homestays/${id}`));
+    const uniqueIds = [...new Set(services.map((s) => s.homestayId).filter((id) => id))];
+    const promises = uniqueIds.map((id) => axios.get(`/api/homestays/${id}`));
     try {
       const responses = await Promise.all(promises);
       const map = responses.reduce((acc, res) => {
@@ -87,151 +88,182 @@ const PendingServices = () => {
   };
 
   return (
-    <div className="container py-5">
-      <h3 className="mb-4">Approve New Services</h3>
-      <Row className="mb-3">
-        <Col md={6}>
-          <Form.Control
-            type="text"
-            placeholder="Search by Homestay ID"
-            value={searchHomestayId}
-            onChange={(e) => setSearchHomestayId(e.target.value)}
-          />
-        </Col>
-        <Col md={6}>
-          <Form.Control
-            type="text"
-            placeholder="Search by Service Type"
-            value={searchType}
-            onChange={(e) => setSearchType(e.target.value)}
-          />
-        </Col>
-      </Row>
-      <div className="table-responsive">
-        <table className="table table-hover table-bordered align-middle">
-          <thead className="table-light">
-            <tr>
-              <th>ID</th>
-              <th>Homestay</th>
-              <th>Service Type</th>
-              <th>Price</th>
-              <th>Notes</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibleServices.length > 0 ? (
-              visibleServices.map((s) => (
-                <tr key={s.id}>
-                  <td>{s.id}</td>
-                  <td>{s.homestayId} - {homestayMap[s.homestayId] || "N/A"}</td>
-                  <td>{s.serviceType?.serviceName || "N/A"}</td>
-                  <td>{s.price?.toLocaleString()} VND</td>
-                  <td>{s.specialNotes || "-"}</td>
-                  <td><span className="badge bg-warning text-dark">Pending</span></td>
-                  <td>
-                    <button
-                      className="btn btn-sm btn-success me-2"
-                      onClick={() => handleApprove(s.id)}
-                    >
-                      Approve
-                    </button>
-                    <button
-                      className="btn btn-sm btn-danger"
-                      onClick={() => handleReject(s.id)}
-                    >
-                      Reject
-                    </button>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="7" className="text-center py-3">
-                  No services found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-      <div className="d-flex justify-content-between align-items-center mt-3">
-        <span>
-          Page {currentPage} / {totalPages}
-        </span>
-        <nav>
-          <ul className="pagination mb-0">
-            {/* First & Previous */}
-            <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-              <button className="page-link" onClick={() => changePage(1)}>«</button>
-            </li>
-            <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-              <button className="page-link" onClick={() => changePage(currentPage - 1)}>‹</button>
-            </li>
+    <div className="main-wrapper">
+      <div className="page-wrapper">
+        <div className="content container-fluid">
+          {/* Header */}
+          <div className="page-header">
+            <div className="row align-items-center">
+              <div className="col">
+                <h4 className="card-title">
+                  <i className="fas fa-tools text-primary me-2"></i>
+                  Pending Services
+                </h4>
+              </div>
+            </div>
+          </div>
 
-            {/* Page Numbers with Ellipsis */}
-            {(() => {
-              const pageItems = [];
-              const maxPagesToShow = 5;
-              let start = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
-              let end = start + maxPagesToShow - 1;
+          {/* Filters */}
+          <Row className="mb-4">
+            <Col md={6}>
+              <Form.Control
+                type="text"
+                placeholder="Search by Homestay ID or Name"
+                value={searchHomestayId}
+                onChange={(e) => setSearchHomestayId(e.target.value)}
+              />
+            </Col>
+            <Col md={6}>
+              <Form.Control
+                type="text"
+                placeholder="Search by Service Type"
+                value={searchType}
+                onChange={(e) => setSearchType(e.target.value)}
+              />
+            </Col>
+          </Row>
 
-              if (end > totalPages) {
-                end = totalPages;
-                start = Math.max(1, end - maxPagesToShow + 1);
-              }
+          {/* Table */}
+          <div className="card card-table">
+            <div className="card-body">
+              <div className="table-responsive">
+                <table className="table table-hover table-striped align-middle mb-0">
+                  <thead className="table-light">
+                    <tr>
+                      <th>ID</th>
+                      <th>Homestay</th>
+                      <th>Service Type</th>
+                      <th>Price</th>
+                      <th>Notes</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visibleServices.length > 0 ? (
+                      visibleServices.map((s) => (
+                        <tr key={s.id}>
+                          <td>{s.id}</td>
+                          <td>
+                            {s.homestayId} - {homestayMap[s.homestayId] || "N/A"}
+                          </td>
+                          <td>{s.serviceType?.serviceName || "N/A"}</td>
+                          <td>{s.price?.toLocaleString()} VND</td>
+                          <td>{s.specialNotes || "-"}</td>
+                          <td>
+                            <span className="badge bg-warning text-dark">Pending</span>
+                          </td>
+                          <td>
+                            <div className="d-flex flex-column gap-2 align-items-center">
+                              <button
+                                className="btn btn-outline-success btn-sm rounded-pill px-3 shadow-sm w-100"
+                                onClick={() => handleApprove(s.id)}
+                              >
+                                <i className="bi bi-check-circle me-1"></i> Approve
+                              </button>
+                              <button
+                                className="btn btn-outline-danger btn-sm rounded-pill px-3 shadow-sm w-100"
+                                onClick={() => handleReject(s.id)}
+                              >
+                                <i className="bi bi-x-circle me-1"></i> Reject
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="7" className="text-center py-3">
+                          No services found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
 
-              if (start > 1) {
-                pageItems.push(
-                  <li key={1} className="page-item">
-                    <button className="page-link" onClick={() => changePage(1)}>1</button>
-                  </li>
-                );
-                if (start > 2) {
-                  pageItems.push(
-                    <li key="start-ellipsis" className="page-item disabled">
-                      <span className="page-link">...</span>
-                    </li>
-                  );
-                }
-              }
+          {/* Pagination - with ellipsis */}
+          <div className="d-flex justify-content-between align-items-center mt-4">
+            <span>
+              Page {currentPage} / {totalPages}
+            </span>
+            <nav>
+              <ul className="pagination mb-0">
+                {/* First & Prev */}
+                <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
+                  <button className="page-link" onClick={() => changePage(1)}>«</button>
+                </li>
+                <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
+                  <button className="page-link" onClick={() => changePage(currentPage - 1)}>‹</button>
+                </li>
 
-              for (let i = start; i <= end; i++) {
-                pageItems.push(
-                  <li key={i} className={`page-item ${i === currentPage ? 'active' : ''}`}>
-                    <button className="page-link" onClick={() => changePage(i)}>{i}</button>
-                  </li>
-                );
-              }
+                {/* Page Numbers with Ellipsis */}
+                {(() => {
+                  const maxPagesToShow = 5;
+                  let start = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+                  let end = start + maxPagesToShow - 1;
 
-              if (end < totalPages) {
-                if (end < totalPages - 1) {
-                  pageItems.push(
-                    <li key="end-ellipsis" className="page-item disabled">
-                      <span className="page-link">...</span>
-                    </li>
-                  );
-                }
-                pageItems.push(
-                  <li key={totalPages} className="page-item">
-                    <button className="page-link" onClick={() => changePage(totalPages)}>{totalPages}</button>
-                  </li>
-                );
-              }
+                  if (end > totalPages) {
+                    end = totalPages;
+                    start = Math.max(1, end - maxPagesToShow + 1);
+                  }
 
-              return pageItems;
-            })()}
+                  const pageItems = [];
 
-            {/* Next & Last */}
-            <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-              <button className="page-link" onClick={() => changePage(currentPage + 1)}>›</button>
-            </li>
-            <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-              <button className="page-link" onClick={() => changePage(totalPages)}>»</button>
-            </li>
-          </ul>
-        </nav>
+                  if (start > 1) {
+                    pageItems.push(
+                      <li key="1" className="page-item">
+                        <button className="page-link" onClick={() => changePage(1)}>1</button>
+                      </li>
+                    );
+                    if (start > 2) {
+                      pageItems.push(
+                        <li key="start-ellipsis" className="page-item disabled">
+                          <span className="page-link">...</span>
+                        </li>
+                      );
+                    }
+                  }
+
+                  for (let i = start; i <= end; i++) {
+                    pageItems.push(
+                      <li key={i} className={`page-item ${i === currentPage ? "active" : ""}`}>
+                        <button className="page-link" onClick={() => changePage(i)}>{i}</button>
+                      </li>
+                    );
+                  }
+
+                  if (end < totalPages) {
+                    if (end < totalPages - 1) {
+                      pageItems.push(
+                        <li key="end-ellipsis" className="page-item disabled">
+                          <span className="page-link">...</span>
+                        </li>
+                      );
+                    }
+                    pageItems.push(
+                      <li key={totalPages} className="page-item">
+                        <button className="page-link" onClick={() => changePage(totalPages)}>{totalPages}</button>
+                      </li>
+                    );
+                  }
+
+                  return pageItems;
+                })()}
+
+                {/* Next & Last */}
+                <li className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}>
+                  <button className="page-link" onClick={() => changePage(currentPage + 1)}>›</button>
+                </li>
+                <li className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}>
+                  <button className="page-link" onClick={() => changePage(totalPages)}>»</button>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        </div>
       </div>
     </div>
   );

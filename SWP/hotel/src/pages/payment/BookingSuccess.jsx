@@ -60,9 +60,6 @@ const BookingSuccess = () => {
         setError(err.response?.status === 401
           ? 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.'
           : err.response?.data?.message || 'Không thể tải thông tin đặt phòng. Vui lòng liên hệ hỗ trợ.');
-        if (err.response?.status === 401) {
-          navigate('/admin/login');
-        }
       } finally {
         setLoading(false);
       }

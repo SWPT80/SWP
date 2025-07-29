@@ -9,9 +9,14 @@ const Dashboard = () => {
   const [bookings, setBookings] = useState([]);
   const [showAll, setShowAll] = useState(false);
   const navigate = useNavigate();
+  const [activeUsers, setActiveUsers] = useState(0);
+  const [totalHosts, setTotalHosts] = useState(0);
+  const [totalCustomers, setTotalCustomers] = useState(0);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
+
+    // Lấy danh sách bookings
     axios.get('http://localhost:8080/api/bookings/with-user-info', {
       headers: {
         Authorization: `Bearer ${token}`
@@ -22,6 +27,29 @@ const Dashboard = () => {
         console.error("Lỗi khi lấy danh sách booking:", err.response?.data || err.message);
         alert("Bạn không có quyền truy cập.");
       });
+
+    // Lấy số người dùng đang hoạt động
+    axios.get('http://localhost:8080/api/monitor/active-users')
+      .then(res => setActiveUsers(res.data))
+      .catch(err => console.error("Lỗi khi lấy số người dùng đang hoạt động:", err));
+
+    // ✅ Lấy tổng số host
+    axios.get('http://localhost:8080/api/admin/users/count/hosts', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+      .then(res => setTotalHosts(res.data))
+      .catch(err => console.error("Lỗi khi lấy số lượng host:", err));
+
+    // ✅ Lấy tổng số customer
+    axios.get('http://localhost:8080/api/admin/users/count/customers', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+      .then(res => setTotalCustomers(res.data))
+      .catch(err => console.error("Lỗi khi lấy số lượng customer:", err));
   }, []);
 
   const displayedBookings = showAll ? bookings : bookings.slice(0, 5);
@@ -31,21 +59,20 @@ const Dashboard = () => {
       <div className="page-wrapper">
         <div className="content container-fluid">
           <div className="page-header">
-            <div className="row">
-              <div className="col-sm-12 mt-5">
-                <h3 className="page-title mt-3">Hello Admin!</h3>
-                <ul className="breadcrumb">
-                  <li className="breadcrumb-item active">Dashboard</li>
-                </ul>
+            <div className="row align-items-center">
+              <div className="col">
+                <h4 className="card-title mt-2">Hello Admin!
+                  <ul>Dashboard</ul>
+                </h4>
               </div>
             </div>
           </div>
 
           <div className="row">
             {[{ title: 'Total Booking', value: bookings.length, icon: 'user-plus' },
-            { title: 'Available Rooms', value: 180, icon: 'dollar-sign' },
-            { title: 'Enquiry', value: 1538, icon: 'file-plus' },
-            { title: 'Collections', value: 364, icon: 'globe' }].map((card, index) => (
+            { title: 'Total Customers', value: totalCustomers, icon: 'users' },
+            { title: 'Total Hosts', value: totalHosts, icon: 'user-check' },
+            { title: 'Active Users', value: activeUsers, icon: 'users' }].map((card, index) => (
               <div className="col-xl-3 col-sm-6 col-12" key={index}>
                 <div className="card board1 fill">
                   <div className="card-body">

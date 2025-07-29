@@ -115,4 +115,12 @@ public class UserManagement {
         User user = getHostForManagement(id);  // Sử dụng method mới
         userRepo.deleteById(id);
     }
+
+    public long countHosts() {
+        return userRepo.countByRole("host");
+    }
+
+    public long countCustomers() {
+        return userRepo.countByRole("user");
+    }
 }

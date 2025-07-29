@@ -24,14 +24,8 @@ import Expenses from "./pages/admin/Expenses";
 import Activity from "./pages/admin/Activities";
 import ExpenseReports from "./pages/admin/Expense-reports";
 import InvoiceReports from "./pages/admin/Invoices-report";
-import ForgotPassword from "./pages/admin/Forgot-password";
-import ChangePassword from "./pages/admin/Change-password";
-import LockScreen from "./pages/admin/Lock-screen";
 import Profile from "./pages/admin/Profile";
 import Error404 from "./pages/admin/Error-404";
-import Error500 from "./pages/admin/Error-500";
-import Login from "./pages/admin/Login";
-import Register from "./pages/admin/Register";
 import Gallery from "./pages/admin/Gallery";
 import PendingServices from "./pages/admin/PendingServices";
 import ReportList from "./pages/admin/ReportManagement/ReportList";
@@ -42,6 +36,7 @@ import Experience from "./pages/Experience";
 import Service from "./pages/Service";
 import RoomDetails from "./pages/RoomDetails";
 import Offers from "./pages/Offer";
+import Booked from "./pages/Booked";
 
 // Host Pages
 import HostDashboard from "./pages/host/Dashboard";
@@ -64,109 +59,104 @@ import AddService from "./pages/host/AddService";
 import PaymentCheckout from "./pages/payment/Payment-checkout";
 import PaymentCallback from "./pages/payment/PaymentCallback";
 import BookingSuccess from "./pages/payment/BookingSuccess";
-
 import { AuthProvider } from './context/AuthContext';
 import SearchResults from "./components/Search/SearchResultsHome";
 import UserChatPage from "./components/Chat/ChatUsers";
-
+import { WebSocketProvider } from './context/WebSocketContext';
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          {/* Admin Routes */}
-          <Route
-            path="/admin"
-            element={
-              <PrivateRoute allowedRoles={['ADMIN']}>
-                <AdminLayout />
-              </PrivateRoute>
-            }
-          >
-            <Route index element={<Navigate to="/admin/dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="all-booking" element={<AllBooking />} />
-            <Route path="edit-booking/:id" element={<EditBooking />} />
-            <Route path="all-customer" element={<AllCustomer />} />
-            <Route path="edit-customer/:id" element={<EditCustomer />} />
-            <Route path="all-hosts" element={<AllHost />} />
-            <Route path="edit-host/:id" element={<EditHost />} />
-            <Route path="all-service" element={<AllService />} />
-            <Route path="pending-services" element={<PendingServices />} />
-            <Route path="invoices" element={<Invoices />} />
-            <Route path="expenses" element={<Expenses />} />
-            <Route path="activities" element={<Activity />} />
-            <Route path="expense-reports" element={<ExpenseReports />} />
-            <Route path="invoice-reports" element={<InvoiceReports />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="gallery" element={<Gallery />} />
-            <Route path="*" element={<Error404 />} />
-            <Route path="reports" element={<ReportList />} />
-          </Route>
-
-          {/* Authentication Routes (No Layout) */}
-          <Route path="/admin/login" element={<Login />} />
-          <Route path="/admin/register" element={<Register />} />
-          <Route path="/admin/forgot-password" element={<ForgotPassword />} />
-          <Route path="/admin/change-password" element={<ChangePassword />} />
-          <Route path="/admin/lock-screen" element={<LockScreen />} />
-
-          {/* Frontend Routes */}
-          <Route element={<HomeLayout />}>
-            <Route path="/search-results" element={<SearchResults />} />
-            <Route path="/" element={<Home />} />
-            <Route path="/experience" element={<Experience />} />
-            <Route path="/services" element={<Service />} />
-            <Route path="/review" element={<ReviewPage />} />
-            <Route path="/report" element={<ReportPage />} /> {/* ✅ Dùng ReportPage */}
-          </Route>
-
-          {/* Host Routes */}
-          <Route
-            path="/host"
-            element={
-              <PrivateRoute allowedRoles={['HOST']}>
-                <HostLayout />
-              </PrivateRoute>
-            }
-          >
-            <Route index element={<Navigate to="/host/dashboard" replace />} />
-            <Route path="dashboard" element={<HostDashboard />} />
-
-            <Route path="rooms" element={<Room />}>
-              <Route index element={<AllRoom />} />
-              <Route path="add" element={<AddRoom />} />
-              <Route path="edit/:id" element={<EditRoom />} />
-              <Route path="pricing" element={<RoomPricing />} />
+      <WebSocketProvider>
+        <Router>
+          <Routes>
+            {/* Admin Routes */}
+            <Route
+              path="/admin"
+              element={
+                <PrivateRoute allowedRoles={['ADMIN']}>
+                  <AdminLayout />
+                </PrivateRoute>
+              }
+            >
+              <Route index element={<Navigate to="/admin/dashboard" replace />} />
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="all-booking" element={<AllBooking />} />
+              <Route path="edit-booking/:id" element={<EditBooking />} />
+              <Route path="all-customer" element={<AllCustomer />} />
+              <Route path="edit-customer/:id" element={<EditCustomer />} />
+              <Route path="all-hosts" element={<AllHost />} />
+              <Route path="edit-host/:id" element={<EditHost />} />
+              <Route path="all-service" element={<AllService />} />
+              <Route path="pending-services" element={<PendingServices />} />
+              <Route path="invoices" element={<Invoices />} />
+              <Route path="expenses" element={<Expenses />} />
+              <Route path="activities" element={<Activity />} />
+              <Route path="expense-reports" element={<ExpenseReports />} />
+              <Route path="invoice-reports" element={<InvoiceReports />} />
+              <Route path="profile" element={<Profile />} />
+              <Route path="gallery" element={<Gallery />} />
+              <Route path="*" element={<Error404 />} />
+              <Route path="reports" element={<ReportList />} />
             </Route>
 
-            <Route path="messages" element={<Messages />} />
-            <Route path="reports" element={<CustomerReport />} />
-            <Route path="billing" element={<BillingSystem />} />
-            <Route path="services" element={<HostService />} />
-            <Route path="add-service" element={<AddService />} />
-            <Route path="edit-service/:id" element={<EditService />} />
-            <Route path="occupancy" element={<Occupancy />} />
-            <Route path="bookings" element={<HostBooking />} />
-            <Route path="facilities" element={<FacilitiesList />} />
-          </Route>
+            {/* Frontend Routes */}
+            <Route element={<HomeLayout />}>
+              <Route path="/search-results" element={<SearchResults />} />
+              <Route path="/" element={<Home />} />
+              <Route path="/experience" element={<Experience />} />
+              <Route path="/services" element={<Service />} />
+              <Route path="/review" element={<ReviewPage />} />
+              <Route path="/report" element={<ReportPage />} /> {/* ✅ Dùng ReportPage */}
+            </Route>
 
-          {/* Booking/Payment Routes */}
-          <Route element={<BookedLayout />}>
-            <Route path="/offer" element={<Offers />} />
-            <Route path="/room/roomdetails/:homestayId/:roomNumber" element={<RoomDetails />} />
-            <Route path="/checkout" element={<PaymentCheckout />} />
-            <Route path="/payment-callback" element={<PaymentCallback />} />
-            <Route path="/booking-success" element={<BookingSuccess />} />
-          </Route>
+            {/* Host Routes */}
+            <Route
+              path="/host"
+              element={
+                <PrivateRoute allowedRoles={['HOST']}>
+                  <HostLayout />
+                </PrivateRoute>
+              }
+            >
+              <Route index element={<Navigate to="/host/dashboard" replace />} />
+              <Route path="dashboard" element={<HostDashboard />} />
 
-          <Route path="/chatuser" element={<UserChatPage />} />
-          <Route path="*" element={<Error404 />} />
-          <Route path="/profiles" element={<Profiles />} />
-          <Route path="/become-host" element={<BecomeHost />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-        </Routes>
-      </Router>
+              <Route path="rooms" element={<Room />}>
+                <Route index element={<AllRoom />} />
+                <Route path="add" element={<AddRoom />} />
+                <Route path="edit/:id" element={<EditRoom />} />
+                <Route path="pricing" element={<RoomPricing />} />
+              </Route>
+
+              <Route path="messages" element={<Messages />} />
+              <Route path="reports" element={<CustomerReport />} />
+              <Route path="billing" element={<BillingSystem />} />
+              <Route path="services" element={<HostService />} />
+              <Route path="add-service" element={<AddService />} />
+              <Route path="edit-service/:id" element={<EditService />} />
+              <Route path="occupancy" element={<Occupancy />} />
+              <Route path="bookings" element={<HostBooking />} />
+              <Route path="facilities" element={<FacilitiesList />} />
+            </Route>
+
+            {/* Booking/Payment Routes */}
+            <Route element={<BookedLayout />}>
+              <Route path="/offer" element={<Offers />} />
+              <Route path="/room/roomdetails/:homestayId/:roomNumber" element={<RoomDetails />} />
+              <Route path="/checkout" element={<PaymentCheckout />} />
+              <Route path="/payment-callback" element={<PaymentCallback />} />
+              <Route path="/booking-success" element={<BookingSuccess />} />
+              <Route path="/booked" element={<Booked />} />
+            </Route>
+
+            <Route path="/chatuser" element={<UserChatPage />} />
+            <Route path="*" element={<Error404 />} />
+            <Route path="/profiles" element={<Profiles />} />
+            <Route path="/become-host" element={<BecomeHost />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+          </Routes>
+        </Router>
+      </WebSocketProvider>
     </AuthProvider>
   );
 }

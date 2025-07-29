@@ -1,163 +1,311 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
-import { Container, Row, Col, Card, Table, Button, Form, Badge, ListGroup } from "react-bootstrap";
-import { Client } from "@stomp/stompjs";
-import SockJS from "sockjs-client";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap-icons/font/bootstrap-icons.css";
-import "@fortawesome/fontawesome-free/css/all.min.css";
-import "../assets/styles/RoomDetails.css";
+import React, { useState, useEffect, useMemo } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { useWebSocket } from '../context/WebSocketContext';
+import axios from '../utils/axiosConfig';
 
-export default function Booked() {
+import {
+    Container,
+    Row,
+    Col,
+    Card,
+    Button,
+    Form,
+    Modal,
+    ListGroup,
+    Badge,
+    Tabs,
+    Tab,
+    Alert,
+    Spinner,
+    Pagination,
+    InputGroup
+} from 'react-bootstrap';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap-icons/font/bootstrap-icons.css';
+import '@fortawesome/fontawesome-free/css/all.min.css';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+const Booked = () => {
+    const { isLoggedIn, user } = useAuth();
+    const { bookings: realTimeBookings } = useWebSocket();
+    const navigate = useNavigate();
+
     const [bookings, setBookings] = useState([]);
-    const [roomData, setRoomData] = useState(null);
-    const [amenities, setAmenities] = useState([]);
-    const [cancellationPolicies, setCancellationPolicies] = useState([]);
-    const [homestayRules, setHomestayRules] = useState([]);
-    const [reviews, setReviews] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [activeTab, setActiveTab] = useState('all');
+
     const [selectedBooking, setSelectedBooking] = useState(null);
-    const [error, setError] = useState("");
-    const [stompClient, setStompClient] = useState(null);
-    const userId = localStorage.getItem("userId");
-    const token = localStorage.getItem("token");
+
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [showMessageModal, setShowMessageModal] = useState(false);
+
+    const [reportType, setReportType] = useState('');
+    const [reportContent, setReportContent] = useState('');
+    const [reportTypes] = useState([
+        'Chất lượng dịch vụ không như mô tả',
+        'Vấn đề về vệ sinh',
+        'Thái độ không chuyên nghiệp của host',
+        'Vấn đề về an toàn',
+        'Khác'
+    ]);
+
+    const [messageContent, setMessageContent] = useState('');
+
+    const [showReviewModal, setShowReviewModal] = useState(false);
+    const [reviewRating, setReviewRating] = useState(0);
+    const [reviewContent, setReviewContent] = useState('');
+
+    const [searchQuery, setSearchQuery] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 6;
+
+    const showToast = (message, type = 'info') => {
+        const options = {
+            position: 'top-right',
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+        };
+        if (type === 'error') {
+            toast.error(message, options);
+        } else if (type === 'success') {
+            toast.success(message, options);
+        } else {
+            toast.info(message, options);
+        }
+    };
 
     useEffect(() => {
-        const fetchBookings = async () => {
-            try {
-                const res = await axios.get(`http://localhost:8080/api/bookings/user/${userId}/latest`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                const booking = res.data;
-                setBookings([booking]);
+        if (!isLoggedIn) {
+            navigate('/login');
+            return;
+        }
+        fetchBookings();
+    }, [isLoggedIn, navigate]);
 
-                const [roomRes, reviewRes, cancelRes, rulesRes] = await Promise.all([
-                    axios.get(`/api/rooms/${booking.homestayId}/${booking.roomNumber}`, { headers: { Authorization: `Bearer ${token}` } }),
-                    axios.get(`/api/reviews/room/${booking.homestayId}/${booking.roomNumber}`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] })),
-                    axios.get(`/api/cancellation-policies/homestay/${booking.homestayId}`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] })),
-                    axios.get(`/api/homestay-rules/homestay/${booking.homestayId}`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] })),
-                ]);
+    useEffect(() => {
+        console.log(bookings);
+    }, [bookings]);
 
-                const roomDetails = roomRes.data;
-                setRoomData({
-                    roomName: roomDetails.room.type,
-                    name: roomDetails.homestay.homestayName,
-                    star: roomDetails.room.rating || (reviewRes.data.length > 0 ? reviewRes.data.reduce((sum, r) => sum + r.rating, 0) / reviewRes.data.length : 0),
-                    description: roomDetails.homestay.description || "Không có mô tả",
-                    address: roomDetails.homestay.address || "Không có địa chỉ",
-                    location: roomDetails.homestay.location || "Không xác định",
-                    detailImageHomestay: roomDetails.images?.[0]?.imageUrl || roomDetails.homestayImages?.[0]?.imageUrl || "/images/homestay.jpg",
-                    price: roomDetails.room.price,
-                    capacity: roomDetails.room.capacity,
-                    status: roomDetails.room.status,
-                    amenities: roomDetails.amenities || [],
-                });
-                setReviews(reviewRes.data);
-                setCancellationPolicies(cancelRes.data);
-                setHomestayRules(rulesRes.data);
-
-                if (booking.status === "CONFIRMED") {
-                    handleBookingSelect(booking);
-                }
-            } catch (err) {
-                setError("Failed to load bookings or room details: " + err.message);
-                toast.error("Failed to load bookings or room details: " + err.message);
+    const fetchBookings = async () => {
+        setLoading(true);
+        try {
+            const response = await axios.get(`/api/bookings/user/${user.id}`);
+            setBookings(response.data);
+            if (response.data.length === 0) {
+                showToast('Bạn chưa có booking nào');
             }
-        };
+        } catch (err) {
+            console.error('Lỗi khi lấy danh sách booking:', err);
+            setError('Không thể tải danh sách đặt phòng. Vui lòng thử lại sau.');
+            showToast('Không thể tải danh sách đặt phòng. Vui lòng thử lại sau.', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-        const socket = new SockJS("http://localhost:8080/ws");
-        const client = new Client({
-            webSocketFactory: () => socket,
-            reconnectDelay: 5000,
-            onConnect: () => {
-                client.subscribe(`/topic/notifications/${userId}`, (message) => {
-                    const notification = JSON.parse(message.body);
-                    toast.info(notification.message);
-                    if (notification.type === "BOOKING_CREATED" || notification.type === "BOOKING_STATUS_UPDATE") {
-                        fetchBookings();
-                    }
-                });
-            },
-            onStompError: (frame) => {
-                setError("WebSocket connection failed: " + frame.headers.message);
-                toast.error("WebSocket connection failed: " + frame.headers.message);
-            },
+    const combinedBookings = useMemo(() => {
+        const all = [...bookings, ...realTimeBookings];
+        const map = new Map();
+        all.forEach((booking) => {
+            const key = `${booking.homestay?.id || booking.homestayId || booking.homestay?.homestayName}-${booking.room?.id || booking.roomId || booking.roomNumber || booking.room?.type}-${booking.checkInDate}-${booking.checkOutDate}-${booking.totalAmount}-${booking.totalPeople}`;
+            if (!map.has(key)) {
+                map.set(key, booking);
+            }
         });
-        client.activate();
-        setStompClient(client);
+        return Array.from(map.values());
+    }, [bookings, realTimeBookings]);
 
-        if (userId && token) {
-            fetchBookings();
-        } else {
-            setError("Please log in to view your bookings.");
-            toast.error("Please log in to view your bookings.");
-        }
-
-        return () => {
-            client.deactivate();
+    const bookingTabs = useMemo(() => {
+        const now = new Date();
+        return {
+            all: combinedBookings,
+            upcoming: combinedBookings.filter(
+                (b) => new Date(b.checkInDate) > now && b.status !== 'CANCELLED'
+            ),
+            current: combinedBookings.filter((b) => {
+                const checkIn = new Date(b.checkInDate);
+                const checkOut = new Date(b.checkOutDate);
+                return checkIn <= now && checkOut >= now && b.status !== 'CANCELLED';
+            }),
+            past: combinedBookings.filter(
+                (b) => new Date(b.checkOutDate) < now && b.status !== 'CANCELLED'
+            ),
+            cancelled: combinedBookings.filter((b) => b.status === 'CANCELLED'),
         };
-    }, [userId, token]);
+    }, [combinedBookings]);
 
-    const handleBookingSelect = async (booking) => {
-        setSelectedBooking(booking);
-        try {
-            const res = await axios.get(`http://localhost:8080/api/amenities/homestay/${booking.homestayId}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            setAmenities(res.data.map((amenity) => ({ ...amenity, enabled: true })));
-        } catch (err) {
-            setError("Failed to load amenities: " + err.message);
-            toast.error("Failed to load amenities: " + err.message);
-        }
-    };
-
-    const handleAmenityToggle = (amenityId) => {
-        setAmenities((prev) =>
-            prev.map((amenity) =>
-                amenity.typeId === amenityId ? { ...amenity, enabled: !amenity.enabled } : amenity
-            )
+    const filteredBookings = useMemo(() => {
+        const tabBookings = bookingTabs[activeTab];
+        if (!searchQuery) return tabBookings;
+        const lowerQuery = searchQuery.toLowerCase();
+        return tabBookings.filter(booking =>
+            (booking.homestay?.homestayName || '').toLowerCase().includes(lowerQuery) ||
+            (booking.room?.type || '').toLowerCase().includes(lowerQuery) ||
+            new Date(booking.checkInDate).toLocaleDateString('vi-VN').includes(lowerQuery) ||
+            new Date(booking.checkOutDate).toLocaleDateString('vi-VN').includes(lowerQuery)
         );
-    };
+    }, [bookingTabs, activeTab, searchQuery]);
 
-    const submitAmenityReport = async () => {
-        if (!selectedBooking) return;
+    const paginatedBookings = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return filteredBookings.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredBookings, currentPage]);
+
+    const totalPages = Math.ceil(filteredBookings.length / itemsPerPage);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [activeTab, searchQuery]);
+
+    const handleCancelBooking = async (bookingId) => {
+        if (!window.confirm('Bạn chắc chắn muốn hủy đặt phòng này?')) return;
         try {
-            const reportDescription = amenities
-                .map((a) => `- ${a.typeName}: ${a.enabled ? "Available" : "Not Available"}`)
-                .join("\n");
-
-            const report = {
-                id: selectedBooking.id, // Sử dụng bookingId làm reportId
-                description: reportDescription,
-            };
-
-            await axios.post(`http://localhost:8080/api/amenities/report`, report, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            toast.success("Amenity report submitted successfully!");
-            setAmenities([]);
-            setSelectedBooking(null);
+            await axios.put(`/api/bookings/${bookingId}/cancel`);
+            showToast('Đã hủy đặt phòng thành công', 'success');
+            fetchBookings();
         } catch (err) {
-            setError("Failed to submit report: " + err.message);
-            toast.error("Failed to submit report: " + err.message);
+            console.error(err);
+            showToast('Hủy đặt phòng thất bại: ' + (err.response?.data || err.message), 'error');
         }
     };
 
-    if (error) {
+    const handleSubmitReport = async () => {
+        if (!reportType || !reportContent.trim()) {
+            showToast('Vui lòng điền đầy đủ thông tin báo cáo', 'error');
+            return;
+        }
+
+        try {
+            await axios.post('/api/reports', {
+                bookingId: selectedBooking.id,
+                type: reportType,
+                content: reportContent,
+                homestayId: selectedBooking.homestayId
+            });
+
+            showToast('Gửi báo cáo thành công', 'success');
+            setShowReportModal(false);
+            setReportType('');
+            setReportContent('');
+        } catch (err) {
+            console.error('Lỗi khi gửi báo cáo:', err);
+            showToast('Không thể gửi báo cáo. Vui lòng thử lại.', 'error');
+        }
+    };
+
+    const handleSendMessage = async () => {
+        if (!messageContent.trim()) {
+            showToast('Vui lòng nhập nội dung tin nhắn', 'error');
+            return;
+        }
+
+        try {
+            await axios.post('/api/messages', {
+                bookingId: selectedBooking.id,
+                recipientId: selectedBooking.homestay?.hostId,
+                content: messageContent
+            });
+
+            showToast('Gửi tin nhắn thành công', 'success');
+            setShowMessageModal(false);
+            setMessageContent('');
+        } catch (err) {
+            console.error('Lỗi khi gửi tin nhắn:', err);
+            showToast('Không thể gửi tin nhắn. Vui lòng thử lại.', 'error');
+        }
+    };
+
+    const handleWriteReview = (booking) => {
+        setSelectedBooking(booking);
+        setReviewRating(0);
+        setReviewContent('');
+        setShowReviewModal(true);
+    };
+
+    const handleSubmitReview = async () => {
+        if (reviewRating === 0 || !reviewContent.trim()) {
+            showToast('Vui lòng chọn số sao và nhập nội dung', 'error');
+            return;
+        }
+
+        try {
+            await axios.post('/api/reviews', {
+                bookingId: selectedBooking.id,
+                rating: reviewRating,
+                content: reviewContent
+            });
+            showToast('Đánh giá thành công', 'success');
+            setShowReviewModal(false);
+            fetchBookings();
+        } catch (err) {
+            console.error('Lỗi khi gửi đánh giá:', err);
+            showToast('Không thể gửi đánh giá. Vui lòng thử lại.', 'error');
+        }
+    };
+
+    const getStatusBadge = (status, checkInDate, checkOutDate) => {
+        const now = new Date();
+        const checkIn = new Date(checkInDate);
+        const checkOut = new Date(checkOutDate);
+
+        if (status === 'CANCELLED') {
+            return { variant: 'danger', text: 'Đã hủy' };
+        }
+
+        if (status === 'PENDING') {
+            return { variant: 'warning', text: 'Pending' };
+        }
+
+        if (status === 'COMPLETED') {
+            return { variant: 'success', text: 'Hoàn thành' };
+        }
+
+        if (checkIn <= now && checkOut >= now) {
+            return { variant: 'primary', text: 'Đang diễn ra' };
+        }
+
+        if (checkIn > now) {
+            return { variant: 'success', text: 'Success' };
+        }
+
+        if (checkOut < now) {
+            return { variant: 'secondary', text: 'Đã kết thúc' };
+        }
+
+        return { variant: 'info', text: 'Đã xác nhận' };
+    };
+
+    const formatPrice = (price) => {
+        return new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND',
+        }).format(price);
+    };
+
+    if (loading) {
         return (
             <Container className="text-center py-5">
-                <ToastContainer />
-                <div className="text-danger">{error}</div>
+                <Spinner animation="border" role="status">
+                    <span className="visually-hidden">Đang tải...</span>
+                </Spinner>
             </Container>
         );
     }
 
-    if (!roomData || bookings.length === 0) {
+    if (error) {
         return (
             <Container className="text-center py-5">
-                <ToastContainer />
-                <div>Chưa có đặt phòng nào.</div>
+                <Alert variant="danger">{error}</Alert>
+                <Button variant="primary" onClick={fetchBookings}>
+                    Thử lại
+                </Button>
             </Container>
         );
     }
@@ -165,228 +313,294 @@ export default function Booked() {
     return (
         <Container className="my-4">
             <ToastContainer />
+
             <Row className="mb-4">
-                <Col md={12}>
-                    <Card.Img
-                        variant="top"
-                        src={`/${roomData.detailImageHomestay}`}
-                        alt="Phòng chính"
-                        className="rounded"
-                        style={{ height: "400px", objectFit: "cover" }}
-                    />
+                <Col>
+                    <h1 className="mb-4">Đặt phòng của tôi</h1>
+
+                    <Tabs
+                        activeKey={activeTab}
+                        onSelect={(k) => setActiveTab(k)}
+                        className="mb-4"
+                    >
+                        <Tab eventKey="all" title={`Tất cả (${bookingTabs.all.length})`} />
+                        <Tab eventKey="upcoming" title={`Sắp tới (${bookingTabs.upcoming.length})`} />
+                        <Tab eventKey="current" title={`Đang diễn ra (${bookingTabs.current.length})`} />
+                        <Tab eventKey="past" title={`Đã kết thúc (${bookingTabs.past.length})`} />
+                        <Tab eventKey="cancelled" title={`Đã hủy (${bookingTabs.cancelled.length})`} />
+                    </Tabs>
+
+                    <InputGroup className="mb-4">
+                        <Form.Control
+                            type="text"
+                            placeholder="Tìm kiếm theo tên homestay, loại phòng, ngày..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                        <Button variant="outline-secondary">
+                            <i className="bi bi-search"></i>
+                        </Button>
+                    </InputGroup>
                 </Col>
             </Row>
 
             <Row>
-                <Col md={8}>
-                    <Card className="mb-4">
-                        <Card.Body>
-                            <Card.Title as="h2" className="mb-3">{roomData.roomName}</Card.Title>
-                            <ListGroup variant="flush" className="mb-3">
-                                <ListGroup.Item className="d-flex align-items-center">
-                                    <i className="bi bi-building text-muted me-2"></i>
-                                    <span>{roomData.name}</span>
-                                </ListGroup.Item>
-                                <ListGroup.Item className="d-flex align-items-center">
-                                    <i className="bi bi-geo-alt text-muted me-2"></i>
-                                    <span>{roomData.address} ({roomData.location})</span>
-                                </ListGroup.Item>
-                                <ListGroup.Item className="d-flex align-items-center">
-                                    <i className="bi bi-star-fill text-warning me-2"></i>
-                                    <span>{roomData.star.toFixed(1)} sao</span>
-                                </ListGroup.Item>
-                                <ListGroup.Item className="d-flex align-items-center">
-                                    <i className="bi bi-people text-muted me-2"></i>
-                                    <span>Sức chứa: {roomData.capacity} người</span>
-                                </ListGroup.Item>
-                                <ListGroup.Item className="d-flex align-items-center">
-                                    <i className={`bi bi-${roomData.status ? "check-circle" : "x-circle"} ${roomData.status ? "text-success" : "text-danger"} me-2`}></i>
-                                    <span>Trạng thái: {roomData.status ? "Còn trống" : "Đã đặt"}</span>
-                                </ListGroup.Item>
-                            </ListGroup>
-                            <Card.Text className="text-muted mb-4">{roomData.description}</Card.Text>
+                {paginatedBookings.length === 0 ? (
+                    <Col>
+                        <Alert variant="info" className="text-center">
+                            <i className="bi bi-info-circle fs-1 mb-3 d-block"></i>
+                            <h4>Không có đặt phòng nào</h4>
+                            <p>Bạn chưa có đặt phòng nào trong danh mục này.</p>
+                            <Button variant="primary" onClick={() => navigate('/')}>
+                                Khám phá homestay
+                            </Button>
+                        </Alert>
+                    </Col>
+                ) : (
+                    paginatedBookings.map((booking) => {
+                        const statusBadge = getStatusBadge(booking.status, booking.checkInDate, booking.checkOutDate);
+                        const now = new Date();
+                        const checkIn = new Date(booking.checkInDate);
+                        const checkOut = new Date(booking.checkOutDate);
+                        const status = booking.status;
+                        return (
+                            <Col lg={6} key={booking.id} className="mb-4">
+                                <Card className="h-100 shadow-sm booking-card">
+                                    <Row className="g-0">
+                                        <Col md={4}>
+                                            <Card.Img
+                                                variant="top"
+                                                src={
+                                                    booking.roomImages?.[0] ||
+                                                    booking.homestayImages?.[0] ||
+                                                    'images/homestay.jpg'
+                                                }
+                                                alt="Homestay"
+                                                className="h-100"
+                                                style={{ objectFit: 'cover', minHeight: '200px' }}
+                                            />
+                                        </Col>
+                                        <Col md={8}>
+                                            <Card.Body className="d-flex flex-column h-100">
+                                                <div className="flex-grow-1">
+                                                    <div className="d-flex justify-content-between align-items-start mb-2">
+                                                        <Card.Title className="mb-1">
+                                                            {booking.homestayName || 'Homestay'}
+                                                        </Card.Title>
+                                                        <Badge bg={statusBadge.variant}>
+                                                            {statusBadge.text}
+                                                        </Badge>
+                                                    </div>
 
-                            <Card.Title as="h3" className="mb-3">Tiện nghi chỗ ở</Card.Title>
-                            <Row className="gy-3 mb-3">
-                                {roomData.amenities.map((amenity, index) => (
-                                    <Col key={index} xs={12} sm={6} md={4}>
-                                        <Card className="h-100">
-                                            <Card.Body className="d-flex align-items-center">
-                                                <i className={`${amenity.iconClass || "fas fa-check"} fs-5 me-3 text-primary`}></i>
-                                                <span className="fw-medium">{amenity.typeName}</span>
+                                                    <Card.Subtitle className="mb-2 text-muted">
+                                                        {booking.room?.type || `Phòng ${booking.roomNumber}`}
+                                                    </Card.Subtitle>
+
+                                                    <ListGroup variant="flush" className="small">
+                                                        <ListGroup.Item className="px-0 py-1">
+                                                            <i className="bi bi-calendar-check text-success me-2"></i>
+                                                            Nhận phòng: {new Date(booking.checkInDate).toLocaleDateString('vi-VN')}
+                                                        </ListGroup.Item>
+                                                        <ListGroup.Item className="px-0 py-1">
+                                                            <i className="bi bi-calendar-x text-danger me-2"></i>
+                                                            Trả phòng: {new Date(booking.checkOutDate).toLocaleDateString('vi-VN')}
+                                                        </ListGroup.Item>
+                                                        <ListGroup.Item className="px-0 py-1">
+                                                            <i className="bi bi-people text-primary me-2"></i>
+                                                            Khách: {booking.totalPeople} người
+                                                        </ListGroup.Item>
+                                                        <ListGroup.Item className="px-0 py-1">
+                                                            <i className="bi bi-cash text-warning me-2"></i>
+                                                            Tổng tiền: <strong>{formatPrice(booking.totalAmount)}</strong>
+                                                        </ListGroup.Item>
+                                                    </ListGroup>
+                                                </div>
+
+                                                <div className="mt-3 pt-2 border-top">
+                                                    <div className="d-flex gap-2 flex-wrap">
+                                                        {status !== 'CANCELLED' && checkIn > now && (
+                                                            <Button
+                                                                variant="outline-danger"
+                                                                size="sm"
+                                                                onClick={() => handleCancelBooking(booking.id)}
+                                                            >
+                                                                <i className="bi bi-x-circle me-1"></i>
+                                                                Hủy đặt phòng
+                                                            </Button>
+                                                        )}
+
+                                                        {(status === 'COMPLETED' || checkOut < now) && !booking.reviews?.length && (
+                                                            <Button
+                                                                variant="outline-success"
+                                                                size="sm"
+                                                                onClick={() => handleWriteReview(booking)}
+                                                            >
+                                                                <i className="bi bi-star me-1"></i>
+                                                                Đánh giá
+                                                            </Button>
+                                                        )}
+
+                                                        <Button
+                                                            variant="outline-warning"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                setSelectedBooking(booking);
+                                                                setShowReportModal(true);
+                                                            }}
+                                                        >
+                                                            <i className="bi bi-flag me-1"></i>
+                                                            Báo cáo
+                                                        </Button>
+
+                                                        <Button
+                                                            variant="outline-info"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                setSelectedBooking(booking);
+                                                                setShowMessageModal(true);
+                                                            }}
+                                                        >
+                                                            <i className="bi bi-chat-dots me-1"></i>
+                                                            Nhắn tin
+                                                        </Button>
+                                                    </div>
+                                                </div>
                                             </Card.Body>
-                                        </Card>
-                                    </Col>
-                                ))}
-                            </Row>
-
-                            <Card.Title as="h3" className="mb-3">Báo cáo tiện nghi</Card.Title>
-                            {selectedBooking && selectedBooking.status === "CONFIRMED" ? (
-                                <Form>
-                                    {amenities.map((amenity) => (
-                                        <Form.Check
-                                            key={amenity.typeId}
-                                            type="switch"
-                                            id={`amenity-${amenity.typeId}`}
-                                            label={amenity.typeName}
-                                            checked={amenity.enabled}
-                                            onChange={() => handleAmenityToggle(amenity.typeId)}
-                                        />
-                                    ))}
-                                    <Button
-                                        variant="primary"
-                                        className="mt-3"
-                                        onClick={submitAmenityReport}
-                                        disabled={amenities.length === 0}
-                                    >
-                                        Gửi báo cáo tiện nghi
-                                    </Button>
-                                </Form>
-                            ) : (
-                                <p>Vui lòng chọn một đặt phòng với trạng thái CONFIRMED để gửi báo cáo tiện nghi.</p>
-                            )}
-                        </Card.Body>
-                    </Card>
-
-                    <Card className="mb-4">
-                        <Card.Body>
-                            <Card.Title as="h4" className="mb-3">Quy tắc chung</Card.Title>
-                            {homestayRules.length > 0 ? (
-                                <ListGroup variant="flush">
-                                    {homestayRules.map((rule, index) => (
-                                        <ListGroup.Item key={index} className="mb-2">
-                                            <span className="fw-semibold text-dark">{rule.ruleName}</span>: <span className="text-muted">{rule.description}</span>
-                                        </ListGroup.Item>
-                                    ))}
-                                </ListGroup>
-                            ) : (
-                                <p>Không có quy tắc cụ thể.</p>
-                            )}
-                        </Card.Body>
-                    </Card>
-
-                    <Card className="mb-4">
-                        <Card.Body>
-                            <Card.Title as="h3" className="mb-3">Đánh giá của khách</Card.Title>
-                            {reviews.length > 0 ? (
-                                reviews.map((review, index) => (
-                                    <Card key={index} className="mb-3">
-                                        <Card.Body>
-                                            <div className="d-flex justify-content-between align-items-center mb-2">
-                                                <div>
-                                                    <strong>{review.userName || "Ẩn danh"}</strong>
-                                                    <span className="text-muted ms-2">({new Date(review.createdAt).toLocaleDateString("vi-VN")})</span>
-                                                </div>
-                                                <div className="d-flex">
-                                                    {[...Array(5)].map((_, i) => (
-                                                        <i
-                                                            key={i}
-                                                            className={`bi bi-star${i < Math.floor(review.rating) ? "-fill" : i < review.rating ? "-half" : ""} text-warning`}
-                                                        ></i>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            <Card.Text className="mb-0 text-muted">{review.comment}</Card.Text>
-                                        </Card.Body>
-                                    </Card>
-                                ))
-                            ) : (
-                                <p>Chưa có đánh giá nào.</p>
-                            )}
-                        </Card.Body>
-                    </Card>
-
-                    <Card className="mb-4">
-                        <Card.Body>
-                            <Card.Title as="h3" className="mb-3">Chính sách hủy phòng</Card.Title>
-                            {cancellationPolicies.length > 0 ? (
-                                <ListGroup variant="flush">
-                                    {cancellationPolicies.map((policy, index) => (
-                                        <ListGroup.Item key={index}>
-                                            {policy.name}: {policy.description} (Hoàn tiền {policy.refundPercentage}% nếu hủy trước {policy.daysBeforeCheckin} ngày)
-                                        </ListGroup.Item>
-                                    ))}
-                                </ListGroup>
-                            ) : (
-                                <p>Không có chính sách hủy phòng cụ thể.</p>
-                            )}
-                        </Card.Body>
-                    </Card>
-
-                    <Card className="mb-4">
-                        <Card.Body>
-                            <Card.Title as="h3" className="mb-3">Vị trí</Card.Title>
-                            <div style={{ height: "300px", width: "100%" }}>
-                                <iframe
-                                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3834.110419706312!2d108.245!3d16.0595!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTbCsDAzM0LjIiTiAxMDjCsDE0JzUxLjAiRQ!5e0!3m2!1svi!2s!4v1625091234567"
-                                    width="100%"
-                                    height="100%"
-                                    style={{ border: 0 }}
-                                    allowFullScreen
-                                    loading="lazy"
-                                ></iframe>
-                            </div>
-                        </Card.Body>
-                    </Card>
-                </Col>
-
-                <Col md={4}>
-                    <Card className="sticky-top" style={{ top: "20px", maxHeight: "90vh", overflowY: "auto" }}>
-                        <Card.Body>
-                            <Card.Title as="h3" className="mb-3">Your Bookings</Card.Title>
-                            <Table hover bordered responsive>
-                                <thead>
-                                    <tr>
-                                        <th>Booking ID</th>
-                                        <th>Homestay</th>
-                                        <th>Room</th>
-                                        <th>Check In</th>
-                                        <th>Check Out</th>
-                                        <th>Status</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {bookings.map((booking) => (
-                                        <tr key={booking.id}>
-                                            <td>{booking.id}</td>
-                                            <td>{booking.homestayName}</td>
-                                            <td>{booking.roomNumber}</td>
-                                            <td>{new Date(booking.checkInDate).toLocaleDateString("vi-VN")}</td>
-                                            <td>{new Date(booking.checkOutDate).toLocaleDateString("vi-VN")}</td>
-                                            <td>
-                                                <Badge
-                                                    bg={
-                                                        booking.status === "PENDING"
-                                                            ? "warning"
-                                                            : booking.status === "CONFIRMED"
-                                                                ? "primary"
-                                                                : booking.status === "CANCELLED"
-                                                                    ? "danger"
-                                                                    : "secondary"
-                                                    }
-                                                >
-                                                    {booking.status}
-                                                </Badge>
-                                            </td>
-                                            <td>
-                                                <Button
-                                                    variant="info"
-                                                    size="sm"
-                                                    onClick={() => handleBookingSelect(booking)}
-                                                    disabled={booking.status !== "CONFIRMED"}
-                                                >
-                                                    Check Amenities
-                                                </Button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </Table>
-                        </Card.Body>
-                    </Card>
-                </Col>
+                                        </Col>
+                                    </Row>
+                                </Card>
+                            </Col>
+                        );
+                    })
+                )}
             </Row>
+
+            {totalPages > 1 && (
+                <Pagination className="justify-content-center mt-4">
+                    <Pagination.First onClick={() => setCurrentPage(1)} disabled={currentPage === 1} />
+                    <Pagination.Prev onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1} />
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                        <Pagination.Item key={page} active={page === currentPage} onClick={() => setCurrentPage(page)}>
+                            {page}
+                        </Pagination.Item>
+                    ))}
+                    <Pagination.Next onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages} />
+                    <Pagination.Last onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} />
+                </Pagination>
+            )}
+
+            {/* Modal gửi báo cáo */}
+            <Modal show={showReportModal} onHide={() => setShowReportModal(false)} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>Gửi báo cáo</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form.Group className="mb-3">
+                        <Form.Label>Loại báo cáo</Form.Label>
+                        <Form.Select
+                            value={reportType}
+                            onChange={(e) => setReportType(e.target.value)}
+                        >
+                            <option value="">Chọn loại báo cáo...</option>
+                            {reportTypes.map((type, index) => (
+                                <option key={index} value={type}>{type}</option>
+                            ))}
+                        </Form.Select>
+                    </Form.Group>
+
+                    <Form.Group className="mb-3">
+                        <Form.Label>Nội dung báo cáo</Form.Label>
+                        <Form.Control
+                            as="textarea"
+                            rows={5}
+                            value={reportContent}
+                            onChange={(e) => setReportContent(e.target.value)}
+                            placeholder="Mô tả chi tiết vấn đề bạn gặp phải..."
+                        />
+                    </Form.Group>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowReportModal(false)}>
+                        Hủy
+                    </Button>
+                    <Button variant="warning" onClick={handleSubmitReport}>
+                        <i className="bi bi-flag me-1"></i>
+                        Gửi báo cáo
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Modal nhắn tin với host */}
+            <Modal show={showMessageModal} onHide={() => setShowMessageModal(false)} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>Nhắn tin với host</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form.Group className="mb-3">
+                        <Form.Label>Tin nhắn</Form.Label>
+                        <Form.Control
+                            as="textarea"
+                            rows={5}
+                            value={messageContent}
+                            onChange={(e) => setMessageContent(e.target.value)}
+                            placeholder="Nhập tin nhắn bạn muốn gửi cho host..."
+                        />
+                    </Form.Group>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowMessageModal(false)}>
+                        Hủy
+                    </Button>
+                    <Button variant="info" onClick={handleSendMessage}>
+                        <i className="bi bi-send me-1"></i>
+                        Gửi tin nhắn
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Modal đánh giá */}
+            <Modal show={showReviewModal} onHide={() => setShowReviewModal(false)} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>Đánh giá đặt phòng</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form.Group className="mb-3 text-center">
+                        <Form.Label>Chọn số sao</Form.Label>
+                        <div className="d-flex justify-content-center">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <i
+                                    key={star}
+                                    className={`fa${reviewRating >= star ? 's' : 'r'} fa-star fs-2 mx-1`}
+                                    style={{ color: '#ffc107', cursor: 'pointer' }}
+                                    onClick={() => setReviewRating(star)}
+                                />
+                            ))}
+                        </div>
+                    </Form.Group>
+
+                    <Form.Group className="mb-3">
+                        <Form.Label>Nội dung đánh giá</Form.Label>
+                        <Form.Control
+                            as="textarea"
+                            rows={5}
+                            value={reviewContent}
+                            onChange={(e) => setReviewContent(e.target.value)}
+                            placeholder="Chia sẻ trải nghiệm của bạn..."
+                        />
+                    </Form.Group>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowReviewModal(false)}>
+                        Hủy
+                    </Button>
+                    <Button variant="success" onClick={handleSubmitReview}>
+                        <i className="bi bi-star me-1"></i>
+                        Gửi đánh giá
+                    </Button>
+                </Modal.Footer>
+            </Modal>
         </Container>
     );
-}
+};
+
+export default Booked;

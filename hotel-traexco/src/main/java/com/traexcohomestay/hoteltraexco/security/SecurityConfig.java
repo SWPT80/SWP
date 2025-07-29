@@ -54,12 +54,18 @@ public class SecurityConfig {
                                 "/api/chat/**",
                                 "/api/chatbox/**",
                                 "/api/homestays/**",
-                                "/api/seasonal-pricing/**"
+                                "/api/seasonal-pricing/**",
+                                "/api/monitor/active-users"
                         ).permitAll()
+
+                        // Cho phép WebSocket kết nối không cần xác thực
+                        .requestMatchers("/ws/**").permitAll()
+
+                        // Các API cần quyền
+                        .requestMatchers("/img/**", "/images/**", "/static/**").permitAll()
 
                         // Chỉ GET các homestay là permitAll, còn POST/PUT/DELETE phải đăng nhập
                         .requestMatchers("/api/homestays").authenticated()
-                        .requestMatchers("/api/homestays/{id}").authenticated()
                         .requestMatchers("/api/homestays/{id}").authenticated()
                         .requestMatchers("/api/homestays/bulk-update").authenticated()
 
@@ -75,7 +81,12 @@ public class SecurityConfig {
 
                         // Chỉ ADMIN được dùng API admin
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-
+                        .requestMatchers(
+                                "/api/services/pending",
+                                "/api/services/*/approve",
+                                "/api/services/*/reject",
+                                "/api/admin/account/**"
+                        ).hasRole("ADMIN")
                         // Các request khác yêu cầu xác thực
                         .anyRequest().authenticated()
                 )
@@ -84,16 +95,29 @@ public class SecurityConfig {
         return http.build();
     }
 
+//    @Bean
+//    public CorsConfigurationSource corsConfigurationSource() {
+//        CorsConfiguration config = new CorsConfiguration();
+//        config.setAllowedOrigins(List.of("http://localhost:3000"));
+//        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+//        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+//        config.setAllowCredentials(true);
+//
+//        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+//        source.registerCorsConfiguration("/**", config);
+//        return source;
+//    }
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:3000"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
-        config.setAllowCredentials(true);
+        config.setAllowedOrigins(List.of("http://localhost:3000")); // client React
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*")); // Cho phép tất cả headers
+        config.setAllowCredentials(true); // Cho phép gửi cookie, token
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
+        source.registerCorsConfiguration("/**", config); // Áp dụng cho tất cả route
         return source;
     }
 

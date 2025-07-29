@@ -5,6 +5,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import logo from "../../assets/images/logo.png";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import NotificationDropdown from "../NotificationDropdown";
 
 const Header = ({ onToggleSidebar }) => {
   const [admin, setAdmin] = useState(null);
@@ -73,12 +74,9 @@ const Header = ({ onToggleSidebar }) => {
       </div>
 
       <Nav className="user-menu">
+        <NotificationDropdown theme="dark" />
         {/* Notifications Dropdown */}
         <Dropdown>
-          <Dropdown.Toggle variant="link" id="notifications-dropdown" className="nav-link">
-            <i className="fe fe-bell"></i>
-            <span className="badge badge-pill">3</span>
-          </Dropdown.Toggle>
 
           <Dropdown.Menu className="notifications">
             <div className="topnav-dropdown-header">

@@ -1,9 +1,7 @@
 package com.traexcohomestay.hoteltraexco.service;
+
 import com.traexcohomestay.hoteltraexco.dto.ReviewRequest;
-import com.traexcohomestay.hoteltraexco.model.Booking;
-import com.traexcohomestay.hoteltraexco.model.Review;
-import com.traexcohomestay.hoteltraexco.model.ReviewRoom;
-import com.traexcohomestay.hoteltraexco.model.ReviewService;
+import com.traexcohomestay.hoteltraexco.model.*;
 import com.traexcohomestay.hoteltraexco.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -32,7 +30,7 @@ public class UserReviewService {
     private ServiceRepository serviceRepository;
 
     public void submitReview(ReviewRequest request) {
-        // Validate booking status
+        // 1. Validate booking status
         Booking booking = bookingRepo.findById(request.getBookingId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy booking"));
 
@@ -40,14 +38,20 @@ public class UserReviewService {
             throw new RuntimeException("Không hợp lệ: Booking không thuộc user này.");
         }
 
-        // 1. Review tổng thể
+        // 2. Tạo review tổng thể
         Review review = new Review();
         review.setUser(booking.getUser());
+
+        // ✅ Lấy homestay từ room
+        Homestay homestay = roomRepo.findById(booking.getRooms().getId())
+                .orElseThrow(() -> new RuntimeException("Phòng không tồn tại"))
+                .getHomestay();
+        review.setHomestay(homestay);
 
         review.setCreatedAt(LocalDateTime.now());
         review = reviewRepo.save(review);
 
-        // 2. Review phòng
+        // 3. Review phòng
         ReviewRoom rr = new ReviewRoom();
         rr.setReview(review);
         rr.setRooms(booking.getRooms());
@@ -55,15 +59,17 @@ public class UserReviewService {
         rr.setComment(request.getRoomComment());
         reviewRoomRepo.save(rr);
 
-        // 3. Review dịch vụ
-        for (ReviewRequest.ServiceReviewDTO s : request.getServiceReviews()) {
-            ReviewService rs = new ReviewService();
-            rs.setReview(review);
-            rs.setService(serviceRepository.findById(s.getServiceId())
-                    .orElseThrow(() -> new RuntimeException("Service không tồn tại")));
-            rs.setRating(s.getRating());
-            rs.setComment(s.getComment());
-            reviewServiceRepo.save(rs);
+        // 4. Review dịch vụ nếu có
+        if (request.getServiceReviews() != null) {
+            for (ReviewRequest.ServiceReviewDTO s : request.getServiceReviews()) {
+                ReviewService rs = new ReviewService();
+                rs.setReview(review);
+                rs.setService(serviceRepository.findById(s.getServiceId())
+                        .orElseThrow(() -> new RuntimeException("Service không tồn tại")));
+                rs.setRating(s.getRating());
+                rs.setComment(s.getComment());
+                reviewServiceRepo.save(rs);
+            }
         }
     }
 }
