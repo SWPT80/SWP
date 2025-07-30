@@ -1,0 +1,55 @@
+.chat-bubble {
+  padding: 8px 12px;
+  border-radius: 18px;
+  display: inline-block;
+  max-width: 80%;
+  word-break: break-word;
+}
+
+.chat-sender {
+  background-color: #0084ff;
+  color: white;
+  align-self: flex-end;
+}
+
+.chat-receiver {
+  background-color: #e4e6eb;
+  color: black;
+  align-self: flex-start;
+}
+
+.chat-meta {
+  font-size: 0.7rem;
+  margin-top: 4px;
+  color: #999;
+  text-align: right;
+}
+
+/* New styles for left-positioned chat */
+.chat-popup-left {
+  position: fixed !important;
+  bottom: 0px !important;
+  left: 20px !important; /* Changed from right to left */
+  z-index: 9999 !important;
+}
+
+.chat-button-left {
+  position: fixed !important;
+  bottom: 24px !important;
+  left: 24px !important; /* Changed from right to left */
+  z-index: 9998 !important;
+}
+
+.chat-list-left {
+  position: fixed !important;
+  bottom: 90px !important;
+  left: 24px !important; /* Changed from right to left */
+  z-index: 9998 !important;
+}
+
+.chat-minimized-left {
+  position: fixed !important;
+  bottom: 20px !important;
+  left: 20px !important; /* Changed from right to left */
+  z-index: 9999 !important;
+}

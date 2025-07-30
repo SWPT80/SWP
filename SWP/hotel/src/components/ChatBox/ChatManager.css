@@ -1,0 +1,296 @@
+/* ChatManager CSS - Left Side Position */
+
+@keyframes slideUpFade {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+    scale: 0.9;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    transform: translateX(-100%) scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* FAB Button Styles - Left Position */
+.chatbox-fab {
+  animation: bounceIn 0.5s ease-out;
+  position: fixed !important;
+  bottom: 32px !important;
+  left: 32px !important; /* Changed from right to left */
+  width: 60px !important;
+  height: 60px !important;
+  background: linear-gradient(135deg, #4f8cff, #3358e6) !important;
+  border-radius: 50% !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18) !important;
+  z-index: 999999 !important;
+}
+
+.chatbox-fab.active {
+  box-shadow: 0 6px 20px rgba(79, 140, 255, 0.4) !important;
+}
+
+.chatbox-fab:hover {
+  transform: scale(1.05) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.22) !important;
+}
+
+/* Popup Styles - Left Position */
+.chatbox-popup {
+  animation: slideInFromLeft 0.3s ease-out !important;
+  position: fixed !important;
+  bottom: 104px !important;
+  left: 32px !important; /* Changed from right to left */
+  width: 380px !important;
+  max-width: calc(100vw - 64px) !important;
+  height: 550px !important;
+  max-height: calc(100vh - 140px) !important;
+  background: #fff !important;
+  border-radius: 18px !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15) !important;
+  z-index: 999998 !important;
+  border: 1px solid rgba(0,0,0,0.08) !important;
+}
+
+.chatbox-popup.active {
+  box-shadow: 0 12px 40px rgba(0,0,0,0.25) !important;
+  border: 2px solid #4f8cff !important;
+}
+
+/* Hover effects cho các elements */
+.chatbox-close:hover {
+  background: rgba(255,255,255,0.2) !important;
+  transform: scale(1.1) !important;
+}
+
+.chatbox-input:focus {
+  border-color: #4f8cff !important;
+  box-shadow: 0 0 0 2px rgba(79, 140, 255, 0.1) !important;
+}
+
+.chatbox-send-btn:hover:not(:disabled) {
+  background: #3358e6 !important;
+  transform: scale(1.05) !important;
+}
+
+/* Message animations */
+.chatbox-message {
+  animation: slideInMessage 0.3s ease-out;
+}
+
+@keyframes slideInMessage {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Bubble styles */
+.chatbox-bubble {
+  position: relative;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+}
+
+.chatbox-message.user .chatbox-bubble {
+  background: linear-gradient(135deg, #4f8cff, #3358e6) !important;
+  border-bottom-right-radius: 4px !important;
+}
+
+.chatbox-message:not(.user) .chatbox-bubble {
+  background: #e4e6eb !important;
+  border-bottom-left-radius: 4px !important;
+}
+
+/* Responsive adjustments - Left Side */
+@media (max-width: 768px) {
+  .chatbox-popup {
+    width: calc(100vw - 32px) !important;
+    left: 16px !important; /* Changed from right to left */
+    max-width: none !important;
+    bottom: 100px !important;
+  }
+  
+  .chatbox-fab {
+    left: 16px !important; /* Changed from right to left */
+    bottom: 24px !important;
+    width: 56px !important;
+    height: 56px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .chatbox-popup {
+    width: calc(100vw - 20px) !important;
+    left: 10px !important; /* Changed from right to left */
+    height: calc(100vh - 120px) !important;
+    max-height: calc(100vh - 120px) !important;
+    bottom: 80px !important;
+  }
+  
+  .chatbox-fab {
+    left: 10px !important; /* Changed from right to left */
+    bottom: 16px !important;
+    width: 52px !important;
+    height: 52px !important;
+  }
+  
+  .chatbox-messages {
+    padding: 12px !important;
+  }
+  
+  .chatbox-input-area {
+    padding: 10px 12px !important;
+  }
+}
+
+/* Scrollbar styling */
+.chatbox-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chatbox-messages::-webkit-scrollbar-track {
+  background: #f4f7fb;
+}
+
+.chatbox-messages::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.chatbox-messages::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+/* Room card trong chatbox */
+.chatbox-messages .room-card {
+  background: #ffffff !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+  margin: 8px 0 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+  border: 1px solid #f0f0f0 !important;
+  transition: all 0.2s ease !important;
+}
+
+.chatbox-messages .room-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Loading state */
+.chatbox-bubble em {
+  font-style: italic;
+  opacity: 0.8;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* Focus states for accessibility */
+.chatbox-fab:focus,
+.chatbox-close:focus,
+.chatbox-input:focus,
+.chatbox-send-btn:focus {
+  outline: 2px solid #4f8cff;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .chatbox-popup {
+    border: 2px solid #000 !important;
+  }
+  
+  .chatbox-fab {
+    border: 2px solid #000 !important;
+  }
+}
+
+/* Multiple chatbox positioning - Left side stacking */
+.chatbox-popup[data-position-index="0"] {
+  left: 32px !important;
+  z-index: 999998 !important;
+}
+
+.chatbox-popup[data-position-index="1"] {
+  left: calc(32px + 400px) !important;
+  z-index: 999997 !important;
+}
+
+.chatbox-popup[data-position-index="2"] {
+  left: calc(32px + 800px) !important;
+  z-index: 999996 !important;
+}
+
+/* Mobile stacking for multiple chatbox */
+@media (max-width: 768px) {
+  .chatbox-popup[data-position-index="0"],
+  .chatbox-popup[data-position-index="1"],
+  .chatbox-popup[data-position-index="2"] {
+    left: 16px !important;
+    width: calc(100vw - 32px) !important;
+  }
+  
+  /* Hide additional chatboxes on mobile */
+  .chatbox-popup[data-position-index="1"],
+  .chatbox-popup[data-position-index="2"] {
+    display: none !important;
+  }
+}
+
+/* Fade out animation for closing */
+.chatbox-popup.closing {
+  animation: slideOutToLeft 0.25s ease-in forwards !important;
+}
+
+@keyframes slideOutToLeft {
+  from {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-100%) scale(0.8);
+    opacity: 0;
+  }
+}
