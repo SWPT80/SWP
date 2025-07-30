@@ -102,24 +102,36 @@ public class HostController {
         }).collect(Collectors.toList());
     }
 
-
     // Chấp nhận yêu cầu trở thành host
     @PutMapping("/requests/{id}/approve")
-    public ResponseEntity<HostRequestDTO> approve(@PathVariable Integer id) {
-        HostRequest hr = hostRequestService.approve(id);
-        HostRequestDTO dto = new HostRequestDTO();
-        dto.setId(hr.getId());
-        dto.setType(hr.getType());
-        dto.setField1(hr.getField1());
-        dto.setField2(hr.getField2());
-        dto.setDescription(hr.getDescription());
-        dto.setStatus(hr.getStatus());
-        if (hr.getUser() != null) {
-            dto.setFullName(hr.getUser().getFullName());
-            dto.setEmail(hr.getUser().getEmail());
-            dto.setPhone(hr.getUser().getPhone());
+    public ResponseEntity<?> approve(@PathVariable Integer id) {
+        try {
+            HostRequest hr = hostRequestService.approve(id);
+            HostRequestDTO dto = new HostRequestDTO();
+            dto.setId(hr.getId());
+            dto.setType(hr.getType());
+            dto.setField1(hr.getField1());
+            dto.setField2(hr.getField2());
+            dto.setDescription(hr.getDescription());
+            dto.setStatus(hr.getStatus());
+            dto.setDocumentType(hr.getDocumentType());
+            dto.setIdentityFileUrl(hr.getIdentityFileUrl());
+            dto.setSocialLink(hr.getSocialLink());
+            dto.setIntroVideoUrl(hr.getIntroVideoUrl());
+            dto.setEmailVerified(hr.getEmailVerified());
+
+            if (hr.getUser() != null) {
+                dto.setFullName(hr.getUser().getFullName());
+                dto.setEmail(hr.getUser().getEmail());
+                dto.setPhone(hr.getUser().getPhone());
+            }
+
+            return ResponseEntity.ok(dto);
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.badRequest().body("Email chưa được xác minh. Không thể duyệt.");
+        } catch (Exception ex) {
+            return ResponseEntity.status(500).body("Lỗi khi duyệt yêu cầu.");
         }
-        return ResponseEntity.ok(dto);
     }
 
     // Từ chối yêu cầu trở thành host
@@ -140,6 +152,7 @@ public class HostController {
         }
         return ResponseEntity.ok(dto);
     }
+
     @GetMapping("/verify-email")
     public ResponseEntity<String> verifyEmail(@RequestParam String token) {
         try {
@@ -162,9 +175,6 @@ public class HostController {
         boolean exists = hostRequestService.existsByUserIdAndStatusNot(user.getId(), "REJECTED");
         return ResponseEntity.ok(exists); // true = đã gửi (status khác REJECTED)
     }
-
-
-
 
 
     // ⭐ LẤY DANH SÁCH HOST

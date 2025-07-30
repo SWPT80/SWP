@@ -19,5 +19,5 @@ public class HostRequestDTO {
     private String identityFileUrl;
     private String socialLink;
     private String introVideoUrl;
-
+    private Boolean emailVerified;
 }

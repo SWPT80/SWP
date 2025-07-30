@@ -9,6 +9,7 @@ const BookingSuccess = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [bookingDetails, setBookingDetails] = useState(null);
+  const [paymentInfo, setPaymentInfo] = useState(null); // **FIX: Thêm state cho thông tin thanh toán**
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -18,20 +19,26 @@ const BookingSuccess = () => {
         const queryParams = new URLSearchParams(location.search);
         const bookingId = queryParams.get('bookingId');
         const txnRef = queryParams.get('txnRef') || queryParams.get('orderId');
+        const isDeposit = queryParams.get('isDeposit') === 'true'; // **FIX: Lấy thông tin isDeposit từ URL**
 
         if (!bookingId) {
           throw new Error('Không tìm thấy bookingId trong URL');
         }
 
-        const response = await axios.get(`/api/bookings/${bookingId}`, {
-          params: { includeDetails: true }
-        });
+        // **FIX: Lấy thông tin booking và payment**
+        const [bookingResponse, paymentResponse] = await Promise.all([
+          axios.get(`/api/bookings/${bookingId}`, {
+            params: { includeDetails: true }
+          }),
+          // Lấy thông tin payment để hiển thị chính xác
+          axios.get(`/api/payments/booking/${bookingId}/latest`).catch(() => ({ data: null }))
+        ]);
 
-        if (!response.data) {
+        if (!bookingResponse.data) {
           throw new Error('Không có dữ liệu đặt phòng');
         }
 
-        const bookingData = response.data;
+        const bookingData = bookingResponse.data;
 
         if (Array.isArray(bookingData.serviceDetails)) {
           bookingData.services = bookingData.serviceDetails.map(service => ({
@@ -45,6 +52,27 @@ const BookingSuccess = () => {
         }
 
         setBookingDetails(bookingData);
+
+        // **FIX: Set thông tin payment**
+        if (paymentResponse.data) {
+          setPaymentInfo({
+            amount: paymentResponse.data.amount,
+            isDeposit: paymentResponse.data.isDeposit || isDeposit,
+            paymentMethod: paymentResponse.data.paymentMethod,
+            status: paymentResponse.data.status,
+            txnRef: txnRef
+          });
+        } else {
+          // Fallback nếu không lấy được từ API
+          setPaymentInfo({
+            amount: isDeposit ? bookingData.totalAmount * 0.3 : bookingData.totalAmount,
+            isDeposit: isDeposit,
+            paymentMethod: 'Unknown',
+            status: 'SUCCESS',
+            txnRef: txnRef
+          });
+        }
+
       } catch (err) {
         console.error('Lỗi khi lấy thông tin đặt phòng:', err);
         setError(err.response?.status === 401
@@ -106,14 +134,27 @@ const BookingSuccess = () => {
     );
   }
 
+  // **FIX: Tính toán số tiền còn lại nếu là deposit**
+  const remainingAmount = paymentInfo?.isDeposit ?
+    (bookingDetails.totalAmount - (paymentInfo?.amount || 0)) : 0;
+
   return (
     <Container className="my-5">
       <Card className="shadow-sm">
         <Card.Body className="p-5">
           <h2 className="text-center mb-4 text-success">
             <i className="bi bi-check-circle-fill me-2"></i>
-            Đã gửi yêu cầu đặt phòng thành công!
+            {paymentInfo?.isDeposit ? 'Đã thanh toán cọc thành công!' : 'Đã thanh toán thành công!'}
           </h2>
+
+          {/* **FIX: Thêm thông báo về deposit** */}
+          {paymentInfo?.isDeposit && (
+            <Alert variant="info" className="text-center mb-4">
+              <i className="bi bi-info-circle-fill me-2"></i>
+              Bạn đã thanh toán cọc thành công. Vui lòng thanh toán số tiền còn lại{' '}
+              <strong>{formattedAmount(remainingAmount)}</strong> khi nhận phòng.
+            </Alert>
+          )}
 
           <div className="row">
             <div className="col-md-8 mx-auto">
@@ -150,10 +191,46 @@ const BookingSuccess = () => {
                         {bookingDetails.status === 'CONFIRMED' ? 'Đã xác nhận' : 'Đang chờ xác nhận'}
                       </Badge>
                     </ListGroup.Item>
+                  </ListGroup>
+                </Card.Body>
+              </Card>
+
+              {/* **FIX: Thêm card thông tin thanh toán** */}
+              <Card className="mb-4">
+                <Card.Header as="h4" className="bg-light">
+                  Thông tin thanh toán
+                </Card.Header>
+                <Card.Body>
+                  <ListGroup variant="flush">
                     <ListGroup.Item>
-                      <strong>Tổng tiền:</strong> {bookingDetails.depositAmount && bookingDetails.depositAmount > 0
-                        ? `${formattedAmount(bookingDetails.depositAmount)} (Đặt cọc)`
-                        : formattedAmount(bookingDetails.totalAmount)}
+                      <strong>Loại thanh toán:</strong>
+                      <Badge bg={paymentInfo?.isDeposit ? 'warning' : 'success'} className="ms-2">
+                        {paymentInfo?.isDeposit ? 'Thanh toán cọc' : 'Thanh toán đầy đủ'}
+                      </Badge>
+                    </ListGroup.Item>
+                    <ListGroup.Item>
+                      <strong>Số tiền đã thanh toán:</strong> {formattedAmount(paymentInfo?.amount)}
+                    </ListGroup.Item>
+                    <ListGroup.Item>
+                      <strong>Tổng tiền đặt phòng:</strong> {formattedAmount(bookingDetails.totalAmount)}
+                    </ListGroup.Item>
+                    {paymentInfo?.isDeposit && (
+                      <ListGroup.Item>
+                        <strong>Số tiền còn lại:</strong>
+                        <span className="text-danger fw-bold"> {formattedAmount(remainingAmount)}</span>
+                        <small className="text-muted d-block">
+                          (Thanh toán khi nhận phòng)
+                        </small>
+                      </ListGroup.Item>
+                    )}
+                    {paymentInfo?.txnRef && (
+                      <ListGroup.Item>
+                        <strong>Mã giao dịch:</strong> {paymentInfo.txnRef}
+                      </ListGroup.Item>
+                    )}
+                    <ListGroup.Item>
+                      <strong>Trạng thái thanh toán:</strong>
+                      <Badge bg="success" className="ms-2">Thành công</Badge>
                     </ListGroup.Item>
                   </ListGroup>
                 </Card.Body>

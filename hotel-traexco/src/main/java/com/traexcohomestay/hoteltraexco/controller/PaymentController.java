@@ -64,32 +64,14 @@ public class PaymentController {
 
 
     @GetMapping("/callback")
-    public void handlePaymentCallback(
-            @RequestParam(value = "vnp_ResponseCode", required = false) String vnpResponseCode,
-            @RequestParam(value = "vnp_TxnRef", required = false) String vnpTxnRef,
-            @RequestParam(value = "vnp_Amount", required = false) String vnpAmount,
-            @RequestParam(value = "resultCode", required = false) String momoResultCode,
-            @RequestParam(value = "orderId", required = false) String momoOrderId,
-            @RequestParam(value = "amount", required = false) String momoAmount,
-            @RequestParam(value = "vnp_SecureHash", required = false) String vnpSecureHash,
-            @RequestParam Map<String, String> params,
-            HttpServletResponse response) throws IOException {
+    public void handlePaymentCallback(@RequestParam(value = "vnp_ResponseCode", required = false) String vnpResponseCode, @RequestParam(value = "vnp_TxnRef", required = false) String vnpTxnRef, @RequestParam(value = "vnp_Amount", required = false) String vnpAmount, @RequestParam(value = "resultCode", required = false) String momoResultCode, @RequestParam(value = "orderId", required = false) String momoOrderId, @RequestParam(value = "amount", required = false) String momoAmount, @RequestParam(value = "vnp_SecureHash", required = false) String vnpSecureHash, @RequestParam Map<String, String> params, HttpServletResponse response) throws IOException {
         logger.info("Received payment callback with params: {}", params);
-        paymentService.handlePaymentCallback(
-                vnpResponseCode, vnpTxnRef, vnpAmount,
-                momoResultCode, momoOrderId, momoAmount,
-                vnpSecureHash, params, response
-        );
+        paymentService.handlePaymentCallback(vnpResponseCode, vnpTxnRef, vnpAmount, momoResultCode, momoOrderId, momoAmount, vnpSecureHash, params, response);
     }
 
     @GetMapping("/cancel")
-    public void handlePaymentCancel(
-            @RequestParam(value = "vnp_TxnRef", required = false) String vnpTxnRef,
-            @RequestParam(value = "orderId", required = false) String momoOrderId,
-            @RequestParam(value = "bookingId", required = false) Integer bookingId,
-            HttpServletResponse response) throws IOException {
-        logger.info("Received payment cancel request - vnpTxnRef: {}, momoOrderId: {}, bookingId: {}",
-                vnpTxnRef, momoOrderId, bookingId);
+    public void handlePaymentCancel(@RequestParam(value = "vnp_TxnRef", required = false) String vnpTxnRef, @RequestParam(value = "orderId", required = false) String momoOrderId, @RequestParam(value = "bookingId", required = false) Integer bookingId, HttpServletResponse response) throws IOException {
+        logger.info("Received payment cancel request - vnpTxnRef: {}, momoOrderId: {}, bookingId: {}", vnpTxnRef, momoOrderId, bookingId);
 
         try {
             paymentService.handlePaymentCancel(vnpTxnRef, momoOrderId, bookingId);
@@ -109,8 +91,7 @@ public class PaymentController {
             return ResponseEntity.ok(status);
         } catch (Exception e) {
             logger.error("Error checking payment status: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Lỗi khi kiểm tra trạng thái thanh toán"));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Lỗi khi kiểm tra trạng thái thanh toán"));
         }
     }
 
@@ -126,8 +107,7 @@ public class PaymentController {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
             logger.error("Error retrying payment: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Lỗi khi thử lại thanh toán: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi khi thử lại thanh toán: " + e.getMessage());
         }
     }
 }

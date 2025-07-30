@@ -57,8 +57,8 @@ const HostRequestAdminPage = () => {
       fetchRequests();
       showCenteredModal('✅ Yêu cầu đã được duyệt thành công.', 'success');
     } catch (err) {
-      console.error('Approve failed:', err);
-      showCenteredModal('❌ Không thể duyệt yêu cầu.', 'danger');
+      const msg = err.response?.data || '❌ Không thể duyệt yêu cầu.';
+      showCenteredModal(msg, 'danger');
     }
   };
 
@@ -77,6 +77,8 @@ const HostRequestAdminPage = () => {
     }
   };
 
+
+
   return (
     <div className="container mt-5">
       <h2 className="mb-4">Duyệt Yêu Cầu Trở Thành Host</h2>
@@ -85,111 +87,124 @@ const HostRequestAdminPage = () => {
       {!loading && !error && (
         <Table striped bordered hover responsive>
           <thead>
-              <tr>
-                <th>Họ tên</th>
-                <th>Email</th>
-                <th>Số điện thoại</th>
-                <th>Loại</th>
-                <th>Chi tiết</th>
-                <th>Ảnh giấy tờ</th>
-                <th>Video giới thiệu</th>
-                <th>Trạng thái</th>
-                <th>Hành động</th>
-              </tr>
-            </thead>
+            <tr>
+              <th>Họ tên</th>
+              <th>Email</th>
+              <th>Số điện thoại</th>
+              <th>Loại</th>
+              <th>Chi tiết</th>
+              <th>Ảnh giấy tờ</th>
+              <th>Xác minh email</th>
+              <th>Video giới thiệu</th>
+              <th>Trạng thái</th>
+              <th>Hành động</th>
+            </tr>
+          </thead>
 
           <tbody>
-              {requests.map((req) => (
-                <tr key={req.id}>
-                  <td>{req.fullName}</td>
-                  <td>{req.email}</td>
-                  <td>{req.phone}</td>
-                  <td>{req.type}</td>
+            {requests.map((req) => (
+              <tr key={req.id}>
+                <td>{req.fullName}</td>
+                <td>{req.email}</td>
+                <td>{req.phone}</td>
+                <td>{req.type}</td>
 
-                  {/* Chi tiết mô tả */}
-                  <td>
-                    <strong>{req.field1}</strong>
-                    {req.field2 && <div>{req.field2}</div>}
-                    <div>{req.description}</div>
-                    {req.documentType && (
-                      <div><strong>Loại giấy tờ:</strong> {req.documentType}</div>
-                    )}
-                    {req.socialLink && (
-                      <div>
-                        <strong>Mạng xã hội:</strong>{' '}
-                        <a href={req.socialLink} target="_blank" rel="noopener noreferrer">
-                          {req.socialLink}
-                        </a>
-                      </div>
-                    )}
-                  </td>
+                {/* Chi tiết mô tả */}
+                <td>
+                  <strong>{req.field1}</strong>
+                  {req.field2 && <div>{req.field2}</div>}
+                  <div>{req.description}</div>
+                  {req.documentType && (
+                    <div><strong>Loại giấy tờ:</strong> {req.documentType}</div>
+                  )}
+                  {req.socialLink && (
+                    <div>
+                      <strong>Mạng xã hội:</strong>{' '}
+                      <a href={req.socialLink} target="_blank" rel="noopener noreferrer">
+                        {req.socialLink}
+                      </a>
+                    </div>
+                  )}
+                </td>
 
-                  {/* Cột ảnh giấy tờ */}
-                  <td style={{ textAlign: 'center' }}>
-                    {req.identityFileUrl && (
-                      <>
-                        <img
-                          src={`http://localhost:8080${req.identityFileUrl}`}
-                          alt="Giấy tờ"
-                          onClick={() => {
-                            setSelectedImageUrl(`http://localhost:8080${req.identityFileUrl}`);
-                            setShowImageModal(true);
-                          }}
-                          style={{
-                            width: '120px',
-                            height: '90px',
-                            objectFit: 'cover',
-                            border: '1px solid #ccc',
-                            cursor: 'pointer',
-                            borderRadius: '4px',
-                          }}
-                        />
-                        <div style={{ fontSize: '12px', color: '#666' }}>(Click để xem)</div>
-                      </>
-                    )}
-                  </td>
-
-                  {/* Cột video */}
-                  <td style={{ textAlign: 'center' }}>
-                    {req.introVideoUrl && (
-                      <video
-                        width="140"
-                        height="90"
-                        controls
-                        src={`http://localhost:8080/${req.introVideoUrl}`}
-                        style={{
-                          borderRadius: '4px',
-                          border: '1px solid #ccc',
+                {/* Cột ảnh giấy tờ */}
+                <td style={{ textAlign: 'center' }}>
+                  {req.identityFileUrl && (
+                    <>
+                      <img
+                        src={`http://localhost:8080${req.identityFileUrl}`}
+                        alt="Giấy tờ"
+                        onClick={() => {
+                          setSelectedImageUrl(`http://localhost:8080${req.identityFileUrl}`);
+                          setShowImageModal(true);
                         }}
+                        style={{
+                          width: '120px',
+                          height: '90px',
+                          objectFit: 'cover',
+                          border: '1px solid #ccc',
+                          cursor: 'pointer',
+                          borderRadius: '4px',
+                        }}
+                      />
+                      <div style={{ fontSize: '12px', color: '#666' }}>(Click để xem)</div>
+                    </>
+                  )}
+                </td>
+                <td>
+                  <Badge bg={req.emailVerified ? 'success' : 'secondary'}>
+                    {req.emailVerified ? 'Đã xác minh' : 'Chưa xác minh'}
+                  </Badge>
+                </td>
+
+                {/* Cột video */}
+                <td style={{ textAlign: 'center' }}>
+                  {req.introVideoUrl && (
+                    <video
+                      width="140"
+                      height="90"
+                      controls
+                      src={`http://localhost:8080/${req.introVideoUrl}`}
+                      style={{
+                        borderRadius: '4px',
+                        border: '1px solid #ccc',
+                      }}
+                    >
+                      Không hỗ trợ video.
+                    </video>
+                  )}
+                </td>
+
+                <td>
+                  <Badge bg={
+                    req.status === 'PENDING'
+                      ? 'warning'
+                      : req.status === 'APPROVED'
+                        ? 'success'
+                        : 'danger'
+                  }>
+                    {req.status}
+                  </Badge>
+                </td>
+
+                <td>
+                  {req.status === 'PENDING' && (
+                    <>
+                      <Button
+                        variant="success"
+                        size="sm"
+                        disabled={!req.emailVerified || req.status !== 'PENDING'}
+                        onClick={() => handleApprove(req.id)}
                       >
-                        Không hỗ trợ video.
-                      </video>
-                    )}
-                  </td>
-
-                  <td>
-                    <Badge bg={
-                      req.status === 'PENDING'
-                        ? 'warning'
-                        : req.status === 'APPROVED'
-                          ? 'success'
-                          : 'danger'
-                    }>
-                      {req.status}
-                    </Badge>
-                  </td>
-
-                  <td>
-                    {req.status === 'PENDING' && (
-                      <>
-                        <Button variant="success" size="sm" onClick={() => handleApprove(req.id)}>Duyệt</Button>{' '}
-                        <Button variant="danger" size="sm" onClick={() => handleReject(req.id)}>Từ chối</Button>
-                      </>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+                        Duyệt
+                      </Button>{' '}
+                      <Button variant="danger" size="sm" onClick={() => handleReject(req.id)}>Từ chối</Button>
+                    </>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
         </Table>
       )}
 

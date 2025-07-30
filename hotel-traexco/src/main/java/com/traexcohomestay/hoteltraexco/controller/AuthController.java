@@ -3,6 +3,7 @@ package com.traexcohomestay.hoteltraexco.controller;
 import ch.qos.logback.classic.Logger;
 import com.traexcohomestay.hoteltraexco.dto.*;
 import com.traexcohomestay.hoteltraexco.model.User;
+import com.traexcohomestay.hoteltraexco.repository.UserRepository;
 import com.traexcohomestay.hoteltraexco.security.CustomUserDetails;
 import com.traexcohomestay.hoteltraexco.service.AuthService;
 import com.traexcohomestay.hoteltraexco.service.BookingServiceImpl;
@@ -21,6 +22,9 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
+import java.util.Optional;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -29,6 +33,9 @@ public class AuthController {
     private UserDetailsService userDetailsService;
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(BookingServiceImpl.class);
     private final AuthService authService;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthRequest request) {
@@ -50,6 +57,17 @@ public class AuthController {
     public ResponseEntity<String> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         authService.resetPassword(request);
         return ResponseEntity.ok("Mật khẩu đã được đặt lại thành công!");
+    }
+
+    @GetMapping("/validate-reset-token")
+    public ResponseEntity<String> validateResetToken(@RequestParam("token") String token) {
+        Optional<User> userOpt = userRepository.findByResetToken(token);
+
+        if (userOpt.isEmpty() || userOpt.get().getResetTokenExpiry().isBefore(LocalDateTime.now())) {
+            return ResponseEntity.badRequest().body("Token không hợp lệ hoặc đã hết hạn.");
+        }
+
+        return ResponseEntity.ok("Token hợp lệ");
     }
 
     @PostMapping("/google")

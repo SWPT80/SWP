@@ -135,7 +135,9 @@ public class AuthServiceImpl implements AuthService {
             if (user.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
                 throw new RuntimeException("Token đã hết hạn");
             }
-
+            if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+                throw new RuntimeException("Mật khẩu mới không được trùng với mật khẩu cũ");
+            }
             user.setPassword(passwordEncoder.encode(request.getNewPassword()));
             user.setResetToken(null);
             user.setResetTokenExpiry(null);

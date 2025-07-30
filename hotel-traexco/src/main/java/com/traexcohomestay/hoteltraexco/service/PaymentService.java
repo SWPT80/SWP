@@ -40,6 +40,3 @@ public interface PaymentService {
      */
     void cancelExpiredPayments();
 }
-
-
-
