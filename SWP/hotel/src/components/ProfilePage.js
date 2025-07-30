@@ -4,6 +4,7 @@ import { Container, Row, Col, Card, Tabs, Tab, Form, Button, Table, Pagination, 
 import axios from '../utils/axiosConfig';
 import { useAuth } from '../context/AuthContext';
 import '../assets/styles/Profile.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const Profiles = () => {
   const navigate = useNavigate();
@@ -37,12 +38,12 @@ const Profiles = () => {
 
   const homestayServices = {
     'Mountain Retreat': [
-      { serviceId: 'SERV001', serviceName: 'Breakfast Package', price: '$20', status: 'Confirmed' },
-      { serviceId: 'SERV002', serviceName: 'Guided Tour', price: '$30', status: 'Available' },
+      { serviceId: 'SERV001', serviceName: 'Gói ăn sáng', price: '20.000đ', status: 'Đã xác nhận' },
+      { serviceId: 'SERV002', serviceName: 'Hướng dẫn tham quan', price: '30.000đ', status: 'Có sẵn' },
     ],
     'Beachside Villa': [
-      { serviceId: 'SERV003', serviceName: 'Airport Transfer', price: '$50', status: 'Pending' },
-      { serviceId: 'SERV004', serviceName: 'Spa Package', price: '$70', status: 'Available' },
+      { serviceId: 'SERV003', serviceName: 'Đưa đón sân bay', price: '50.000đ', status: 'Đang chờ' },
+      { serviceId: 'SERV004', serviceName: 'Gói spa', price: '70.000đ', status: 'Có sẵn' },
     ],
   };
 
@@ -52,24 +53,20 @@ const Profiles = () => {
     const fetchData = async () => {
       const token = localStorage.getItem('token');
 
-
       setLoading(true);
       setError('');
       try {
-        // Kiểm tra lại trạng thái đăng nhập
         await checkAuth();
 
-        // Lấy thông tin hồ sơ người dùng
         const profileResponse = await axios.get('http://localhost:8080/api/user/profile', {
           headers: { Authorization: `Bearer ${token}` },
         });
-        console.log('Profile API Response:', profileResponse.data);
+        console.log('Phản hồi API Hồ sơ:', profileResponse.data);
 
-        // Lấy danh sách mã giảm giá của người dùng
         const vouchersResponse = await axios.get(`http://localhost:8080/api/vouchers/user/${user.userId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        console.log('Vouchers API Response:', vouchersResponse.data);
+        console.log('Phản hồi API Mã giảm giá:', vouchersResponse.data);
 
         if (profileResponse.data && typeof profileResponse.data === 'object') {
           setUserData({
@@ -94,7 +91,7 @@ const Profiles = () => {
         }
       } catch (err) {
         console.error('Lỗi khi lấy dữ liệu:', err.response ? err.response.data : err.message);
-        let errorMessage = 'Không thể tải thông tin hồ sơ hoặc mã giảm giá';
+        let errorMessage = 'Không thể tải thông tin hồ sơ hoặc mã giảm giá.';
         if (err.response?.status === 401) {
           errorMessage = 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.';
           localStorage.removeItem('token');
@@ -124,24 +121,24 @@ const Profiles = () => {
 
     if (currentPassword || newPassword || repeatPassword) {
       if (!currentPassword) {
-        setError('Vui lòng nhập mật khẩu hiện tại!');
+        setError('Vui lòng nhập mật khẩu hiện tại.');
         setLoading(false);
         return;
       }
       if (newPassword !== repeatPassword) {
-        setError('Mật khẩu mới và mật khẩu xác nhận không khớp!');
+        setError('Mật khẩu mới và mật khẩu xác nhận không khớp.');
         setLoading(false);
         return;
       }
       if (newPassword.length < 6) {
-        setError('Mật khẩu mới phải có ít nhất 6 ký tự!');
+        setError('Mật khẩu mới phải có ít nhất 6 ký tự.');
         setLoading(false);
         return;
       }
     }
 
     if (!validateEmail(userData.email)) {
-      setError('Định dạng email không hợp lệ!');
+      setError('Định dạng email không hợp lệ.');
       setLoading(false);
       return;
     }
@@ -171,10 +168,9 @@ const Profiles = () => {
         });
       }
 
-      setSuccess('Cập nhật hồ sơ thành công!');
+      setSuccess('Cập nhật hồ sơ thành công.');
     } catch (err) {
-      setError(err.response?.data?.message || 'Lỗi khi cập nhật hồ sơ');
-
+      setError(err.response?.data?.message || 'Lỗi khi cập nhật hồ sơ.');
     } finally {
       setLoading(false);
     }
@@ -187,7 +183,7 @@ const Profiles = () => {
     setCurrentPage(1);
     setError('');
     setSuccess('');
-    alert('Hủy bỏ các thay đổi!');
+    alert('Hủy bỏ các thay đổi.');
   };
 
   const toggleCollapse = (bookingId) => {
@@ -216,9 +212,9 @@ const Profiles = () => {
 
   return (
     <Container className="light-style flex-grow-1 container-p-y" style={{ paddingTop: '143px' }}>
-      <h4 className="font-weight-bold py-3 mb-4">Hồ Sơ Người Dùng</h4>
-      {error && <Alert variant="danger">{error}</Alert>}
-      {success && <Alert variant="success">{success}</Alert>}
+      <h4 className="font-weight-bold py-3 mb-4">Hồ sơ người dùng</h4>
+      {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
+      {success && <Alert variant="success" onClose={() => setSuccess('')} dismissible>{success}</Alert>}
       {loading && (
         <div className="text-center my-3">
           <Spinner animation="border" />
@@ -233,57 +229,57 @@ const Profiles = () => {
                 className={`list-group-item list-group-item-action ${activeTab === 'general' ? 'active' : ''}`}
                 onClick={() => setActiveTab('general')}
               >
-                Tổng Quan
+                Tổng quan
               </Button>
               <Button
                 variant="link"
                 className={`list-group-item list-group-item-action ${activeTab === 'change-password' ? 'active' : ''}`}
                 onClick={() => setActiveTab('change-password')}
               >
-                Đổi Mật Khẩu
+                Đổi mật khẩu
               </Button>
               <Button
                 variant="link"
                 className={`list-group-item list-group-item-action ${activeTab === 'info' ? 'active' : ''}`}
                 onClick={() => setActiveTab('info')}
               >
-                Thông Tin Bổ Sung
+                Thông tin bổ sung
               </Button>
               <Button
                 variant="link"
                 className={`list-group-item list-group-item-action ${activeTab === 'invoices' ? 'active' : ''}`}
                 onClick={() => setActiveTab('invoices')}
               >
-                Hóa Đơn
+                Hóa đơn
               </Button>
               <Button
                 variant="link"
                 className={`list-group-item list-group-item-action ${activeTab === 'trips' ? 'active' : ''}`}
                 onClick={() => setActiveTab('trips')}
               >
-                Chuyến Đi
+                Chuyến đi
               </Button>
               <Button
                 variant="link"
                 className={`list-group-item list-group-item-action ${activeTab === 'bookings' ? 'active' : ''}`}
                 onClick={() => setActiveTab('bookings')}
               >
-                Đơn Đặt Phòng
+                Đơn đặt phòng
               </Button>
               <Button
                 variant="link"
                 className={`list-group-item list-group-item-action ${activeTab === 'vouchers' ? 'active' : ''}`}
                 onClick={() => setActiveTab('vouchers')}
               >
-                Mã Giảm Giá
+                Mã giảm giá
               </Button>
             </div>
           </Col>
           <Col md={9}>
             <Tabs activeKey={activeTab} onSelect={(k) => setActiveTab(k)} className="mb-4">
-              <Tab eventKey="general" title="Tổng Quan">
+              <Tab eventKey="general" title="Tổng quan">
                 <div className="card-body media align-items-center">
-                  <img src={userData.profilePhoto} alt="Hồ sơ" className="d-block ui-w-80" />
+                  <img src={userData.profilePhoto} alt="Hồ sơ người dùng" className="d-block ui-w-80" />
                   <div className="media-body ml-4">
                     <div className="text-light small mt-1">Chức năng tải ảnh hiện không được hỗ trợ.</div>
                   </div>
@@ -317,7 +313,7 @@ const Profiles = () => {
                       <Alert variant="warning" className="mt-3">
                         Email của bạn chưa được xác nhận. Vui lòng kiểm tra hộp thư.
                         <br />
-                        <a href="#" onClick={() => alert('Đã gửi lại email xác nhận')}>
+                        <a href="#" onClick={() => alert('Đã gửi lại email xác nhận.')}>
                           Gửi lại email xác nhận
                         </a>
                       </Alert>
@@ -325,7 +321,7 @@ const Profiles = () => {
                   </Form.Group>
                 </div>
               </Tab>
-              <Tab eventKey="change-password" title="Đổi Mật Khẩu">
+              <Tab eventKey="change-password" title="Đổi mật khẩu">
                 <div className="card-body pb-2">
                   <Form.Group>
                     <Form.Label>Mật khẩu hiện tại</Form.Label>
@@ -353,7 +349,7 @@ const Profiles = () => {
                   </Form.Group>
                 </div>
               </Tab>
-              <Tab eventKey="info" title="Thông Tin Bổ Sung">
+              <Tab eventKey="info" title="Thông tin bổ sung">
                 <div className="card-body pb-2">
                   <Form.Group>
                     <Form.Label>Số điện thoại</Form.Label>
@@ -396,9 +392,9 @@ const Profiles = () => {
                   </Form.Group>
                 </div>
               </Tab>
-              <Tab eventKey="invoices" title="Hóa Đơn">
+              <Tab eventKey="invoices" title="Hóa đơn">
                 <div className="card-body pb-2">
-                  <h6 className="mb-4">Hóa Đơn Của Bạn</h6>
+                  <h6 className="mb-4">Hóa đơn của bạn</h6>
                   <Table className="invoice-table">
                     <thead>
                       <tr>
@@ -411,23 +407,29 @@ const Profiles = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {userData.invoices.map((invoice) => (
-                        <tr key={invoice.invoiceId}>
-                          <td>{invoice.invoiceId}</td>
-                          <td>{invoice.homestay}</td>
-                          <td>{invoice.checkIn}</td>
-                          <td>{invoice.checkOut}</td>
-                          <td>{invoice.totalAmount}</td>
-                          <td>{invoice.status}</td>
+                      {userData.invoices.length > 0 ? (
+                        userData.invoices.map((invoice) => (
+                          <tr key={invoice.invoiceId}>
+                            <td>{invoice.invoiceId}</td>
+                            <td>{invoice.homestay}</td>
+                            <td>{invoice.checkIn}</td>
+                            <td>{invoice.checkOut}</td>
+                            <td>{invoice.totalAmount}</td>
+                            <td>{invoice.status}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="6" className="text-center">Bạn chưa có hóa đơn nào.</td>
                         </tr>
-                      ))}
+                      )}
                     </tbody>
                   </Table>
                 </div>
               </Tab>
-              <Tab eventKey="trips" title="Chuyến Đi">
+              <Tab eventKey="trips" title="Chuyến đi">
                 <div className="card-body pb-2">
-                  <h6 className="mb-4">Chuyến Đi Của Bạn</h6>
+                  <h6 className="mb-4">Chuyến đi của bạn</h6>
                   <Table className="trip-table">
                     <thead>
                       <tr>
@@ -440,88 +442,103 @@ const Profiles = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {userData.trips.map((trip) => (
-                        <tr key={trip.tripId}>
-                          <td>{trip.tripId}</td>
-                          <td>{trip.homestay}</td>
-                          <td>{trip.checkIn}</td>
-                          <td>{trip.checkOut}</td>
-                          <td>{trip.location}</td>
-                          <td>{trip.status}</td>
+                      {userData.trips.length > 0 ? (
+                        userData.trips.map((trip) => (
+                          <tr key={trip.tripId}>
+                            <td>{trip.tripId}</td>
+                            <td>{trip.homestay}</td>
+                            <td>{trip.checkIn}</td>
+                            <td>{trip.checkOut}</td>
+                            <td>{trip.location}</td>
+                            <td>{trip.status}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="6" className="text-center">Bạn chưa có chuyến đi nào.</td>
                         </tr>
-                      ))}
+                      )}
                     </tbody>
                   </Table>
                 </div>
               </Tab>
-              <Tab eventKey="bookings" title="Đơn Đặt Phòng">
+              <Tab eventKey="bookings" title="Đơn đặt phòng">
                 <div className="card-body pb-2">
-                  <h6 className="mb-4">Đơn Đặt Phòng Của Bạn</h6>
-                  {userData.bookings
-                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                    .map((booking) => (
-                      <div className="booking-row" key={booking.bookingId}>
-                        <div
-                          className="collapse-header"
-                          onClick={() => toggleCollapse(booking.bookingId)}
-                        >
-                          Mã đặt phòng: {booking.bookingId} - {booking.homestay} ({booking.checkIn} đến {booking.checkOut})
-                        </div>
-                        <Collapse in={openCollapses[booking.bookingId]}>
-                          <div id={`booking-${booking.bookingId}`}>
-                            <Table className="booking-table">
-                              <thead>
-                                <tr>
-                                  <th>Mã đặt phòng</th>
-                                  <th>Homestay</th>
-                                  <th>Ngày nhận phòng</th>
-                                  <th>Ngày trả phòng</th>
-                                  <th>Khách</th>
-                                  <th>Trạng thái</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                <tr>
-                                  <td>{booking.bookingId}</td>
-                                  <td>{booking.homestay}</td>
-                                  <td>{booking.checkIn}</td>
-                                  <td>{booking.checkOut}</td>
-                                  <td>{booking.guests}</td>
-                                  <td>{booking.status}</td>
-                                </tr>
-                              </tbody>
-                            </Table>
-                            <h6 className="mt-3 text-primary">Dịch vụ:</h6>
-                            <Table className="service-table">
-                              <thead>
-                                <tr>
-                                  <th>Mã dịch vụ</th>
-                                  <th>Tên dịch vụ</th>
-                                  <th>Giá</th>
-                                  <th>Trạng thái</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {(homestayServices[booking.homestay] || []).map((service) => (
-                                  <tr key={service.serviceId}>
-                                    <td>{service.serviceId}</td>
-                                    <td>{service.serviceName}</td>
-                                    <td>{service.price}</td>
-                                    <td>{service.status}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </Table>
+                  <h6 className="mb-4">Đơn đặt phòng của bạn</h6>
+                  {userData.bookings.length > 0 ? (
+                    userData.bookings
+                      .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                      .map((booking) => (
+                        <div className="booking-row" key={booking.bookingId}>
+                          <div
+                            className="collapse-header"
+                            onClick={() => toggleCollapse(booking.bookingId)}
+                          >
+                            Mã đặt phòng: {booking.bookingId} - {booking.homestay} ({booking.checkIn} đến {booking.checkOut})
                           </div>
-                        </Collapse>
-                      </div>
-                    ))}
+                          <Collapse in={openCollapses[booking.bookingId]}>
+                            <div id={`booking-${booking.bookingId}`}>
+                              <Table className="booking-table">
+                                <thead>
+                                  <tr>
+                                    <th>Mã đặt phòng</th>
+                                    <th>Homestay</th>
+                                    <th>Ngày nhận phòng</th>
+                                    <th>Ngày trả phòng</th>
+                                    <th>Khách</th>
+                                    <th>Trạng thái</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr>
+                                    <td>{booking.bookingId}</td>
+                                    <td>{booking.homestay}</td>
+                                    <td>{booking.checkIn}</td>
+                                    <td>{booking.checkOut}</td>
+                                    <td>{booking.guests}</td>
+                                    <td>{booking.status}</td>
+                                  </tr>
+                                </tbody>
+                              </Table>
+                              <h6 className="mt-3 text-primary">Dịch vụ:</h6>
+                              <Table className="service-table">
+                                <thead>
+                                  <tr>
+                                    <th>Mã dịch vụ</th>
+                                    <th>Tên dịch vụ</th>
+                                    <th>Giá</th>
+                                    <th>Trạng thái</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {(homestayServices[booking.homestay] || []).map((service) => (
+                                    <tr key={service.serviceId}>
+                                      <td>{service.serviceId}</td>
+                                      <td>{service.serviceName}</td>
+                                      <td>{service.price}</td>
+                                      <td>{service.status}</td>
+                                    </tr>
+                                  ))}
+                                  {!(homestayServices[booking.homestay]?.length) && (
+                                    <tr>
+                                      <td colSpan="4" className="text-center">Không có dịch vụ nào.</td>
+                                    </tr>
+                                  )}
+                                </tbody>
+                              </Table>
+                            </div>
+                          </Collapse>
+                        </div>
+                      ))
+                  ) : (
+                    <Alert variant="info">Bạn chưa có đơn đặt phòng nào.</Alert>
+                  )}
                   {renderPagination()}
                 </div>
               </Tab>
-              <Tab eventKey="vouchers" title="Mã Giảm Giá">
+              <Tab eventKey="vouchers" title="Mã giảm giá">
                 <div className="card-body pb-2">
-                  <h6 className="mb-4">Mã Giảm Giá Của Bạn</h6>
+                  <h6 className="mb-4">Mã giảm giá của bạn</h6>
                   <Table className="voucher-table">
                     <thead>
                       <tr>
@@ -560,7 +577,7 @@ const Profiles = () => {
       </Card>
       <div className="text-right mt-4">
         <Button variant="primary" onClick={saveProfile} disabled={loading}>
-          Lưu Thay Đổi
+          Lưu thay đổi
         </Button>
         <Button variant="outline-secondary" className="ml-2" onClick={cancelEdit} disabled={loading}>
           Hủy

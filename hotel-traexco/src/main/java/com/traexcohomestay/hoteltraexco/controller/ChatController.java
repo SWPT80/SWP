@@ -157,21 +157,80 @@ public class ChatController {
     }
 
     // API để lấy homestay info theo userId cho ChatPopupManager
+    // API Controller - Sửa lại để trả về data thay vì noContent
     @GetMapping("/user/{userId}/homestay-info")
-    public ResponseEntity<Map<String, Object>> getUserHomestayInfo(@PathVariable Long userId) {
+    public ResponseEntity<Map<String, Object>> getUserHomestayInfo(@PathVariable int userId) {
         try {
             Map<String, Object> homestayInfo = chatService.getHomestayInfoByUserId(userId);
 
+            // Thay vì trả về noContent, hãy trả về empty object với default values
             if (homestayInfo.isEmpty()) {
                 System.out.println("⚠️ No homestay info found for userId: " + userId);
-                return ResponseEntity.noContent().build();
+
+                // Trả về object rỗng thay vì noContent
+                Map<String, Object> defaultInfo = new HashMap<>();
+                defaultInfo.put("homestayId", null);
+                defaultInfo.put("homestayName", null);
+                defaultInfo.put("homestayLocation", null);
+
+                return ResponseEntity.ok(defaultInfo);
             }
 
             System.out.println("✅ Homestay info for userId " + userId + ": " + homestayInfo);
             return ResponseEntity.ok(homestayInfo);
         } catch (Exception e) {
             System.err.println("❌ Error getting homestay info: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+
+            // Trả về error object thay vì internal server error
+            Map<String, Object> errorInfo = new HashMap<>();
+            errorInfo.put("error", true);
+            errorInfo.put("message", e.getMessage());
+            errorInfo.put("homestayId", null);
+            errorInfo.put("homestayName", null);
+            errorInfo.put("homestayLocation", null);
+
+            return ResponseEntity.ok(errorInfo); // Hoặc có thể dùng status 200 với error flag
         }
+    }
+
+    // Hoặc cách khác là sửa service method
+    public Map<String, Object> getHomestayInfoByUserId(int userId) {
+        Map<String, Object> result = new HashMap<>();
+
+        try {
+            // Lấy thông tin từ conversations where user là customer hoặc host
+            List<Object[]> conversations = conversationRepo.findHomestayInfoByUserId(userId);
+
+            if (!conversations.isEmpty()) {
+                Object[] row = conversations.get(0);
+                Integer homestayId = (Integer) row[0];
+                String homestayName = (String) row[1];
+                String homestayLocation = (String) row[2];
+
+                result.put("homestayId", homestayId);
+                result.put("homestayName", homestayName);
+                result.put("homestayLocation", homestayLocation);
+
+                System.out.println("✅ Found homestay info for userId " + userId + ": " + result);
+            } else {
+                System.out.println("⚠️ No homestay found for userId: " + userId);
+
+                // Thay vì return empty map, return map với null values
+                result.put("homestayId", null);
+                result.put("homestayName", null);
+                result.put("homestayLocation", null);
+            }
+
+        } catch (Exception e) {
+            System.err.println("❌ Error getting homestay info for userId " + userId + ": " + e.getMessage());
+
+            // Return default values thay vì empty map
+            result.put("homestayId", null);
+            result.put("homestayName", null);
+            result.put("homestayLocation", null);
+            result.put("error", e.getMessage());
+        }
+
+        return result;
     }
 }

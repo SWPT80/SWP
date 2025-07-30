@@ -3,41 +3,48 @@ import ChatPopupManager from "./ChatPopupManager";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { Alert } from "react-bootstrap";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 export default function UserChatPage() {
   const [hostList, setHostList] = useState([]);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
   const { user, isLoggedIn } = useAuth();
 
- const handleOpenChat = (host) => {
-  window.dispatchEvent(
-    new CustomEvent("open-chat", {
-      detail: {
-        id: `${host.userId}-${host.homestayId}`,
-        userId: host.userId,
-        homestayId: host.homestayId,
-        fullname: host.fullname,
-        avatar: host.avatar,
-      },
-    })
-  );
-};
+  const handleOpenChat = (host) => {
+    window.dispatchEvent(
+      new CustomEvent("open-chat", {
+        detail: {
+          id: `${host.userId}-${host.homestayId}`,
+          userId: host.userId,
+          homestayId: host.homestayId,
+          fullname: host.fullname,
+          avatar: host.avatar,
+        },
+      })
+    );
+  };
 
   useEffect(() => {
-    console.log("UserChat mounted");
+    console.log("Trang UserChat được khởi tạo");
   }, []);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setError("Không tìm thấy thông tin người dùng.");
+      return;
+    }
 
     const userId = user.id;
     const role = user.role?.toUpperCase();
 
     console.log("Token:", localStorage.getItem("token"));
-    console.log("userID:", userId);
+    console.log("ID người dùng:", userId);
 
     // Nếu không đúng vai trò thì điều hướng về trang chủ
-    if (![ "HOST", "ADMIN"].includes(role)) {
+    if (!["HOST", "ADMIN"].includes(role)) {
+      setError("Bạn không có quyền truy cập trang này.");
       navigate("/", { replace: true });
       return;
     }
@@ -55,44 +62,64 @@ export default function UserChatPage() {
           avatar: host.avatar || "",
         }));
         setHostList(formatted);
+        setError(null);
       })
       .catch((err) => {
-        console.error("Lỗi tải danh sách host:", err);
+        console.error("Lỗi tải danh sách chủ nhà:", err);
+        setError("Không thể tải danh sách chủ nhà. Vui lòng thử lại.");
       });
   }, [user, navigate]);
 
   if (!isLoggedIn || !user) {
-    return <div className="text-center mt-5">Đang tải...</div>;
-
+    return (
+      <div className="text-center mt-5">
+        {error && (
+          <Alert variant="danger" onClose={() => setError(null)} dismissible>
+            {error}
+          </Alert>
+        )}
+        Đang tải...
+      </div>
+    );
   }
 
   return (
-  <div className="container mt-4">
-    <div className="list-group">
-      {hostList.map((host) => (
-        <button
-          key={host.id}
-          className="list-group-item list-group-item-action d-flex align-items-center"
-          onClick={() => handleOpenChat(host)}
-        >
-          <img
-            src={host.avatar || "https://via.placeholder.com/40"}
-            alt="avatar"
-            className="rounded-circle me-2"
-            width={40}
-            height={40}
-          />
-          {host.fullname}
-        </button>
-      ))}
+    <div className="container mt-4">
+      {error && (
+        <Alert variant="danger" onClose={() => setError(null)} dismissible>
+          {error}
+        </Alert>
+      )}
+      <div className="list-group">
+        {hostList.length === 0 ? (
+          <div className="text-center py-4">
+            Chưa có chủ nhà nào để trò chuyện
+          </div>
+        ) : (
+          hostList.map((host) => (
+            <button
+              key={host.id}
+              className="list-group-item list-group-item-action d-flex align-items-center"
+              onClick={() => handleOpenChat(host)}
+            >
+              <img
+                src={host.avatar || "https://via.placeholder.com/40"}
+                alt="avatar"
+                className="rounded-circle me-2"
+                width={40}
+                height={40}
+              />
+              {host.fullname}
+            </button>
+          ))
+        )}
+      </div>
+
+      <ChatPopupManager
+        currentUserId={user.id}
+        listToChatWith={hostList}
+        type="userToHost"
+      />
     </div>
-
-    <ChatPopupManager
-      currentUserId={user.id}
-      listToChatWith={hostList}
-      type="userToHost"
-    />
-  </div>
-);
-
+  );
 }

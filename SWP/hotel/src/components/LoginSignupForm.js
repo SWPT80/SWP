@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Modal, Button, Form, Tabs, Tab } from 'react-bootstrap';
+import { Modal, Button, Form, Tabs, Tab, Alert } from 'react-bootstrap';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const AuthModal = ({ show, onClose, onAuthSuccess }) => {
   const navigate = useNavigate();
@@ -15,25 +16,23 @@ const AuthModal = ({ show, onClose, onAuthSuccess }) => {
     localStorage.setItem('token', token);
     localStorage.setItem('role', role.toUpperCase());
 
-    // Gọi API /me để lấy thông tin user và lưu hostId
     try {
       const meResponse = await axios.get('http://localhost:8080/api/auth/me', {
         headers: { Authorization: `Bearer ${token}` }
       });
       const user = meResponse.data;
-      localStorage.setItem('hostId', user.id); // lưu hostId
+      localStorage.setItem('hostId', user.id);
       const fullName = user.fullName || user.email.split('@')[0];
       setSuccess('Đăng nhập thành công!');
       onAuthSuccess({ fullName });
       onClose();
 
-      // Điều hướng theo role
       if (role === 'ADMIN') navigate('/admin/dashboard', { replace: true });
       else if (role === 'HOST') navigate('/host/dashboard', { replace: true });
       else navigate('/', { replace: true });
     } catch (error) {
-      console.error('Lỗi khi gọi /me:', error);
-      setError('Tài khoản bạn đã bị vô hiệu hóa.');
+      console.error('Lỗi khi lấy thông tin người dùng:', error);
+      setError('Tài khoản của bạn đã bị vô hiệu hóa.');
     }
   };
 
@@ -54,7 +53,7 @@ const AuthModal = ({ show, onClose, onAuthSuccess }) => {
         await handleLoginSuccess(res.data.token, res.data.role);
       } else {
         if (data.registerPassword !== data.registerConfirmPassword) {
-          setError('Mật khẩu xác nhận không khớp');
+          setError('Mật khẩu xác nhận không khớp.');
           return;
         }
 
@@ -70,7 +69,7 @@ const AuthModal = ({ show, onClose, onAuthSuccess }) => {
         await handleLoginSuccess(res.data.token, res.data.role);
       }
     } catch (err) {
-      const msg = err.response?.data?.message || 'Tài khoản bạn đã bị vô hiệu hóa.';
+      const msg = err.response?.data?.message || 'Tài khoản hoặc mật khẩu không đúng.';
       setError(msg);
     }
   };
@@ -82,8 +81,8 @@ const AuthModal = ({ show, onClose, onAuthSuccess }) => {
       });
       await handleLoginSuccess(res.data.token, res.data.role);
     } catch (err) {
-      setError(err.response?.data?.message || 'Lỗi đăng nhập Google');
-      console.error('Google Login Error:', err);
+      setError(err.response?.data?.message || 'Lỗi đăng nhập bằng Google.');
+      console.error('Lỗi đăng nhập bằng Google:', err);
     }
   };
 
@@ -98,7 +97,7 @@ const AuthModal = ({ show, onClose, onAuthSuccess }) => {
       setSuccess('Yêu cầu đặt lại mật khẩu đã được gửi!');
       setShowForgotPassword(false);
     } catch (err) {
-      setError(err.response?.data?.message || 'Có lỗi xảy ra');
+      setError(err.response?.data?.message || 'Có lỗi xảy ra khi gửi yêu cầu đặt lại mật khẩu.');
     }
   };
 
@@ -108,8 +107,8 @@ const AuthModal = ({ show, onClose, onAuthSuccess }) => {
         <Modal.Title>Đăng nhập / Đăng ký</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        {error && <div className="alert alert-danger">{error}</div>}
-        {success && <div className="alert alert-success">{success}</div>}
+        {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
+        {success && <Alert variant="success" onClose={() => setSuccess('')} dismissible>{success}</Alert>}
 
         <Tabs
           activeKey={key}
@@ -181,7 +180,7 @@ const AuthModal = ({ show, onClose, onAuthSuccess }) => {
           <GoogleOAuthProvider clientId="736882827867-gjjrd24l8vofkj87nhe8kt1q0d7t9ako.apps.googleusercontent.com">
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
-              onError={() => setError('Lỗi đăng nhập Google')}
+              onError={() => setError('Lỗi đăng nhập bằng Google.')}
               theme="outline"
               size="large"
               width="100%"

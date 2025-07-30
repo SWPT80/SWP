@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Card, Button, Image } from "react-bootstrap";
+import { Card, Button, Image, Alert } from "react-bootstrap";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import 'bootstrap/dist/css/bootstrap.min.css';
 
-const daysOfWeek = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+const daysOfWeek = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 const calendarDays = [
   { day: 31, isCurrentMonth: false },
   { day: 1, isCurrentMonth: true },
@@ -43,12 +44,27 @@ const bookingsList = [
 ];
 
 export function CalendarSection() {
-  const [currentDate, setCurrentDate] = useState("August 2023");
+  const [currentDate, setCurrentDate] = useState("Tháng 8 2023");
+  const [error, setError] = useState(null);
+
+  // Kiểm tra dữ liệu lịch
+  useEffect(() => {
+    if (!calendarDays.length || !bookingsList.length) {
+      setError("Không có dữ liệu lịch hoặc danh sách đặt phòng.");
+    } else {
+      setError(null);
+    }
+  }, []);
 
   return (
     <Card className="p-3">
       <Card.Body>
-        <h5 className="mb-4">Calendar</h5>
+        {error && (
+          <Alert variant="danger" onClose={() => setError(null)} dismissible>
+            {error}
+          </Alert>
+        )}
+        <h5 className="mb-4">Lịch</h5>
         <div className="d-flex justify-content-between align-items-center mb-3">
           <Button variant="light" size="sm">
             <ChevronLeft size={16} />
@@ -65,39 +81,42 @@ export function CalendarSection() {
           {calendarDays.map((date, index) => (
             <div
               key={index}
-              className={`p-2 rounded ${
-                date.isCurrentMonth
+              className={`p-2 rounded ${date.isCurrentMonth
                   ? date.hasBooking
                     ? "bg-primary text-white"
                     : ""
                   : "text-muted"
-              }`}
+                }`}
             >
               {date.day}
             </div>
           ))}
         </div>
         <div className="mt-4">
-          <h6 className="fw-semibold mb-1">August 02, 2023 Booking Lists</h6>
-          <div className="text-muted small mb-3">(3 Bookings)</div>
-          {bookingsList.map((booking, index) => (
-            <div key={index} className="d-flex align-items-center mb-3">
-              <Image
-                src={booking.avatar}
-                roundedCircle
-                width={32}
-                height={32}
-                alt={booking.name}
-                className="me-3"
-              />
-              <div>
-                <div className="fw-medium">{booking.name}</div>
-                <div className="text-muted small">
-                  {booking.nights} Nights | {booking.guests} Guests
+          <h6 className="fw-semibold mb-1">Danh sách đặt phòng ngày 02/08/2023</h6>
+          <div className="text-muted small mb-3">({bookingsList.length} đặt phòng)</div>
+          {bookingsList.length === 0 ? (
+            <p>Không có đặt phòng nào</p>
+          ) : (
+            bookingsList.map((booking, index) => (
+              <div key={index} className="d-flex align-items-center mb-3">
+                <Image
+                  src={booking.avatar}
+                  roundedCircle
+                  width={32}
+                  height={32}
+                  alt={booking.name}
+                  className="me-3"
+                />
+                <div>
+                  <div className="fw-medium">{booking.name}</div>
+                  <div className="text-muted small">
+                    {booking.nights} đêm | {booking.guests} khách
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </Card.Body>
     </Card>

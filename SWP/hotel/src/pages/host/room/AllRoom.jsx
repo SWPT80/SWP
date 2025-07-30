@@ -7,23 +7,96 @@ import {
   Row,
   Col,
   Container,
-  Card
+  Card,
+  Toast,
+  ToastContainer
 } from "react-bootstrap";
 import { useNavigate } from 'react-router-dom';
+import axios from "axios";
 
 export default function AllRoom() {
   const api = 'http://localhost:8080/api/rooms';
-  const [hostId, setHostId] = useState(21);
   const navigate = useNavigate();
+  const [hostId, setHostId] = useState(() => localStorage.getItem("hostId"));
 
-  const fetchRooms = async () => {
-    const res = await fetch(`${api}/host/${hostId}`);
-    const data = await res.json();
-    setRooms(data);
+  // Toast states
+  const [toasts, setToasts] = useState([]);
+
+  // Function to show toast
+  const showToast = (message, type = 'success', duration = 4000) => {
+    const id = Date.now();
+    const newToast = {
+      id,
+      message,
+      type, // 'success', 'error', 'warning', 'info'
+      show: true,
+      duration,
+      startTime: Date.now(),
+      progress: 0
+    };
+    setToasts(prev => [...prev, newToast]);
+    
+    // Update progress bar
+    const progressInterval = setInterval(() => {
+      setToasts(prev => prev.map(toast => {
+        if (toast.id === id) {
+          const elapsed = Date.now() - toast.startTime;
+          const progress = Math.min((elapsed / duration) * 100, 100);
+          return { ...toast, progress };
+        }
+        return toast;
+      }));
+    }, 50);
+    
+    // Auto hide after duration
+    setTimeout(() => {
+      clearInterval(progressInterval);
+      setToasts(prev => prev.filter(toast => toast.id !== id));
+    }, duration);
+  };
+
+  const hideToast = (id) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
   };
 
   useEffect(() => {
-    fetchRooms();
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/", { replace: true });
+      return;
+    }
+    // Nếu chưa có hostId => gọi /me
+    if (!hostId) {
+      axios.get("http://localhost:8080/api/auth/me", {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(res => {
+          const user = res.data;
+          if (user.role !== 'HOST') {
+            navigate("/", { replace: true });
+            return;
+          }
+          localStorage.setItem("hostId", user.id);
+          setHostId(user.id);
+        })
+        .catch(() => navigate("/", { replace: true }));
+    }
+  }, [navigate, hostId]);
+
+  const fetchRooms = async () => {
+    try {
+      const res = await fetch(`${api}/host/${hostId}`);
+      const data = await res.json();
+      setRooms(data);
+    } catch (error) {
+      showToast("Failed to load rooms", "error");
+    }
+  };
+
+  useEffect(() => {
+    if (hostId) {
+      fetchRooms();
+    }
   }, [hostId]);
 
   const [rooms, setRooms] = useState([]);
@@ -31,12 +104,23 @@ export default function AllRoom() {
   const [showModal, setShowModal] = useState(false);
 
   const handleDelete = async (homestayId, roomId) => {
-    const res = await fetch(`${api}/${homestayId}/${roomId}`, {
-      method: 'DELETE',
-    });
-    if (res.ok) {
-      alert('Room deleted');
-      fetchRooms();
+    try {
+      const res = await fetch(`${api}/${homestayId}/${roomId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        showToast("🗑️ Room deleted successfully!", "success");
+        fetchRooms();
+
+        // Dispatch custom event để thông báo cho các component khác
+        window.dispatchEvent(new CustomEvent('roomDeleted', {
+          detail: { homestayId, roomId }
+        }));
+      } else {
+        showToast("Failed to delete room", "error");
+      }
+    } catch (error) {
+      showToast("An error occurred while deleting room", "error");
     }
   };
 
@@ -63,25 +147,54 @@ export default function AllRoom() {
       });
 
       if (!res.ok) {
-        alert('Update failed!');
+        showToast("❌ Update failed!", "error");
         return;
       }
 
-      alert('Room updated!');
+      showToast("✅ Room updated successfully!", "success");
       setShowModal(false);
       fetchRooms(); // reload danh sách
 
     } catch (err) {
       console.error("Update error:", err);
-      alert("An error occurred while updating room.");
+      showToast("An error occurred while updating room", "error");
     }
   };
 
+  const getToastVariant = (type) => {
+    switch (type) {
+      case 'success': return 'success';
+      case 'error': return 'danger';
+      case 'warning': return 'warning';
+      case 'info': return 'info';
+      default: return 'primary';
+    }
+  };
+
+  const getToastIcon = (type) => {
+    switch (type) {
+      case 'success': return '✅';
+      case 'error': return '❌';
+      case 'warning': return '⚠️';
+      case 'info': return 'ℹ️';
+      default: return '📢';
+    }
+  };
 
   return (
     <Container className="mt-5">
       <Card className="shadow p-4">
-        <h2 className="text-center mb-4">🏠 Manage Your Rooms</h2>
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <h2>🏠 Manage Your Rooms</h2>
+          <Button 
+            variant="success" 
+            size="lg"
+            onClick={() => navigate('/host/rooms/add')}
+            className="d-flex align-items-center gap-2"
+          >
+            ➕ Add New Room
+          </Button>
+        </div>
         <Table responsive bordered hover className="align-middle text-center">
           <thead className="table-primary">
             <tr>
@@ -91,7 +204,6 @@ export default function AllRoom() {
               <th>Price</th>
               <th>Rating</th>
               <th>Status</th>
-              <th>Images</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -114,24 +226,6 @@ export default function AllRoom() {
                   <span className={`badge ${room.status ? 'bg-success' : 'bg-secondary'}`}>
                     {room.status ? 'Active' : 'Inactive'}
                   </span>
-                </td>
-                <td>
-                  {room.roomImages?.length > 0 ? (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', justifyContent: 'center' }}>
-                      {room.roomImages.map((img, index) => (
-                        <img
-                          key={index}
-                          src={img.url}
-                          alt={`room-${index}`}
-                          width={80}
-                          height={60}
-                          style={{ objectFit: 'cover', borderRadius: '4px' }}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <span>No image</span>
-                  )}
                 </td>
                 <td onClick={(e) => e.stopPropagation()}>
                   <Button
@@ -231,6 +325,56 @@ export default function AllRoom() {
           </Button>
         </Modal.Footer>
       </Modal>
+
+      {/* Toast Container */}
+      <ToastContainer position="top-end" className="p-3" style={{ zIndex: 9999 }}>
+        {toasts.map((toast) => (
+          <div key={toast.id} className="position-relative">
+            <Toast
+              show={toast.show}
+              onClose={() => hideToast(toast.id)}
+              bg={getToastVariant(toast.type)}
+              className="text-white"
+              style={{ minWidth: '300px' }}
+            >
+              <Toast.Header>
+                <span className="me-2">{getToastIcon(toast.type)}</span>
+                <strong className="me-auto">
+                  {toast.type === 'success' && 'Success'}
+                  {toast.type === 'error' && 'Error'}
+                  {toast.type === 'warning' && 'Warning'}
+                  {toast.type === 'info' && 'Info'}
+                </strong>
+              </Toast.Header>
+              <Toast.Body>
+                {toast.message}
+                {/* Progress Bar */}
+                <div className="mt-2">
+                  <div 
+                    className="progress" 
+                    style={{ 
+                      height: '3px', 
+                      backgroundColor: 'rgba(255,255,255,0.3)',
+                      borderRadius: '2px'
+                    }}
+                  >
+                    <div
+                      className="progress-bar"
+                      role="progressbar"
+                      style={{
+                        width: `${toast.progress}%`,
+                        backgroundColor: 'rgba(255,255,255,0.8)',
+                        transition: 'width 0.05s linear',
+                        borderRadius: '2px'
+                      }}
+                    />
+                  </div>
+                </div>
+              </Toast.Body>
+            </Toast>
+          </div>
+        ))}
+      </ToastContainer>
     </Container>
   );
 }

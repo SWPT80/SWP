@@ -41,5 +41,4 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
     @Query("SELECT COALESCE(SUM(b.totalAmount), 0) FROM Booking b " +
             "WHERE b.rooms.homestay.hostId = :hostId AND b.status IN ('CONFIRMED', 'CHECKED_OUT')")
     BigDecimal sumRevenueByHostId(@Param("hostId") Integer hostId);
-
 }

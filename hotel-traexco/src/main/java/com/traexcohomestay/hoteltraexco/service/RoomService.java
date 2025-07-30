@@ -8,6 +8,7 @@ import com.traexcohomestay.hoteltraexco.dto.response.RoomResponseWithImages;
 import com.traexcohomestay.hoteltraexco.model.Room;
 
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface RoomService {
@@ -20,4 +21,6 @@ public interface RoomService {
     Room getRoomById(int homestayId, String roomId);
     Room updateRoom(int homestayId, String roomId, RoomUpdateRequest request);
     void deleteRoom(int homestayId, String roomId);
+    List<RoomDetailsDTO> getRoomDetailsByHostId(Integer hostId);
+    boolean checkRoomAvailability(Integer homestayId, String roomNumber, LocalDate checkInDate, LocalDate checkOutDate);
 }

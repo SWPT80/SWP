@@ -119,12 +119,12 @@ public class ChatService {
     }
 
     // Method để lấy homestay info theo userId
-    public Map<String, Object> getHomestayInfoByUserId(Long userId) {
+    public Map<String, Object> getHomestayInfoByUserId(int userId) {
         Map<String, Object> result = new HashMap<>();
 
         try {
             // Lấy thông tin từ conversations where user là customer hoặc host
-            List<Object[]> conversations = conversationRepo.findHomestayInfoByUserId(userId.intValue());
+            List<Object[]> conversations = conversationRepo.findHomestayInfoByUserId(userId);
 
             if (!conversations.isEmpty()) {
                 Object[] row = conversations.get(0);

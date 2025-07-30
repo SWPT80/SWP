@@ -37,6 +37,24 @@ const services = [
   { value: 'Làm móng', icon: 'fas fa-hand-paper' },
 ];
 
+// Dữ liệu mẫu cho suggestions - có thể thay thế bằng API call
+const locationSuggestions = [
+  'Đà Nẵng', 'Hội An', 'Huế', 'Sapa', 'Hạ Long', 'Phú Quốc', 
+  'Nha Trang', 'Đà Lạt', 'Hà Nội', 'TP. Hồ Chí Minh', 'Mũi Né', 
+  'Cần Thơ', 'Vũng Tàu', 'Quy Nhon', 'Phan Thiết'
+];
+
+const experienceSuggestions = [
+  { name: 'Tour thành phố Đà Nẵng', location: 'Đà Nẵng' },
+  { name: 'Trekking Sapa', location: 'Sapa' },
+  { name: 'Du thuyền Hạ Long', location: 'Hạ Long' },
+  { name: 'Cooking class Hội An', location: 'Hội An' },
+  { name: 'Đi bộ phố cổ Hà Nội', location: 'Hà Nội' },
+  { name: 'Lặn biển Đà Nẵng', location: 'Đà Nẵng' },
+  { name: 'Khám phá rừng quốc gia', location: 'Đà Lạt' },
+  { name: 'Câu cá biển', location: 'Phú Quốc' },
+];
+
 const HomeSlider = () => {
   return (
     <div className="home">
@@ -86,17 +104,14 @@ const HomeSlider = () => {
 };
 
 const Search = () => {
-  const [checkInDate, setCheckInDate] = useState("");
-  const handleCheckInChange = (e) => {
-    const selectedDate = e.target.value;
-    setCheckInDate(selectedDate);
-
-    // Nếu check-out nhỏ hơn hoặc bằng check-in thì reset
-    if (checkOutRef.current?.value && checkOutRef.current.value <= selectedDate) {
-      checkOutRef.current.value = "";
-    }
-  };
   const [serviceDropdownOpen, setServiceDropdownOpen] = useState(false);
+  
+  // States cho suggestions
+  const [locationSuggestionsOpen, setLocationSuggestionsOpen] = useState(false);
+  const [experienceNameSuggestionsOpen, setExperienceNameSuggestionsOpen] = useState(false);
+  const [filteredLocationSuggestions, setFilteredLocationSuggestions] = useState([]);
+  const [filteredExperienceSuggestions, setFilteredExperienceSuggestions] = useState([]);
+  
   const serviceInputRef = useRef(null);
   const serviceOptionsRef = useRef(null);
   const navigate = useNavigate();
@@ -110,16 +125,23 @@ const Search = () => {
 
   // Ref riêng cho từng tab
   const hotelLocationRef = useRef(null);
-  const checkInRef = useRef(null);
-  const checkOutRef = useRef(null);
+  const ratingRef = useRef(null);
+  const minPriceRef = useRef(null);
 
   const experienceLocationRef = useRef(null);
   const experienceNameRef = useRef(null);
 
   const serviceLocationRef = useRef(null);
 
+  // Refs cho suggestions
+  const locationSuggestionsRef = useRef(null);
+  const experienceNameSuggestionsRef = useRef(null);
+
   const handleTabClick = (tabId) => {
     setActiveTab(tabId);
+    // Đóng tất cả suggestions khi chuyển tab
+    setLocationSuggestionsOpen(false);
+    setExperienceNameSuggestionsOpen(false);
 
     if (tabId === 'trải nghiệm' && location.pathname !== '/experience') {
       navigate('/experience');
@@ -130,8 +152,10 @@ const Search = () => {
     }
   };
 
+  // Xử lý click outside để đóng dropdowns
   useEffect(() => {
     const handleClickOutside = (event) => {
+      // Service dropdown
       if (
         serviceInputRef.current &&
         serviceOptionsRef.current &&
@@ -140,10 +164,74 @@ const Search = () => {
       ) {
         setServiceDropdownOpen(false);
       }
+
+      // Location suggestions
+      if (
+        locationSuggestionsRef.current &&
+        !locationSuggestionsRef.current.contains(event.target)
+      ) {
+        setLocationSuggestionsOpen(false);
+      }
+
+      // Experience name suggestions
+      if (
+        experienceNameSuggestionsRef.current &&
+        !experienceNameSuggestionsRef.current.contains(event.target)
+      ) {
+        setExperienceNameSuggestionsOpen(false);
+      }
     };
+
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
+
+  // Xử lý input địa điểm
+  const handleLocationInput = (e, type) => {
+    const value = e.target.value;
+    if (value.length > 0) {
+      const filtered = locationSuggestions.filter(location =>
+        location.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredLocationSuggestions(filtered);
+      setLocationSuggestionsOpen(true);
+    } else {
+      setLocationSuggestionsOpen(false);
+    }
+  };
+
+  // Xử lý input tên trải nghiệm
+  const handleExperienceNameInput = (e) => {
+    const value = e.target.value;
+    if (value.length > 0) {
+      const filtered = experienceSuggestions.filter(exp =>
+        exp.name.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredExperienceSuggestions(filtered);
+      setExperienceNameSuggestionsOpen(true);
+    } else {
+      setExperienceNameSuggestionsOpen(false);
+    }
+  };
+
+  // Chọn suggestion địa điểm
+  const handleLocationSuggestionClick = (suggestionValue, inputRef) => {
+    if (inputRef.current) {
+      inputRef.current.value = suggestionValue;
+    }
+    setLocationSuggestionsOpen(false);
+  };
+
+  // Chọn suggestion trải nghiệm
+  const handleExperienceNameSuggestionClick = (experience) => {
+    if (experienceNameRef.current) {
+      experienceNameRef.current.value = experience.name;
+    }
+    if (experienceLocationRef.current) {
+      experienceLocationRef.current.value = experience.location;
+    }
+    setExperienceNameSuggestionsOpen(false);
+  };
 
   const handleServiceInputClick = () => {
     setServiceDropdownOpen(true);
@@ -161,8 +249,8 @@ const Search = () => {
       const params = new URLSearchParams({
         type: 'nhà',
         location: hotelLocationRef.current?.value || '',
-        checkIn: checkInRef.current?.value || '',
-        checkOut: checkOutRef.current?.value || '',
+        minRating: ratingRef.current?.value || '',
+        minPrice: minPriceRef.current?.value || '',
       });
       navigate(`/search-results?${params.toString()}`);
     }
@@ -210,26 +298,55 @@ const Search = () => {
           {/* Nhà */}
           <div className={`search_panel ${activeTab === 'nhà' ? 'active' : ''}`}>
             <div className="search_panel_content">
-              <div className="search_item">
+              <div className="search_item" style={{ position: 'relative' }}>
                 <div>Địa điểm</div>
-                <input ref={hotelLocationRef} type="text" className="search_input destination" placeholder="Tìm kiếm địa điểm" required />
-              </div>
-              <div className="search_item">
-                <div>Check in</div>
-                <input
-                  ref={checkInRef}
-                  type="date"
-                  className="search_input check_in"
-                  onChange={handleCheckInChange} // 👈 Gắn vào đây
+                <input 
+                  ref={hotelLocationRef} 
+                  type="text" 
+                  className="search_input destination" 
+                  placeholder="Tìm kiếm địa điểm" 
+                  required 
+                  onChange={(e) => handleLocationInput(e, 'hotel')}
+                  onFocus={(e) => handleLocationInput(e, 'hotel')}
                 />
+                {locationSuggestionsOpen && (
+                  <div ref={locationSuggestionsRef} className="search-suggestions">
+                    {filteredLocationSuggestions.map((suggestion, index) => (
+                      <div 
+                        key={index}
+                        className="search-suggestion-item"
+                        onClick={() => handleLocationSuggestionClick(suggestion, hotelLocationRef)}
+                      >
+                        <i className="fas fa-map-marker-alt"></i>
+                        {suggestion}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="search_item">
-                <div>Check out</div>
+                <div>Đánh giá tối thiểu</div>
+                <select
+                  ref={ratingRef}
+                  className="search_input rating"
+                >
+                  <option value="">Chọn đánh giá</option>
+                  <option value="1">1 sao trở lên</option>
+                  <option value="2">2 sao trở lên</option>
+                  <option value="3">3 sao trở lên</option>
+                  <option value="4">4 sao trở lên</option>
+                  <option value="5">5 sao</option>
+                </select>
+              </div>
+              <div className="search_item">
+                <div>Giá tối thiểu (VND)</div>
                 <input
-                  ref={checkOutRef}
-                  type="date"
-                  className="search_input check_out"
-                  min={checkInDate} // 👈 Giới hạn ngày nhỏ nhất là ngày check-in
+                  ref={minPriceRef}
+                  type="number"
+                  className="search_input min_price"
+                  placeholder="Nhập giá tối thiểu"
+                  min="0"
+                  step="50000"
                 />
               </div>
               <div className="search_button" onClick={handleSearch}>
@@ -241,13 +358,64 @@ const Search = () => {
           {/* Trải nghiệm */}
           <div className={`search_panel ${activeTab === 'trải nghiệm' ? 'active' : ''}`}>
             <div className="search_panel_content">
-              <div className="search_item">
+              <div className="search_item" style={{ position: 'relative' }}>
                 <div>Địa điểm</div>
-                <input ref={experienceLocationRef} type="text" className="search_input destination" placeholder="Tìm kiếm địa điểm" required />
+                <input 
+                  ref={experienceLocationRef} 
+                  type="text" 
+                  className="search_input destination" 
+                  placeholder="Tìm kiếm địa điểm" 
+                  required 
+                  onChange={(e) => handleLocationInput(e, 'experience')}
+                  onFocus={(e) => handleLocationInput(e, 'experience')}
+                />
+                {locationSuggestionsOpen && (
+                  <div ref={locationSuggestionsRef} className="search-suggestions">
+                    {filteredLocationSuggestions.map((suggestion, index) => (
+                      <div 
+                        key={index}
+                        className="search-suggestion-item"
+                        onClick={() => handleLocationSuggestionClick(suggestion, experienceLocationRef)}
+                      >
+                        <i className="fas fa-map-marker-alt"></i>
+                        {suggestion}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="search_item">
+              <div className="search_item" style={{ position: 'relative' }}>
                 <div>Tên trải nghiệm</div>
-                <input ref={experienceNameRef} type="text" className="search_input" placeholder="Nhập tên trải nghiệm" />
+                <input 
+                  ref={experienceNameRef} 
+                  type="text" 
+                  className="search_input" 
+                  placeholder="Nhập tên trải nghiệm" 
+                  onChange={handleExperienceNameInput}
+                  onFocus={handleExperienceNameInput}
+                />
+                {experienceNameSuggestionsOpen && (
+                  <div ref={experienceNameSuggestionsRef} className="search-suggestions">
+                    {filteredExperienceSuggestions.map((experience, index) => (
+                      <div 
+                        key={index}
+                        className="search-suggestion-item experience-suggestion"
+                        onClick={() => handleExperienceNameSuggestionClick(experience)}
+                      >
+                        <div className="experience-suggestion-content">
+                          <div className="experience-name">
+                            <i className="fas fa-hiking"></i>
+                            {experience.name}
+                          </div>
+                          <div className="experience-location">
+                            <i className="fas fa-map-marker-alt"></i>
+                            {experience.location}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="search_button" onClick={handleSearch}>
                 <button type="button">search</button>
@@ -258,9 +426,31 @@ const Search = () => {
           {/* Dịch vụ */}
           <div className={`search_panel ${activeTab === 'dịch vụ' ? 'active' : ''}`}>
             <div className="search_panel_content">
-              <div className="search_item">
+              <div className="search_item" style={{ position: 'relative' }}>
                 <div>Địa điểm</div>
-                <input ref={serviceLocationRef} type="text" className="search_input destination" placeholder="Tìm kiếm địa điểm" required />
+                <input 
+                  ref={serviceLocationRef} 
+                  type="text" 
+                  className="search_input destination" 
+                  placeholder="Tìm kiếm địa điểm" 
+                  required 
+                  onChange={(e) => handleLocationInput(e, 'service')}
+                  onFocus={(e) => handleLocationInput(e, 'service')}
+                />
+                {locationSuggestionsOpen && (
+                  <div ref={locationSuggestionsRef} className="search-suggestions">
+                    {filteredLocationSuggestions.map((suggestion, index) => (
+                      <div 
+                        key={index}
+                        className="search-suggestion-item"
+                        onClick={() => handleLocationSuggestionClick(suggestion, serviceLocationRef)}
+                      >
+                        <i className="fas fa-map-marker-alt"></i>
+                        {suggestion}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="search_item">
                 <div>Dịch vụ</div>
@@ -326,7 +516,7 @@ const HomePage = () => {
         // Lấy danh sách host đã book hoặc có thể chat
         const response = await axios.get(`http://localhost:8080/api/chat/hosts-booked?userId=${user.id}`);
         const data = response.data;
-
+        
         const formatted = data.map((host) => ({
           id: `${host.hostId}-${host.homestayId}`,
           userId: host.hostId,
@@ -334,11 +524,11 @@ const HomePage = () => {
           fullname: host.fullname,
           avatar: host.avatar || "",
         }));
-
+        
         setHostList(formatted);
       } catch (error) {
         console.error("Lỗi khi tải danh sách chat:", error);
-
+        
         // Dữ liệu mẫu nếu API lỗi hoặc chưa có dữ liệu
         setHostList([
           {
@@ -349,7 +539,7 @@ const HomePage = () => {
             avatar: "https://ui-avatars.com/api/?name=Nguyen+Van+A&background=0084ff&color=fff"
           },
           {
-            id: "2-2",
+            id: "2-2", 
             userId: 2,
             homestayId: 2,
             fullname: "Trần Thị B - Host",
@@ -365,8 +555,9 @@ const HomePage = () => {
   return (
     <div>
       <HomeSlider />
+      {/* <ChatManager /> */}
       <Search />
-      <CozeChat />
+      <CozeChat/>
       {/* Chat Integration - Chỉ hiển thị khi user đã đăng nhập */}
       {isLoggedIn && user && (
         <ChatPopupManager

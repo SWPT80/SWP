@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from '../utils/axiosConfig';
 import { Form, Button, Alert } from 'react-bootstrap';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const ReportForm = ({ bookingId, userId, homestayId, roomNumber }) => {
     const [reportType, setReportType] = useState('homestay');
@@ -11,15 +12,16 @@ const ReportForm = ({ bookingId, userId, homestayId, roomNumber }) => {
     const [success, setSuccess] = useState('');
     const [error, setError] = useState('');
 
-    // 🟡 Khi chọn loại "service", tự động load danh sách dịch vụ từ API
     useEffect(() => {
         const fetchServices = async () => {
             if (reportType === 'service' && homestayId) {
                 try {
                     const res = await axios.get(`/api/services/homestay/${homestayId}`);
                     setServiceOptions(res.data);
+                    setError('');
                 } catch (err) {
-                    console.error('Không thể load dịch vụ:', err);
+                    console.error('Lỗi khi tải danh sách dịch vụ:', err);
+                    setError('Không thể tải danh sách dịch vụ. Vui lòng thử lại.');
                     setServiceOptions([]);
                 }
             }
@@ -49,17 +51,17 @@ const ReportForm = ({ bookingId, userId, homestayId, roomNumber }) => {
             setDescription('');
             setServiceId('');
         } catch (err) {
-            console.error('Lỗi gửi báo cáo:', err);
+            console.error('Lỗi khi gửi báo cáo:', err);
             setError('Không thể gửi báo cáo. Vui lòng thử lại.');
         }
 
-        console.log("Report data gửi đi:", reportData);
+        console.log("Dữ liệu báo cáo gửi đi:", reportData);
     };
 
     return (
         <Form onSubmit={handleSubmit}>
-            {success && <Alert variant="success">{success}</Alert>}
-            {error && <Alert variant="danger">{error}</Alert>}
+            {success && <Alert variant="success" onClose={() => setSuccess('')} dismissible>{success}</Alert>}
+            {error && <Alert variant="danger" onClose={() => setError('')} dismissible>{error}</Alert>}
 
             <Form.Group controlId="reportType" className="mb-3">
                 <Form.Label>Loại báo cáo</Form.Label>
@@ -79,12 +81,19 @@ const ReportForm = ({ bookingId, userId, homestayId, roomNumber }) => {
                         required
                     >
                         <option value="">-- Chọn dịch vụ --</option>
-                        {serviceOptions.map(service => (
-                            <option key={service.id} value={service.id}>
-                                {service.serviceType?.serviceName || service.name}
-                            </option>
-                        ))}
+                        {serviceOptions.length > 0 ? (
+                            serviceOptions.map(service => (
+                                <option key={service.id} value={service.id}>
+                                    {service.serviceType?.serviceName || service.name}
+                                </option>
+                            ))
+                        ) : (
+                            <option disabled>Không có dịch vụ nào</option>
+                        )}
                     </Form.Select>
+                    {serviceOptions.length === 0 && (
+                        <Alert variant="info" className="mt-2">Không có dịch vụ nào để chọn.</Alert>
+                    )}
                 </Form.Group>
             )}
 
@@ -92,7 +101,7 @@ const ReportForm = ({ bookingId, userId, homestayId, roomNumber }) => {
                 <Form.Label>Tiêu đề</Form.Label>
                 <Form.Control
                     type="text"
-                    placeholder="Nhập tiêu đề"
+                    placeholder="Nhập tiêu đề báo cáo"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     required

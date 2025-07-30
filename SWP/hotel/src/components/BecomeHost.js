@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Card, Form, Button, Alert, Modal } from 'react-bootstrap';
 import { FaHome, FaCompass, FaConciergeBell } from 'react-icons/fa';
 import '../assets/styles/BecomeHost.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const BecomeHost = () => {
   const [formData, setFormData] = useState({
@@ -31,14 +32,21 @@ const BecomeHost = () => {
     const checkRequestStatus = async () => {
       try {
         const token = localStorage.getItem('token');
+        if (!token) {
+          setError("Bạn cần đăng nhập để kiểm tra trạng thái yêu cầu.");
+          setLoading(false);
+          return;
+        }
         const res = await axios.get('http://localhost:8080/api/host/check-request-status', {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
         });
         setAlreadySent(res.data === true);
+        setError('');
       } catch (err) {
         console.error('Lỗi khi kiểm tra trạng thái yêu cầu:', err);
+        setError('Không thể kiểm tra trạng thái yêu cầu. Vui lòng thử lại.');
       } finally {
         setLoading(false);
       }
@@ -62,8 +70,9 @@ const BecomeHost = () => {
   const confirmType = () => {
     if (selectedType) {
       setStep(3);
+      setError('');
     } else {
-      alert('Vui lòng chọn loại!');
+      setError('Vui lòng chọn loại đăng ký!');
     }
   };
 
@@ -128,8 +137,8 @@ const BecomeHost = () => {
         navigate('/');
       }, 2000);
     } catch (err) {
-      console.log('Lỗi gửi đăng ký:', err.response);
-      setError('Có lỗi xảy ra. Vui lòng thử lại sau.');
+      console.error('Lỗi gửi đăng ký:', err.response);
+      setError('Có lỗi xảy ra khi gửi đăng ký. Vui lòng thử lại.');
     }
   };
 
@@ -234,8 +243,8 @@ const BecomeHost = () => {
           <Form.Control type="file" name="introVideo" accept="video/*" onChange={handleFileUpload} className="form-input" />
         </Form.Group>
 
-        <Button variant="" type="submit" className="become-host-button w-100 mt-4">
-          Xác nhận
+        <Button variant="primary" type="submit" className="become-host-button w-100 mt-4">
+          Gửi đăng ký
         </Button>
       </Form>
     );
@@ -245,7 +254,7 @@ const BecomeHost = () => {
     switch (step) {
       case 1:
         return (
-          <Button variant="" className="become-host-button w-100" onClick={() => setStep(2)}>
+          <Button variant="primary" className="become-host-button w-100" onClick={() => setStep(2)}>
             Đăng ký trở thành Host
           </Button>
         );
@@ -269,9 +278,14 @@ const BecomeHost = () => {
                   </div>
                 ))}
               </div>
+              {error && (
+                <Alert variant="danger" className="mt-3">
+                  {error}
+                </Alert>
+              )}
               <div className="d-flex justify-content-between gap-3 mt-4">
                 <Button variant="secondary" className="w-50" onClick={() => setStep(1)}>Quay lại</Button>
-                <Button variant="" className="become-host-button w-50" onClick={confirmType}>Xác nhận</Button>
+                <Button variant="primary" className="become-host-button w-50" onClick={confirmType}>Xác nhận</Button>
               </div>
             </Modal.Body>
           </Modal>

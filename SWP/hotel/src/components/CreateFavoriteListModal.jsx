@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Modal, Button, Form } from 'react-bootstrap';
+import { Modal, Button, Form, Alert } from 'react-bootstrap';
 import axios from 'axios';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const CreateFavoriteListModal = ({ show, onClose, userId, onCreated }) => {
   const [name, setName] = useState('');
@@ -12,18 +13,23 @@ const CreateFavoriteListModal = ({ show, onClose, userId, onCreated }) => {
       setError('Tên danh sách không được để trống.');
       return;
     }
+    if (!userId) {
+      setError('Không tìm thấy ID người dùng.');
+      return;
+    }
     setCreating(true);
     try {
       const res = await axios.post(`http://localhost:8080/api/favorites/lists`, {
         userId: parseInt(userId),
         name: name.trim()
       });
-      onCreated?.(res.data); // callback trả về danh sách vừa tạo
+      onCreated?.(res.data);
       onClose();
       setName('');
+      setError('');
     } catch (err) {
-      setError('Lỗi khi tạo danh sách.');
-      console.error('Create list error:', err);
+      setError('Lỗi khi tạo danh sách yêu thích. Vui lòng thử lại.');
+      console.error('Lỗi khi tạo danh sách:', err);
     } finally {
       setCreating(false);
     }
@@ -38,19 +44,19 @@ const CreateFavoriteListModal = ({ show, onClose, userId, onCreated }) => {
   return (
     <Modal show={show} onHide={handleClose} centered>
       <Modal.Header closeButton>
-        <Modal.Title>Tạo Danh sách yêu thích</Modal.Title>
+        <Modal.Title>Tạo danh sách yêu thích</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <Form>
           <Form.Group>
             <Form.Control
               type="text"
-              placeholder="Tên danh sách"
+              placeholder="Nhập tên danh sách"
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={50}
             />
-            {error && <div className="text-danger mt-1">{error}</div>}
+            {error && <Alert variant="danger" className="mt-2">{error}</Alert>}
           </Form.Group>
         </Form>
       </Modal.Body>

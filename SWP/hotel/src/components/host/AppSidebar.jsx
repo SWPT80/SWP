@@ -12,23 +12,22 @@ import {
 import { Link, useLocation } from 'react-router-dom';
 
 const items = [
-  { title: 'Dashboard', url: '/host/dashboard', icon: BarChart3 },
-
+  { title: 'Bảng điều khiển', url: '/host/dashboard', icon: BarChart3 },
   {
-    title: 'Rooms',
+    title: 'Phòng',
     icon: Home,
     submenu: [
-      { title: 'All Rooms', url: '/host/rooms' },
-      { title: 'Room Pricing', url: '/host/rooms/pricing' },
+      { title: 'Tất cả phòng', url: '/host/rooms' },
+      { title: 'Giá phòng', url: '/host/rooms/pricing' },
     ],
   },
-  { title: 'Room Facilites', url: '/host/facilities', icon: Utensils },
-  { title: 'Occupancy', url: '/host/occupancy', icon: Home },
-  { title: 'Booking', url: '/host/bookings', icon: MessageCircle },
-  { title: 'Messages', url: '/host/messages', icon: MessageCircle },
-  { title: 'Customer Report', url: '/host/reports', icon: Star },
-  { title: 'Billing System', url: '/host/billing', icon: CreditCard },
-  { title: 'Service', url: '/host/services', icon: Utensils },
+  { title: 'Tiện nghi phòng', url: '/host/facilities', icon: Utensils },
+  { title: 'Công suất', url: '/host/occupancy', icon: Home },
+  { title: 'Đặt phòng', url: '/host/bookings', icon: MessageCircle },
+  { title: 'Tin nhắn', url: '/host/messages', icon: MessageCircle },
+  { title: 'Báo cáo khách hàng', url: '/host/reports', icon: Star },
+  { title: 'Hệ thống thanh toán', url: '/host/billing', icon: CreditCard },
+  { title: 'Dịch vụ', url: '/host/services', icon: Utensils },
 ];
 
 export function AppSidebar() {

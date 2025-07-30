@@ -3,6 +3,7 @@ package com.traexcohomestay.hoteltraexco.controller;
 import com.traexcohomestay.hoteltraexco.dto.RoomDTO;
 import com.traexcohomestay.hoteltraexco.dto.RoomSearchDTO;
 import com.traexcohomestay.hoteltraexco.dto.RoomDetailsDTO;
+import com.traexcohomestay.hoteltraexco.dto.request.RoomAvailabilityRequest;
 import com.traexcohomestay.hoteltraexco.dto.request.RoomCreateRequest;
 import com.traexcohomestay.hoteltraexco.dto.request.RoomUpdateRequest;
 import com.traexcohomestay.hoteltraexco.dto.response.RoomResponseWithImages;
@@ -31,6 +32,7 @@ public class RoomController {
     public ResponseEntity<List<RoomDTO>> getRoomsByHomestayId(@PathVariable Integer homestayId) {
         return ResponseEntity.ok(roomService.getRoomsByHomestayId(homestayId));
     }
+
     @PostMapping
     public ResponseEntity<RoomDTO> createRoom(@RequestBody RoomCreateRequest request) {
         RoomDTO createdRoom = roomService.createRoom(request);
@@ -67,8 +69,21 @@ public class RoomController {
         roomService.deleteRoom(homestayId, roomId);
         return ResponseEntity.ok("Room marked as inactive");
     }
+
     @GetMapping("/host/{hostId}")
     public List<RoomResponseWithImages> getRoomsByHost(@PathVariable Integer hostId) {
         return roomService.getRoomsByHostId(hostId);
+    }
+
+    @PostMapping("/availability")
+    public ResponseEntity<Boolean> checkRoomAvailability(
+            @RequestBody RoomAvailabilityRequest request) {
+        boolean isAvailable = roomService.checkRoomAvailability(
+                request.getHomestayId(),
+                request.getRoomNumber(),
+                request.getCheckInDate(),
+                request.getCheckOutDate()
+        );
+        return ResponseEntity.ok(isAvailable);
     }
 }

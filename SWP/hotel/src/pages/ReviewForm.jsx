@@ -1,19 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from '../utils/axiosConfig';
 import { Form, Button, Card, Alert } from 'react-bootstrap';
 
-const ReviewForm = ({ bookingId, userId, services }) => {
+const ReviewForm = ({ bookingId, userId, services = [] }) => {
     const [roomRating, setRoomRating] = useState(5);
     const [roomComment, setRoomComment] = useState('');
-    const [serviceReviews, setServiceReviews] = useState(
-        services.map(service => ({
-            serviceId: service.id,
-            rating: 5,
-            comment: '',
-        }))
-    );
+    const [serviceReviews, setServiceReviews] = useState([]);
     const [successMessage, setSuccessMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
+
+    // Khởi tạo serviceReviews khi services thay đổi
+    useEffect(() => {
+        if (Array.isArray(services) && services.length > 0) {
+            const initialReviews = services.map(service => ({
+                serviceId: service.id,
+                rating: 5,
+                comment: '',
+            }));
+            setServiceReviews(initialReviews);
+        }
+    }, [services]);
 
     const handleServiceChange = (index, field, value) => {
         const updated = [...serviceReviews];
@@ -70,10 +76,10 @@ const ReviewForm = ({ bookingId, userId, services }) => {
 
                 <hr />
                 <h5>Đánh giá dịch vụ</h5>
-                {serviceReviews.map((s, index) => (
+                {serviceReviews.length > 0 ? serviceReviews.map((s, index) => (
                     <div key={index}>
                         <Form.Group>
-                            <Form.Label>Dịch vụ: {services[index].name}</Form.Label>
+                            <Form.Label>Dịch vụ: {services[index]?.name || 'Không rõ'}</Form.Label>
                             <Form.Control
                                 type="number"
                                 min="1"
@@ -93,7 +99,7 @@ const ReviewForm = ({ bookingId, userId, services }) => {
                             />
                         </Form.Group>
                     </div>
-                ))}
+                )) : <p>Không có dịch vụ nào để đánh giá.</p>}
 
                 <Button type="submit" variant="primary">Gửi đánh giá</Button>
             </Form>

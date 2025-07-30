@@ -43,7 +43,26 @@ public class SecurityConfig {
                 .requestMatchers("/api/host/check-request-status").hasAnyRole("USER", "HOST", "ADMIN").requestMatchers("/api/favorites/**").permitAll().requestMatchers("/api/host/register").hasAnyRole("USER", "HOST", "ADMIN")
 
                 // Các API công khai
-                .requestMatchers("/api/auth/**", "/api/homestays/**", "/api/rooms/**", "/api/services/**", "/api/service-types/**", "/api/experiences/**", "/api/experience-types/**", "/api/amenities/**", "/api/reviews/**", "/api/cancellation-policies/**", "/api/homestay-rules/**", "/api/chart/**", "/api/payments/callback", "/api/reports/**", "/api/bookings/**", "/api/chat/**", "/api/chatbox/**", "/api/homestays/**", "/api/seasonal-pricing/**", "/api/monitor/active-users").permitAll()
+                .requestMatchers("/api/auth/**",
+                        "/api/homestays/**",
+                        "/api/rooms/**",
+                        "/api/services/**",
+                        "/api/service-types/**",
+                        "/api/experiences/**",
+                        "/api/experience-types/**",
+                        "/api/amenities/**",
+                        "/api/reviews/**",
+                        "/api/cancellation-policies/**",
+                        "/api/homestay-rules/**",
+                        "/api/chart/**",
+                        "/api/payments/callback",
+                        "/api/reports/**",
+                        "/api/bookings/**",
+                        "/api/chat/**",
+                        "/api/chatbox/**",
+                        "/api/homestays/**",
+                        "/api/seasonal-pricing/**",
+                        "/api/monitor/active-users").permitAll()
 
                 // Cho phép WebSocket kết nối không cần xác thực
                 .requestMatchers("/ws/**").permitAll()

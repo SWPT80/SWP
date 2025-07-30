@@ -16,4 +16,8 @@ public class ExperienceDTO {
     private String specialNotes;
     private Boolean status;
     private List<ExperienceImageDTO> images;
+
+    private String experienceName;
+    private String location;
+    private String description;
 }

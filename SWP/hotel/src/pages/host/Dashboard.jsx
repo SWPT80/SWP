@@ -15,10 +15,15 @@ import {
 } from 'chart.js';
 import HostChatApp from "../../components/Chat/ChatHost";
 import "../../assets/css/Dashboard.css";
+import { useNavigate } from "react-router-dom";
+import { BookingsTable } from "../../components/host/BookingsTable";
 
 ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, Title, Tooltip, Legend, Filler);
 
 export default function Dashboard() {
+    const navigate = useNavigate();
+
+    const [hostId, setHostId] = useState(() => localStorage.getItem("hostId"));
   const [timeRange, setTimeRange] = useState('day');
   const [activeTab, setActiveTab] = useState('room');
   const [revenueChart, setRevenueChart] = useState({ labels: [], datasets: [] });
@@ -37,8 +42,29 @@ export default function Dashboard() {
     charts: true
   });
 
-  const hostId = 21; // Hoặc lấy từ context/authentication
-
+   useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/", { replace: true });
+      return;
+    }
+    // Nếu chưa có hostId => gọi /me
+    if (!hostId) {
+      axios.get("http://localhost:8080/api/auth/me", {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(res => {
+          const user = res.data;
+          if (user.role !== 'HOST') {
+            navigate("/", { replace: true });
+            return;
+          }
+          localStorage.setItem("hostId", user.id);
+          setHostId(user.id);
+        })
+        .catch(() => navigate("/", { replace: true }));
+    }
+  }, [navigate, hostId]);
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
@@ -332,112 +358,14 @@ export default function Dashboard() {
                   </button>
                 </div>
                 <div className="cardDashboard-body">
-                  {loading.bookings ? (
-                    <div className="text-center py-5">Loading bookings...</div>
-                  ) : (
-                    <div className="table-responsive">
-                      <table className="table table-hover table-center">
-                        <thead>
-                          <tr>
-                            <th>Booking ID</th>
-                            <th>Customer</th>
-                            <th>Room</th>
-                            <th>Check-in</th>
-                            <th>Check-out</th>
-                            <th>Total</th>
-                            <th>Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {displayedBookings.map((b) => (
-                            <tr key={b.id}>
-                              <td>{b.id}</td>
-                              <td>{b.userFullName || `User ${b.userId}`}</td>
-                              <td>{b.roomNumber}</td>
-                              <td>{new Date(b.checkInDate).toLocaleDateString()}</td>
-                              <td>{new Date(b.checkOutDate).toLocaleDateString()}</td>
-                              <td>{formatCurrency(b.totalAmount)}</td>
-                              <td>
-                                <span className={`badge ${b.status === 'CONFIRMED' ? 'badge-success' :
-                                    b.status === 'CANCELLED' ? 'badge-danger' : 'badge-secondary'
-                                  }`}>
-                                  {b.status}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                          {bookings.length === 0 && (
-                            <tr>
-                              <td colSpan="7" className="text-center">No bookings found</td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
+                    <BookingsTable></BookingsTable>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Rating and Quick Actions */}
-          <div className="row">
-            <div className="col-md-12 col-lg-6">
-              <div className="cardDashboard card-chart">
-                <div className="card-header">
-                  <h4 className="card-title">Overall Rating <small>This Week</small></h4>
-                </div>
-                <div className="cardDashboard-body">
-                  <div className="text-center">
-                    <div className="display-4">{overallRating}/5</div>
-                    {ratingDetails.map((item, index) => (
-                      <div key={index} className="d-flex justify-content-between">
-                        <span>{item.label}</span>
-                        <span>{item.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="col-md-12 col-lg-6">
-              <div className="cardDashboard card-chart">
-                <div className="card-header">
-                  <h4 className="card-title">Quick Actions</h4>
-                </div>
-                <div className="cardDashboard-body">
-                  <div className="row">
-                    <div className="col-6 mb-3">
-                      <button className="btn btn-primary w-100">Add Room</button>
-                    </div>
-                    <div className="col-6 mb-3">
-                      <button className="btn btn-success w-100">View Reports</button>
-                    </div>
-                    <div className="col-6 mb-3">
-                      <button className="btn btn-info w-100">Chat Support</button>
-                    </div>
-                    <div className="col-6 mb-3">
-                      <button className="btn btn-warning w-100">Settings</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          
 
-          {/* Chat Support */}
-          <div className="row">
-            <div className="col-12">
-              <div className="cardDashboard card-chart">
-                <div className="card-header">
-                  <h4 className="card-title">Chat Support</h4>
-                </div>
-                <div className="cardDashboard-body">
-                  <HostChatApp hostId={hostId} />
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

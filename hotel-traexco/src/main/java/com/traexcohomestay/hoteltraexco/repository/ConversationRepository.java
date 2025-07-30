@@ -44,6 +44,7 @@ public interface ConversationRepository extends JpaRepository<Conversation, Inte
     @Query("""
         SELECT DISTINCT
             h.homestayId,
+                h.homestayName,
             h.location
         FROM Conversation c
         JOIN c.homestay h

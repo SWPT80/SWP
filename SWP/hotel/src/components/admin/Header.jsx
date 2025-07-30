@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "../../assets/css/AdminHeader.css";
-import { Dropdown, Nav } from "react-bootstrap";
+import { Dropdown, Nav, Alert } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import logo from "../../assets/images/logo.png";
 import axios from "axios";
@@ -11,6 +11,7 @@ const Header = ({ onToggleSidebar }) => {
   const [admin, setAdmin] = useState(null);
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -21,8 +22,11 @@ const Header = ({ onToggleSidebar }) => {
         })
         .then((res) => {
           setNotifications(res.data);
+          setError(null);
         })
-        .catch((err) => console.error("Failed to load notifications", err));
+        .catch((err) => {
+          setError("Không thể tải thông báo.");
+        });
     }
   }, []);
 
@@ -37,9 +41,10 @@ const Header = ({ onToggleSidebar }) => {
         })
         .then((res) => {
           setAdmin(res.data);
+          setError(null);
         })
         .catch((err) => {
-          console.error("Failed to load admin info:", err);
+          setError("Không thể tải thông tin quản trị viên.");
         });
     }
   }, []);
@@ -62,6 +67,7 @@ const Header = ({ onToggleSidebar }) => {
 
   return (
     <div className="admin_header">
+      {error && <Alert variant="danger" onClose={() => setError(null)} dismissible>{error}</Alert>}
       <button onClick={onToggleSidebar} className="toggle-btn">
         <i className="fas fa-bars"></i>
       </button>
@@ -75,18 +81,17 @@ const Header = ({ onToggleSidebar }) => {
 
       <Nav className="user-menu">
         <NotificationDropdown theme="dark" />
-        {/* Notifications Dropdown */}
+        {/* Thông báo Dropdown */}
         <Dropdown>
-
           <Dropdown.Menu className="notifications">
             <div className="topnav-dropdown-header">
-              <span className="notification-title">Notifications</span>
-              <a href="#" className="clear-noti">Clear All</a>
+              <span className="notification-title">Thông báo</span>
+              <a href="#" className="clear-noti">Xóa tất cả</a>
             </div>
             <div className="noti-content">
               <ul className="notification-list">
                 {notifications.length === 0 ? (
-                  <li className="text-center text-muted p-2">No notifications</li>
+                  <li className="text-center text-muted p-2">Không có thông báo</li>
                 ) : (
                   notifications.map((noti) => (
                     <li key={noti.id}>
@@ -106,12 +111,12 @@ const Header = ({ onToggleSidebar }) => {
               </ul>
             </div>
             <div className="topnav-dropdown-footer">
-              <a href="#">View all Notifications</a>
+              <a href="#">Xem tất cả thông báo</a>
             </div>
           </Dropdown.Menu>
         </Dropdown>
 
-        {/* User Dropdown */}
+        {/* Người dùng Dropdown */}
         <Dropdown>
           <Dropdown.Toggle variant="link" id="user-dropdown" className="nav-link">
             <span className="user-img">
@@ -119,7 +124,7 @@ const Header = ({ onToggleSidebar }) => {
                 className="rounded-circle"
                 src={getAvatarPath()}
                 width="31"
-                alt="Admin"
+                alt="Quản trị viên"
               />
             </span>
           </Dropdown.Toggle>
@@ -129,20 +134,20 @@ const Header = ({ onToggleSidebar }) => {
               <div className="avatar avatar-sm mb-2">
                 <img
                   src={getAvatarPath()}
-                  alt="User"
+                  alt="Người dùng"
                   className="avatar-img rounded-circle"
                   width="60"
                   height="60"
                 />
               </div>
               <div className="user-text">
-                <h6 className="mb-0">{admin?.fullName || "Admin"}</h6>
-                <small className="text-muted">Administrator</small>
+                <h6 className="mb-0">{admin?.fullName || "Quản trị viên"}</h6>
+                <small className="text-muted">Quản trị viên</small>
               </div>
             </div>
 
-            <Dropdown.Item href="/admin/profile">Account Settings</Dropdown.Item>
-            <Dropdown.Item onClick={handleLogout}>Logout</Dropdown.Item>
+            <Dropdown.Item href="/admin/profile">Cài đặt tài khoản</Dropdown.Item>
+            <Dropdown.Item onClick={handleLogout}>Đăng xuất</Dropdown.Item>
           </Dropdown.Menu>
         </Dropdown>
       </Nav>

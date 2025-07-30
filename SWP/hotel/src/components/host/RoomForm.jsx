@@ -9,14 +9,27 @@ import {
   Select,
   MenuItem,
   Paper,
+  Alert
 } from "@mui/material";
 import { styled } from "@mui/system";
+import 'bootstrap/dist/css/bootstrap.min.css';
+import { useEffect, useState } from "react";
 
 const FileInput = styled("input")({
   display: "none",
 });
 
-export default function RoomForm({ formData, onChange, onSubmit, onCancel, title ,errors }) {
+export default function RoomForm({ formData, onChange, onSubmit, onCancel, title, errors }) {
+  useEffect(() => {
+    if (!formData || Object.keys(formData).length === 0) {
+      setError("Không có dữ liệu biểu mẫu phòng để hiển thị.");
+    } else {
+      setError(null);
+    }
+  }, [formData]);
+
+  const [error, setError] = useState(null);
+
   return (
     <Box
       sx={{
@@ -31,7 +44,11 @@ export default function RoomForm({ formData, onChange, onSubmit, onCancel, title
       <Typography variant="h6" gutterBottom>
         {title}
       </Typography>
-
+      {error && (
+        <Alert variant="danger" onClose={() => setError(null)} dismissible>
+          {error}
+        </Alert>
+      )}
       <form onSubmit={onSubmit}>
         <Grid container spacing={2}>
           <Grid item xs={12} md={6}>
@@ -39,12 +56,12 @@ export default function RoomForm({ formData, onChange, onSubmit, onCancel, title
               fullWidth
               required
               name="roomId"
-              label="Room ID"
+              label="ID Phòng"
               value={formData.roomId}
               onChange={onChange}
               error={!!errors?.roomId}
-  helperText={errors?.roomId}
-               // không cho sửa roomId
+              helperText={errors?.roomId}
+              disabled
             />
           </Grid>
 
@@ -53,9 +70,11 @@ export default function RoomForm({ formData, onChange, onSubmit, onCancel, title
               fullWidth
               required
               name="roomType"
-              label="Room Type"
+              label="Loại phòng"
               value={formData.roomType}
               onChange={onChange}
+              error={!!errors?.roomType}
+              helperText={errors?.roomType}
             />
           </Grid>
 
@@ -65,9 +84,11 @@ export default function RoomForm({ formData, onChange, onSubmit, onCancel, title
               required
               type="number"
               name="roomCapacity"
-              label="Capacity"
+              label="Sức chứa"
               value={formData.roomCapacity}
               onChange={onChange}
+              error={!!errors?.roomCapacity}
+              helperText={errors?.roomCapacity}
             />
           </Grid>
 
@@ -77,9 +98,11 @@ export default function RoomForm({ formData, onChange, onSubmit, onCancel, title
               required
               type="number"
               name="roomPrice"
-              label="Price"
+              label="Giá phòng"
               value={formData.roomPrice}
               onChange={onChange}
+              error={!!errors?.roomPrice}
+              helperText={errors?.roomPrice}
             />
           </Grid>
 
@@ -89,32 +112,37 @@ export default function RoomForm({ formData, onChange, onSubmit, onCancel, title
               required
               type="number"
               name="rating"
-              label="Rating"
+              label="Đánh giá"
               value={formData.rating}
               onChange={onChange}
               inputProps={{ step: 0.1, min: 0, max: 5 }}
+              error={!!errors?.rating}
+              helperText={errors?.rating}
             />
           </Grid>
 
           <Grid item xs={12} md={6}>
-            <FormControl fullWidth required>
-              <InputLabel>Status</InputLabel>
+            <FormControl fullWidth required error={!!errors?.status}>
+              <InputLabel>Trạng thái</InputLabel>
               <Select
                 name="status"
                 value={formData.status}
-                label="Status"
+                label="Trạng thái"
                 onChange={onChange}
               >
-                <MenuItem value={true}>Active</MenuItem>
-                <MenuItem value={false}>Inactive</MenuItem>
+                <MenuItem value={true}>Hoạt động</MenuItem>
+                <MenuItem value={false}>Không hoạt động</MenuItem>
               </Select>
+              {errors?.status && (
+                <Typography color="error" variant="caption">{errors.status}</Typography>
+              )}
             </FormControl>
           </Grid>
 
-          {/* Images preview (if available) */}
+          {/* Xem trước hình ảnh */}
           <Grid item xs={12}>
             <Typography variant="subtitle1" gutterBottom>
-              Room Images:
+              Hình ảnh phòng:
             </Typography>
             {formData.roomImages?.length > 0 ? (
               <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
@@ -122,7 +150,7 @@ export default function RoomForm({ formData, onChange, onSubmit, onCancel, title
                   <img
                     key={index}
                     src={img.url}
-                    alt={`room-${index}`}
+                    alt={`hình ảnh phòng-${index}`}
                     width={80}
                     height={60}
                     style={{ objectFit: "cover", borderRadius: "4px" }}
@@ -130,11 +158,11 @@ export default function RoomForm({ formData, onChange, onSubmit, onCancel, title
                 ))}
               </Box>
             ) : (
-              <Typography color="text.secondary">No images</Typography>
+              <Typography color="text.secondary">Không có hình ảnh</Typography>
             )}
           </Grid>
 
-          {/* Upload new file (optional) */}
+          {/* Tải lên hình ảnh mới */}
           <Grid item xs={12}>
             <Paper
               variant="outlined"
@@ -159,21 +187,21 @@ export default function RoomForm({ formData, onChange, onSubmit, onCancel, title
                   }
                 />
                 <Button variant="outlined" component="span">
-                  Upload Image
+                  Tải lên hình ảnh
                 </Button>
               </label>
               {formData.file && (
-                <Typography mt={1}>Selected: {formData.file.name}</Typography>
+                <Typography mt={1}>Đã chọn: {formData.file.name}</Typography>
               )}
             </Paper>
           </Grid>
 
           <Grid item xs={12}>
             <Button type="submit" variant="contained" color="primary" sx={{ mr: 2 }}>
-              Submit
+              Gửi
             </Button>
             <Button variant="outlined" color="error" onClick={onCancel}>
-              Cancel
+              Hủy
             </Button>
           </Grid>
         </Grid>

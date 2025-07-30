@@ -1,14 +1,23 @@
-import { Card, Table, Badge } from "react-bootstrap";
+import { Card, Table, Badge, Alert } from "react-bootstrap";
 import { useLocation } from "react-router-dom";
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 export function Invoice() {
   const location = useLocation();
   const booking = location.state?.booking;
 
-  if (!booking) return <p>Không tìm thấy hóa đơn!</p>;
+  if (!booking) {
+    return (
+      <div className="m-4">
+        <Alert variant="danger">
+          Không tìm thấy thông tin hóa đơn!
+        </Alert>
+      </div>
+    );
+  }
 
-  const totalAmount = parseFloat(booking.paidAmount.replace("$", "")) +
-                      parseFloat(booking.dueAmount.replace("$", ""));
+  const totalAmount = parseFloat(booking.paidAmount.replace("đ", "")) +
+    parseFloat(booking.dueAmount.replace("đ", ""));
 
   return (
     <Card className="m-4">
@@ -31,7 +40,7 @@ export function Invoice() {
           <tbody>
             <tr>
               <td>Tổng cộng</td>
-              <td>${totalAmount}</td>
+              <td>{totalAmount.toLocaleString('vi-VN')}đ</td>
             </tr>
             <tr>
               <td>Đã thanh toán</td>
@@ -45,7 +54,7 @@ export function Invoice() {
               <td>Trạng thái thanh toán</td>
               <td>
                 <Badge bg={booking.paymentStatus === "Success" ? "success" : "warning"}>
-                  {booking.paymentStatus}
+                  {booking.paymentStatus === "Success" ? "Thành công" : "Đang chờ"}
                 </Badge>
               </td>
             </tr>

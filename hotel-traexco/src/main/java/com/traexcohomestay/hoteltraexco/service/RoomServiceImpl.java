@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,6 +23,9 @@ public class RoomServiceImpl implements RoomService {
     private static final Logger logger = LoggerFactory.getLogger(RoomServiceImpl.class);
     @Autowired
     private RoomRepository roomRepository;
+
+    @Autowired
+    private BookingRepository bookingRepository;
 
     @Autowired
     private HomestayRepository homestayRepository;
@@ -232,5 +237,35 @@ public class RoomServiceImpl implements RoomService {
 
         room.setStatus(false);
         roomRepository.save(room);
+    }
+
+    @Override
+    public List<RoomDetailsDTO> getRoomDetailsByHostId(Integer hostId) {
+        List<Room> rooms = roomRepository.findByHomestayHostId(hostId);
+
+        return rooms.stream().map(room -> {
+            Integer homestayId = room.getId().getHomestayId();
+            String roomNumber = room.getId().getRoomNumber();
+
+            Homestay homestay = homestayRepository.findById(homestayId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Homestay not found"));
+
+            List<RoomImage> images = roomImageRepository
+                    .findByRooms_Id_HomestayIdAndRooms_Id_RoomNumber(homestayId, roomNumber);
+
+            List<Amenity> amenities = amenityRepository.findByHomestay_HomestayId(homestayId);
+
+            return convertToDTO(room, homestay, images, amenities);
+        }).collect(Collectors.toList());
+    }
+
+    @Override
+    public boolean checkRoomAvailability(Integer homestayId, String roomNumber, LocalDate checkInDate, LocalDate checkOutDate) {
+        List<Booking> conflictingBookings = bookingRepository.findByRooms_Id_HomestayIdAndRooms_Id_RoomNumber(homestayId, roomNumber)
+                .stream()
+                .filter(b -> b.getStatus().equals("CONFIRMED") &&
+                        !(checkOutDate.isBefore(b.getCheckInDate()) || checkInDate.isAfter(b.getCheckOutDate())))
+                .collect(Collectors.toList());
+        return conflictingBookings.isEmpty();
     }
 }

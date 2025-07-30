@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Card, Button, Form } from "react-bootstrap";
+import { Alert, Card, Button, Form } from "react-bootstrap";
 import { FaFacebookMessenger } from "react-icons/fa";
 import { useWebSocket } from "../../context/WebSocketContext";
-import './chat.css'
+import './chat.css';
 
 const BASE_URL = "http://localhost:8080";
 
@@ -11,6 +11,7 @@ const ChatPopup = ({ currentUserId, targetUser, type, onClose, positionOffset, p
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [minimized, setMinimized] = useState(false);
+  const [error, setError] = useState(null);
   const messageEndRef = useRef();
 
   const { subscribe } = useWebSocket();
@@ -24,14 +25,15 @@ const ChatPopup = ({ currentUserId, targetUser, type, onClose, positionOffset, p
     return `${hours}:${minutes} ${day}/${month}`;
   };
 
-  // Tạo hoặc lấy conversation
+  // Tạo hoặc lấy cuộc trò chuyện
   useEffect(() => {
     const createOrGetConversation = async () => {
       try {
         const customerId = type === "userToHost" ? currentUserId : targetUser.userId;
         const hostId = type === "hostToUser" ? currentUserId : targetUser.userId;
 
-        if (!customerId || !hostId ) {
+        if (!customerId || !hostId) {
+          setError("Thiếu hoặc sai kiểu dữ liệu để tạo cuộc trò chuyện.");
           console.error("❌ Thiếu hoặc sai kiểu dữ liệu để tạo cuộc trò chuyện", {
             customerId,
             hostId,
@@ -47,14 +49,16 @@ const ChatPopup = ({ currentUserId, targetUser, type, onClose, positionOffset, p
 
         if (!res.ok) {
           const text = await res.text();
-          console.error("🚨 Conversation error:", text);
-          alert("Không thể tạo cuộc trò chuyện: " + text);
+          setError(`Không thể tạo cuộc trò chuyện: ${text}`);
+          console.error("🚨 Lỗi cuộc trò chuyện:", text);
           return;
         }
 
         const data = await res.json();
         setConversationId(data.id);
+        setError(null);
       } catch (error) {
+        setError("Lỗi khi tạo cuộc trò chuyện.");
         console.error("❌ Lỗi khi tạo cuộc trò chuyện:", error);
       }
     };
@@ -68,7 +72,11 @@ const ChatPopup = ({ currentUserId, targetUser, type, onClose, positionOffset, p
 
     fetch(`${BASE_URL}/api/chat/messages/${conversationId}`)
       .then((res) => res.json())
-      .then((data) => setMessages(data.map((m) => ({ ...m, status: "sent" }))));
+      .then((data) => setMessages(data.map((m) => ({ ...m, status: "sent" }))))
+      .catch((err) => {
+        setError("Không thể tải tin nhắn.");
+        console.error("❌ Lỗi khi tải tin nhắn:", err);
+      });
 
     const topic = `/topic/chat/${conversationId}`;
     subscribe(topic, (message) => {
@@ -84,10 +92,13 @@ const ChatPopup = ({ currentUserId, targetUser, type, onClose, positionOffset, p
   // Gửi tin nhắn
   const sendMessage = () => {
     if (!newMessage.trim()) return;
-    if (!conversationId) return;
+    if (!conversationId) {
+      setError("Không có ID cuộc trò chuyện để gửi tin nhắn.");
+      return;
+    }
 
     const tempId = Date.now().toString();
-    
+
     const tempMessage = {
       id: tempId,
       conversationId,
@@ -115,11 +126,12 @@ const ChatPopup = ({ currentUserId, targetUser, type, onClose, positionOffset, p
               : msg
           )
         );
+        setError(null);
       })
       .catch((err) => {
         console.error("Lỗi khi gửi tin nhắn:", err);
         setMessages((prev) => prev.filter(msg => msg.id !== tempId));
-        alert("Lỗi khi gửi tin nhắn: " + err.message);
+        setError(`Lỗi khi gửi tin nhắn: ${err.message}`);
       });
   };
 
@@ -130,28 +142,29 @@ const ChatPopup = ({ currentUserId, targetUser, type, onClose, positionOffset, p
 
   // Xử lý đóng popup
   const handleClose = (event) => {
-    console.log("🔴 Close button clicked");
-    
+    console.log("🔴 Nút đóng được nhấn");
+
     try {
       if (event) {
         event.stopPropagation();
         event.preventDefault();
       }
     } catch (error) {
-      console.warn("Warning: Could not stop event propagation:", error);
+      console.warn("Cảnh báo: Không thể ngăn chặn sự kiện lan truyền:", error);
     }
-    
-    console.log("🔴 Calling onClose function");
+
+    console.log("🔴 Gọi hàm onClose");
     if (typeof onClose === 'function') {
       onClose();
     } else {
-      console.error("❌ onClose is not a function:", onClose);
+      console.error("❌ onClose không phải là hàm:", onClose);
+      setError("Lỗi khi đóng cửa sổ chat.");
     }
   };
 
-  // Xử lý minimize
+  // Xử lý thu nhỏ
   const handleMinimize = (event) => {
-    console.log("📉 Minimize clicked");
+    console.log("📉 Thu nhỏ được nhấn");
     if (event) {
       event.stopPropagation();
       event.preventDefault();
@@ -159,7 +172,7 @@ const ChatPopup = ({ currentUserId, targetUser, type, onClose, positionOffset, p
     setMinimized(true);
   };
 
-  // Calculate position based on position prop
+  // Tính toán vị trí
   const getPosition = () => {
     if (position === "left") {
       return `${20 + positionOffset}px`;
@@ -168,14 +181,14 @@ const ChatPopup = ({ currentUserId, targetUser, type, onClose, positionOffset, p
     }
   };
 
-  // Khi minimized, hiển thị dưới dạng nút tròn - MOVED TO LEFT
+  // Khi thu nhỏ, hiển thị dưới dạng nút tròn
   if (minimized) {
     return (
       <div
         style={{
           position: "fixed",
           bottom: "20px",
-          left: getPosition(), // Changed from right to left
+          left: getPosition(),
           zIndex: 9999,
           width: "60px",
           height: "60px",
@@ -225,7 +238,7 @@ const ChatPopup = ({ currentUserId, targetUser, type, onClose, positionOffset, p
           )}
         </button>
 
-        {/* Nút X cho trạng thái minimized */}
+        {/* Nút X cho trạng thái thu nhỏ */}
         <button
           style={{
             position: "absolute",
@@ -254,13 +267,13 @@ const ChatPopup = ({ currentUserId, targetUser, type, onClose, positionOffset, p
     );
   }
 
-  // Khi mở rộng, hiển thị dưới dạng popup chat - MOVED TO LEFT
+  // Khi mở rộng, hiển thị dưới dạng popup chat
   return (
     <div
       style={{
         position: "fixed",
         bottom: "0px",
-        left: getPosition(), // Changed from right to left
+        left: getPosition(),
         zIndex: 9999,
         width: "350px",
         height: "500px",
@@ -273,6 +286,13 @@ const ChatPopup = ({ currentUserId, targetUser, type, onClose, positionOffset, p
         flexDirection: "column",
       }}
     >
+      {/* Thông báo lỗi */}
+      {error && (
+        <Alert variant="danger" onClose={() => setError(null)} dismissible>
+          {error}
+        </Alert>
+      )}
+
       {/* Header */}
       <div
         style={{
@@ -285,9 +305,9 @@ const ChatPopup = ({ currentUserId, targetUser, type, onClose, positionOffset, p
           borderRadius: "12px 12px 0 0",
         }}
       >
-        <div 
-          style={{ 
-            display: "flex", 
+        <div
+          style={{
+            display: "flex",
             alignItems: "center",
             cursor: "pointer",
             flex: 1,
@@ -366,9 +386,9 @@ const ChatPopup = ({ currentUserId, targetUser, type, onClose, positionOffset, p
       >
         {messages.map((msg, idx) => {
           const isSender = parseInt(msg.senderId) === parseInt(currentUserId);
-          
+
           if (process.env.NODE_ENV === 'development') {
-            console.log(`Message ${idx}: senderId=${msg.senderId}, currentUserId=${currentUserId}, isSender=${isSender}`);
+            console.log(`Tin nhắn ${idx}: senderId=${msg.senderId}, currentUserId=${currentUserId}, isSender=${isSender}`);
           }
 
           return (

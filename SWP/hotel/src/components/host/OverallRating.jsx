@@ -1,35 +1,53 @@
-import { Card, Button, Dropdown } from "react-bootstrap";
+import { Card, Button, Dropdown, Alert } from "react-bootstrap";
 import { ChevronDown } from "lucide-react";
+import { useEffect, useState } from "react";
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const ratingCategories = [
-  { name: "Cleanliness", score: 4.5 },
-  { name: "Facilities", score: 4.5 },
-  { name: "Location", score: 2.5 },
-  { name: "Room Comfort", score: 2.5 },
-  { name: "Service", score: 3.8 },
-  { name: "Value for money", score: 3.8 },
+  { name: "Độ sạch sẽ", score: 4.5 },
+  { name: "Tiện nghi", score: 4.5 },
+  { name: "Vị trí", score: 2.5 },
+  { name: "Tiện nghi phòng", score: 2.5 },
+  { name: "Dịch vụ", score: 3.8 },
+  { name: "Giá trị", score: 3.8 },
 ];
 
 export function OverallRating() {
+  const [error, setError] = useState(null);
+
+  // Kiểm tra dữ liệu đánh giá
+  useEffect(() => {
+    if (!ratingCategories.length) {
+      setError("Không có dữ liệu đánh giá để hiển thị.");
+    } else {
+      setError(null);
+    }
+  }, []);
+
   return (
     <Card className="mb-4">
       <Card.Header className="d-flex justify-content-between align-items-center">
-        <Card.Title className="mb-0">Overall Rating</Card.Title>
+        <Card.Title className="mb-0">Đánh giá tổng thể</Card.Title>
         <Dropdown>
           <Dropdown.Toggle variant="outline-secondary" size="sm">
-            This Week <ChevronDown size={16} className="ms-1" />
+            Tuần này <ChevronDown size={16} className="ms-1" />
           </Dropdown.Toggle>
           <Dropdown.Menu>
-            <Dropdown.Item>This Week</Dropdown.Item>
-            <Dropdown.Item>This Month</Dropdown.Item>
-            <Dropdown.Item>This Year</Dropdown.Item>
+            <Dropdown.Item>Tuần này</Dropdown.Item>
+            <Dropdown.Item>Tháng này</Dropdown.Item>
+            <Dropdown.Item>Năm nay</Dropdown.Item>
           </Dropdown.Menu>
         </Dropdown>
       </Card.Header>
 
       <Card.Body>
+        {error && (
+          <Alert variant="danger" onClose={() => setError(null)} dismissible>
+            {error}
+          </Alert>
+        )}
         <div className="text-center mb-4">
-          <div className="text-muted small mb-2">Rating</div>
+          <div className="text-muted small mb-2">Đánh giá</div>
           <div className="position-relative mx-auto" style={{ width: 128, height: 128 }}>
             <svg
               className="position-absolute top-0 start-0"

@@ -113,7 +113,7 @@ public interface SearchResponrity extends JpaRepository<Room, RoomId> {
         SELECT 1 FROM Service s
         JOIN ServiceType t ON s.type_id = t.type_id
         WHERE s.homestay_id = r.homestay_id
-          AND s.status = 1
+
           AND t.service_name COLLATE Vietnamese_CI_AI LIKE N'%' + :serviceName + '%'
     )
 """, nativeQuery = true)
@@ -126,7 +126,8 @@ public interface SearchResponrity extends JpaRepository<Room, RoomId> {
         e.price,
         e.special_notes,
         h.address,
-        et.experience_name
+        et.experience_name,
+        e.homestay_id
     FROM Experiences e
     JOIN Homestays h ON e.homestay_id = h.homestay_id
     JOIN ExperienceType et ON e.type_id = et.type_id
@@ -144,4 +145,6 @@ public interface SearchResponrity extends JpaRepository<Room, RoomId> {
     );
 
 
+    @Query("SELECT e.imageUrl FROM ExperienceImage e WHERE e.experience.id = :experienceId")
+    List<String> findExperienceImageUrlsById(@Param("experienceId") Integer experienceId);
 }

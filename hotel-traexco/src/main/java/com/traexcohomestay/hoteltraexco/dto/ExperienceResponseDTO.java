@@ -4,15 +4,26 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.math.BigDecimal;
-
+import java.util.List;
 @Data
 @AllArgsConstructor
+
 public class ExperienceResponseDTO {
     private Integer id;
     private BigDecimal price;
     private String specialNotes;
     private String address;
     private String experienceName;
+    private List<String> imageUrls; // ✅ Thêm trường này
+    private Integer homestayId;
+
+    public Integer getHomestayId() {
+        return homestayId;
+    }
+
+    public void setHomestayId(Integer homestayId) {
+        this.homestayId = homestayId;
+    }
 
     public Integer getId() {
         return id;
@@ -53,4 +64,15 @@ public class ExperienceResponseDTO {
     public void setExperienceName(String experienceName) {
         this.experienceName = experienceName;
     }
+
+    // Getter/Setter cho imageUrls
+    public List<String> getImageUrls() {
+        return imageUrls;
+    }
+
+    public void setImageUrls(List<String> imageUrls) {
+        this.imageUrls = imageUrls;
+    }
+
+    // ... các getter/setter còn lại giữ nguyên
 }

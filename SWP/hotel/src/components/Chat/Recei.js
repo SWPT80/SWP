@@ -1,13 +1,19 @@
 import axios from 'axios';
 import { useEffect, useRef, useState } from 'react';
+import { Alert } from 'react-bootstrap';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const ReceivedMessages = ({ conversationId, receiverId }) => {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
-    if (!conversationId || !receiverId) return;
+    if (!conversationId || !receiverId) {
+      setError("Thiếu ID cuộc trò chuyện hoặc ID người nhận.");
+      return;
+    }
 
     setLoading(true);
     axios
@@ -20,8 +26,14 @@ const ReceivedMessages = ({ conversationId, receiverId }) => {
           'Accept': 'application/json; charset=UTF-8',
         },
       })
-      .then(response => setMessages(response.data))
-      .catch(error => console.error('Error fetching received messages:', error))
+      .then(response => {
+        setMessages(response.data);
+        setError(null);
+      })
+      .catch(error => {
+        console.error('Lỗi khi tải tin nhắn đã nhận:', error);
+        setError('Không thể tải tin nhắn đã nhận. Vui lòng thử lại.');
+      })
       .finally(() => setLoading(false));
   }, [conversationId, receiverId]);
 
@@ -42,6 +54,13 @@ const ReceivedMessages = ({ conversationId, receiverId }) => {
         flexDirection: "column",
       }}
     >
+      {/* Thông báo lỗi */}
+      {error && (
+        <Alert variant="danger" onClose={() => setError(null)} dismissible>
+          {error}
+        </Alert>
+      )}
+
       <div
         style={{
           fontSize: "18px",
@@ -112,12 +131,12 @@ const ReceivedMessages = ({ conversationId, receiverId }) => {
                   >
                     {msg.sentAt
                       ? new Date(msg.sentAt).toLocaleString('vi-VN', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          day: '2-digit',
-                          month: '2-digit',
-                          year: '2-digit',
-                        })
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: '2-digit',
+                      })
                       : ""}
                   </div>
                 </div>

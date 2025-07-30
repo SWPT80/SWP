@@ -8,17 +8,24 @@ import 'swiper/css/navigation';
 import '../assets/styles/Explore.css';
 import '../assets/styles/RoomCarousel.css';
 import hue from '../assets/images/hue.jpg';
+import danang from '../assets/images/danang.png'
+import vungtau from '../assets/images/vungtau.jpg'
+import hanoi from '../assets/images/hanoi.jpg'
+import dalat from '../assets/images/dalat.jpg'
+import nhatrang from '../assets/images/nhatrang.jpg'
+import saigon from '../assets/images/saigon.jpg'
+
 import { Link } from 'react-router-dom';
 import FavoriteHeart from '../components/FavoriteHeart';
 
 // Định nghĩa mảng địa điểm ban đầu (số lượng sẽ được cập nhật)
 const initialDestinations = [
-  { name: 'TP. Hồ Chí Minh', stays: '0 chỗ nghỉ', img: hue },
-  { name: 'Đà Nẵng', stays: '0 chỗ nghỉ', img: hue },
-  { name: 'Vũng Tàu', stays: '0 chỗ nghỉ', img: hue },
-  { name: 'Hà Nội', stays: '0 chỗ nghỉ', img: hue },
-  { name: 'Đà Lạt', stays: '0 chỗ nghỉ', img: hue },
-  { name: 'Nha Trang', stays: '0 chỗ nghỉ', img: hue },
+  { name: 'TP. Hồ Chí Minh', stays: '0 chỗ nghỉ', img: saigon },
+  { name: 'Đà Nẵng', stays: '0 chỗ nghỉ', img: danang  },
+  { name: 'Vũng Tàu', stays: '0 chỗ nghỉ', img: vungtau },
+  { name: 'Hà Nội', stays: '0 chỗ nghỉ', img: hanoi },
+  { name: 'Đà Lạt', stays: '0 chỗ nghỉ', img: dalat },
+  { name: 'Nha Trang', stays: '0 chỗ nghỉ', img: nhatrang },
 ];
 
 // ExploreVietnam Component

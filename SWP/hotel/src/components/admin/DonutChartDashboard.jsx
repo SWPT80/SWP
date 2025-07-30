@@ -1,24 +1,29 @@
 import React, { useEffect, useState } from "react";
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import axios from "axios";
+import { Alert } from "react-bootstrap";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#AA336A", "#FF6633"];
 
 const DonutChartDashboard = () => {
     const [data, setData] = useState([]);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         axios.get("http://localhost:8080/api/chart/room-types")
             .then((response) => {
                 setData(response.data);
+                setError(null);
             })
             .catch((error) => {
-                console.error("Error loading room type data:", error);
+                setError("Lỗi khi tải dữ liệu loại phòng.");
             });
     }, []);
 
     return (
         <div style={{ width: "100%", height: 300 }}>
+            {error && <Alert variant="danger" onClose={() => setError(null)} dismissible>{error}</Alert>}
             <ResponsiveContainer>
                 <PieChart>
                     <Pie

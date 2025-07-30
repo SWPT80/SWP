@@ -24,11 +24,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import PaymentCheckout from './payment/Payment-checkout';
 import AuthModal from '../components/LoginSignupForm';
 
-const RoomDetails = () => {
-  const [newRating, setNewRating] = useState(0);
-  const [newComment, setNewComment] = useState('');
-  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
+const RoomDetails = () => {
   const { homestayId, roomNumber } = useParams();
   const { isLoggedIn, user, setUser, setIsLoggedIn, checkAuth } = useAuth();
   const navigate = useNavigate();
@@ -52,6 +49,7 @@ const RoomDetails = () => {
     infants: 0,
     pets: 0,
   });
+  const [isRoomAvailable, setIsRoomAvailable] = useState(true);
   const [showGuestOptions, setShowGuestOptions] = useState(false);
   const [selectedServices, setSelectedServices] = useState({});
   const [showServiceModal, setShowServiceModal] = useState(false);
@@ -63,6 +61,7 @@ const RoomDetails = () => {
     phone: '',
     address: '',
   });
+
 
   // Hàm hiển thị toast
   const showToast = (message, type = 'info') => {
@@ -82,6 +81,36 @@ const RoomDetails = () => {
     }
   };
 
+
+  useEffect(() => {
+    const checkAvailability = async () => {
+      if (checkInDate && checkOutDate && new Date(checkOutDate) > new Date(checkInDate)) {
+        try {
+          const response = await axios.post('/api/rooms/availability', {
+            homestayId: parseInt(homestayId),
+            roomNumber: roomNumber,
+            checkInDate: checkInDate,
+            checkOutDate: checkOutDate,
+          });
+          setIsRoomAvailable(response.data);
+          if (!response.data) {
+            showToast('Phòng không khả dụng trong khoảng thời gian đã chọn.', 'error');
+          }
+        } catch (err) {
+          console.error('Lỗi khi kiểm tra tính khả dụng:', err);
+          setIsRoomAvailable(false);
+          showToast('Không thể kiểm tra tính khả dụng của phòng. Vui lòng thử lại.', 'error');
+        }
+      } else {
+        setIsRoomAvailable(true); // Nếu chưa chọn đủ ngày, mặc định cho phép
+      }
+    };
+
+
+    checkAvailability();
+  }, [checkInDate, checkOutDate, homestayId, roomNumber]);
+
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -94,6 +123,7 @@ const RoomDetails = () => {
           axios.get(`/api/homestay-rules/homestay/${homestayId}`).catch(() => ({ data: [] })),
           axios.get(`/api/services/homestay/${homestayId}`).catch(() => ({ data: [] })),
         ]);
+
 
         const roomDetails = roomRes.data;
         setRoomData({
@@ -116,11 +146,13 @@ const RoomDetails = () => {
         setHomestayRules(rulesRes.data);
         setServices(servicesRes.data);
 
+
         const initialServices = servicesRes.data.reduce((acc, service) => {
           acc[service.id] = false;
           return acc;
         }, {});
         setSelectedServices(initialServices);
+
 
         if (isLoggedIn) {
           const me = await axios.get('/api/auth/me');
@@ -141,8 +173,10 @@ const RoomDetails = () => {
       }
     };
 
+
     fetchData();
   }, [homestayId, roomNumber, isLoggedIn]);
+
 
   useEffect(() => {
     // Hiển thị thông báo cho services, rules, reviews, và cancellation policies
@@ -162,6 +196,7 @@ const RoomDetails = () => {
     }
   }, [services, homestayRules, reviews, cancellationPolicies, loading, roomData]);
 
+
   useEffect(() => {
     // Hiển thị messError dưới dạng toast
     if (messError) {
@@ -169,45 +204,9 @@ const RoomDetails = () => {
     }
   }, [messError]);
 
+
   const toggleGuestOptions = () => {
     setShowGuestOptions(!showGuestOptions);
-  };
-
-  const submitReview = async () => {
-    if (!isLoggedIn) {
-      setShowAuthModal(true);
-      showToast('Bạn cần đăng nhập để gửi đánh giá', 'error');
-      return;
-    }
-
-    if (newRating <= 0 || newRating > 5) {
-      showToast('Vui lòng chọn số sao hợp lệ (1-5)', 'error');
-      return;
-    }
-
-    setIsSubmittingReview(true);
-    try {
-      const reviewDTO = {
-        rating: newRating,
-        comment: newComment,
-        homestayId: parseInt(homestayId),
-        roomNumber: roomNumber,
-      };
-
-      await axios.post('/api/reviews/submit', reviewDTO);
-      showToast('Đánh giá đã được gửi, chờ phê duyệt');
-      setNewRating(0);
-      setNewComment('');
-
-      // Gợi ý: Reload đánh giá
-      const updatedReviews = await axios.get(`/api/reviews/room/${homestayId}/${roomNumber}`);
-      setReviews(updatedReviews.data);
-    } catch (error) {
-      console.error('Lỗi gửi đánh giá:', error);
-      showToast('Không thể gửi đánh giá. Vui lòng thử lại.', 'error');
-    } finally {
-      setIsSubmittingReview(false);
-    }
   };
 
 
@@ -226,6 +225,7 @@ const RoomDetails = () => {
     });
   };
 
+
   const handleServiceChange = (serviceId) => {
     setSelectedServices((prev) => ({
       ...prev,
@@ -233,10 +233,12 @@ const RoomDetails = () => {
     }));
   };
 
+
   const handleServiceClick = (service) => {
     setSelectedService(service);
     setShowServiceModal(true);
   };
+
 
   useEffect(() => {
     // Hiển thị thông báo khi mở modal dịch vụ và không có hình ảnh
@@ -245,9 +247,11 @@ const RoomDetails = () => {
     }
   }, [showServiceModal, selectedService]);
 
+
   const handleDateChange = (setter) => (e) => {
     setter(e.target.value);
   };
+
 
   const calculateTotalAmount = () => {
     if (!checkInDate || !checkOutDate || !roomData) return 0;
@@ -255,6 +259,7 @@ const RoomDetails = () => {
     const checkOut = new Date(checkOutDate);
     const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
     let total = nights * roomData.price;
+
 
     const totalGuests = guests.adults + guests.children + guests.infants;
     services.forEach((service) => {
@@ -271,8 +276,10 @@ const RoomDetails = () => {
       }
     });
 
+
     return total;
   };
+
 
   const getSelectedServicesSummary = () => {
     return services
@@ -284,12 +291,14 @@ const RoomDetails = () => {
       }));
   };
 
+
   const handleCustomerInfoChange = (field, value) => {
     setCustomerInfo((prev) => ({
       ...prev,
       [field]: value,
     }));
   };
+
 
   const validateCustomerInfo = () => {
     if (!customerInfo.fullName) return 'Vui lòng nhập họ tên.';
@@ -298,10 +307,12 @@ const RoomDetails = () => {
     return null;
   };
 
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     e.stopPropagation(); // Ngăn sự kiện mặc định của trình duyệt
     setMessError(null);
+
 
     // Kiểm tra riêng các trường ngày
     if (!checkInDate) {
@@ -343,6 +354,7 @@ const RoomDetails = () => {
         .map(([id]) => parseInt(id)),
     };
 
+
     try {
       const response = await axios.post('/api/bookings', bookingDTO);
       const bookingId = Number(response.data.id);
@@ -357,11 +369,14 @@ const RoomDetails = () => {
       if (err.response?.status === 401) {
         setMessError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
         setShowAuthModal(true);
+      } else if (err.response?.data?.includes('Phòng không khả dụng')) {
+        setMessError('Phòng không khả dụng trong khoảng thời gian đã chọn.');
       } else {
         setMessError('Không thể tạo đặt phòng. Vui lòng thử lại.');
       }
     }
   };
+
 
   const handleConfirmBooking = () => {
     const validationError = validateCustomerInfo();
@@ -372,6 +387,7 @@ const RoomDetails = () => {
     setShowConfirmationModal(false);
     setShowPaymentModal(true);
   };
+
 
   const handleAuthSuccess = async ({ fullName, role }) => {
     try {
@@ -395,6 +411,7 @@ const RoomDetails = () => {
     }
   };
 
+
   if (loading) {
     return (
       <Container className="text-center py-5">
@@ -411,16 +428,19 @@ const RoomDetails = () => {
   }
   if (!roomData) return null;
 
+
   const formattedPrice = new Intl.NumberFormat('vi-VN', {
     style: 'currency',
     currency: 'VND',
   }).format(calculateTotalAmount());
+
 
   const totalGuests = guests.adults + guests.children + guests.infants;
   const guestLabel = `${totalGuests} khách${guests.pets > 0 ? `, ${guests.pets} thú cưng` : ''}`;
   const nights = checkInDate && checkOutDate
     ? Math.ceil((new Date(checkOutDate) - new Date(checkInDate)) / (1000 * 60 * 60 * 24))
     : 0;
+
 
   return (
     <Container className="my-4">
@@ -436,6 +456,7 @@ const RoomDetails = () => {
           />
         </Col>
       </Row>
+
 
       <Row>
         <Col md={8}>
@@ -465,6 +486,7 @@ const RoomDetails = () => {
                 </ListGroup.Item>
               </ListGroup>
               <Card.Text className="text-muted mb-4">{roomData.description}</Card.Text>
+
 
               <Card.Title as="h3" className="mb-3">Tiện nghi chỗ ở</Card.Title>
               <Row className="gy-3 mb-3">
@@ -579,43 +601,6 @@ const RoomDetails = () => {
               )}
             </Card.Body>
           </Card>
-
-          <Card className="p-3 mt-4">
-            <Card.Title as="h5">Gửi đánh giá của bạn</Card.Title>
-            <Form>
-              <Form.Group className="mb-3">
-                <Form.Label>Số sao</Form.Label>
-                <Form.Select
-                  value={newRating}
-                  onChange={(e) => setNewRating(parseInt(e.target.value))}
-                  required
-                >
-                  <option value="0">Chọn số sao</option>
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <option key={star} value={star}>{star} sao</option>
-                  ))}
-                </Form.Select>
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Bình luận</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={3}
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Hãy chia sẻ trải nghiệm của bạn..."
-                />
-              </Form.Group>
-              <Button
-                variant="primary"
-                disabled={isSubmittingReview}
-                onClick={submitReview}
-              >
-                {isSubmittingReview ? 'Đang gửi...' : 'Gửi đánh giá'}
-              </Button>
-            </Form>
-          </Card>
-
           <Card className="mb-4">
             <Card.Body>
               <Card.Title as="h3" className="mb-3">Chính sách hủy phòng</Card.Title>
@@ -679,6 +664,7 @@ const RoomDetails = () => {
                     onChange={handleDateChange(setCheckInDate)}
                     required
                     min={new Date().toISOString().split('T')[0]}
+                    max={checkOutDate ? new Date(new Date(checkOutDate).getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0] : ''}
                   />
                 </Form.Group>
                 <Form.Group className="mb-3">
@@ -750,7 +736,7 @@ const RoomDetails = () => {
                   variant="primary"
                   type="submit"
                   className="w-100 py-2 fw-bold"
-                  disabled={!roomData.status}
+                  disabled={!isRoomAvailable || !checkInDate || !checkOutDate || new Date(checkOutDate) <= new Date(checkInDate)}
                 >
                   Xác nhận đặt phòng
                 </Button>
@@ -759,6 +745,7 @@ const RoomDetails = () => {
           </Card>
         </Col>
       </Row>
+
 
       <Modal show={showConfirmationModal}
         onHide={() => setShowConfirmationModal(false)}
@@ -866,6 +853,7 @@ const RoomDetails = () => {
         </Modal.Footer>
       </Modal>
 
+
       <Modal show={showPaymentModal}
         onHide={() => setShowPaymentModal(false)}
         centered
@@ -894,6 +882,7 @@ const RoomDetails = () => {
           />
         </Modal.Body>
       </Modal>
+
 
       <Modal show={showServiceModal} onHide={() => setShowServiceModal(false)} centered>
         <Modal.Header closeButton>
@@ -934,6 +923,7 @@ const RoomDetails = () => {
           </Button>
         </Modal.Footer>
       </Modal>
+
 
       <AuthModal
         show={showAuthModal}

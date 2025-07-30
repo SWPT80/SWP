@@ -8,7 +8,7 @@ import Profiles from "./components/ProfilePage";
 import BecomeHost from "./components/BecomeHost";
 import ResetPassword from "./components/ResetPassword";
 import ReviewPage from './pages/ReviewPage';
-import ReportPage from './pages/ReportPage'; // ✅ Thêm dòng này
+import ReportPage from './pages/ReportPage';
 
 // Admin Pages
 import Dashboard from "./pages/admin/Dashboard";
@@ -60,6 +60,9 @@ import AddService from "./pages/host/AddService";
 import PaymentCheckout from "./pages/payment/Payment-checkout";
 import PaymentCallback from "./pages/payment/PaymentCallback";
 import BookingSuccess from "./pages/payment/BookingSuccess";
+import PaymentErrorHandler from "./pages/payment/PaymentErrorHandler";
+import PaymentCancelledHandler from "./pages/payment/PaymentCancelledHandler";
+
 import { AuthProvider } from './context/AuthContext';
 import SearchResults from "./components/Search/SearchResultsHome";
 import UserChatPage from "./components/Chat/ChatUsers";
@@ -67,6 +70,7 @@ import { WebSocketProvider } from './context/WebSocketContext';
 import EmailVerificationPage from "./components/EmailVerificationPage";
 import FavoriteListPage from "./pages/FavoriteListPage";
 import FavoriteListDetail from "./components/FavoriteListDetail";
+
 function App() {
   return (
     <AuthProvider>
@@ -111,7 +115,7 @@ function App() {
               <Route path="/experience" element={<Experience />} />
               <Route path="/services" element={<Service />} />
               <Route path="/review" element={<ReviewPage />} />
-              <Route path="/report" element={<ReportPage />} /> {/* ✅ Dùng ReportPage */}
+              <Route path="/report" element={<ReportPage />} />
             </Route>
 
             {/* Host Routes */}
@@ -150,6 +154,8 @@ function App() {
               <Route path="/room/roomdetails/:homestayId/:roomNumber" element={<RoomDetails />} />
               <Route path="/checkout" element={<PaymentCheckout />} />
               <Route path="/payment-callback" element={<PaymentCallback />} />
+              <Route path="/payment-error" element={<PaymentErrorHandler />} />
+              <Route path="/payment-cancelled" element={<PaymentCancelledHandler />} />
               <Route path="/booking-success" element={<BookingSuccess />} />
               <Route path="/booked" element={<Booked />} />
             </Route>

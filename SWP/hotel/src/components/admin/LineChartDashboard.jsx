@@ -3,11 +3,14 @@ import {
     LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from "recharts";
 import axios from "axios";
+import { Alert } from "react-bootstrap";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 const LineChartDashboard = () => {
     const [data, setData] = useState([]);
     const [month, setMonth] = useState("");
     const [year, setYear] = useState("");
+    const [error, setError] = useState(null);
 
     const fetchData = () => {
         const params = {};
@@ -15,8 +18,13 @@ const LineChartDashboard = () => {
         if (year) params.year = year;
 
         axios.get("http://localhost:8080/api/chart/revenue/filter", { params })
-            .then((res) => setData(res.data))
-            .catch((err) => console.error("Lỗi load dữ liệu doanh thu:", err));
+            .then((res) => {
+                setData(res.data);
+                setError(null);
+            })
+            .catch((err) => {
+                setError("Lỗi khi tải dữ liệu doanh thu.");
+            });
     };
 
     useEffect(() => {
@@ -25,7 +33,8 @@ const LineChartDashboard = () => {
 
     return (
         <div>
-            {/* Filter */}
+            {error && <Alert variant="danger" onClose={() => setError(null)} dismissible>{error}</Alert>}
+            {/* Bộ lọc */}
             <div className="d-flex mb-3">
                 <select className="form-control mr-2" onChange={(e) => setMonth(e.target.value)} value={month}>
                     <option value="">Chọn tháng</option>
@@ -41,7 +50,7 @@ const LineChartDashboard = () => {
                 </select>
             </div>
 
-            {/* Chart */}
+            {/* Biểu đồ */}
             <div style={{ width: "100%", height: 300 }}>
                 <ResponsiveContainer>
                     <LineChart data={data}>

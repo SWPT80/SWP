@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Card, Button, Table, Modal, Badge, Pagination } from "react-bootstrap";
+import { Card, Button, Table, Modal, Badge, Pagination, Alert } from "react-bootstrap";
 import { useWebSocket } from "../../context/WebSocketContext";
 import { useAuth } from "../../context/AuthContext";
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 export function BookingsTable() {
   const { user } = useAuth();
@@ -11,7 +12,7 @@ export function BookingsTable() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [userServices, setUserServices] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(null);
   const { subscribe, connected } = useWebSocket();
   const [currentPage, setCurrentPage] = useState(0);
   const [paginatedBookings, setPaginatedBookings] = useState([]);
@@ -19,7 +20,10 @@ export function BookingsTable() {
   const [metrics, setMetrics] = useState({ totalBookings: 0, availableRooms: 0, revenue: 0 });
 
   const fetchBookings = async () => {
-    if (!hostId) return;
+    if (!hostId) {
+      setError("Không tìm thấy ID chủ nhà.");
+      return;
+    }
     try {
       const res = await axios.get(`http://localhost:8080/api/bookings/host/${hostId}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
@@ -27,23 +31,27 @@ export function BookingsTable() {
       const updated = autoUpdateCheckOut(res.data);
       const sorted = updated.sort((a, b) => new Date(b.checkInDate) - new Date(a.checkInDate));
       setBookings(sorted);
-      setError("");
+      setError(null);
     } catch (err) {
-      console.error("Fetch bookings failed", err);
-      setError("Failed to load bookings");
+      console.error("Lỗi khi tải danh sách đặt phòng:", err);
+      setError("Không thể tải danh sách đặt phòng. Vui lòng thử lại.");
     }
   };
 
   const fetchMetrics = async () => {
-    if (!hostId) return;
+    if (!hostId) {
+      setError("Không tìm thấy ID chủ nhà.");
+      return;
+    }
     try {
       const res = await axios.get(`http://localhost:8080/api/bookings/host/${hostId}/metrics`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
       setMetrics(res.data);
+      setError(null);
     } catch (err) {
-      console.error("Fetch metrics failed", err);
-      setError("Failed to load metrics");
+      console.error("Lỗi khi tải số liệu:", err);
+      setError("Không thể tải số liệu. Vui lòng thử lại.");
     }
   };
 
@@ -66,8 +74,10 @@ export function BookingsTable() {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
       setUserServices(res.data.serviceDetails || []);
+      setError(null);
     } catch (err) {
-      console.error("Error fetching service detail", err);
+      console.error("Lỗi khi tải chi tiết dịch vụ:", err);
+      setError("Không thể tải chi tiết dịch vụ. Vui lòng thử lại.");
       setUserServices([]);
     }
   };
@@ -87,9 +97,10 @@ export function BookingsTable() {
       );
       setBookings(updated);
       setSelectedUser((prev) => ({ ...prev, status: newStatus }));
+      setError(null);
     } catch (err) {
-      console.error("Update status failed", err);
-      setError("Failed to update status: " + err.message);
+      console.error("Lỗi khi cập nhật trạng thái:", err);
+      setError("Không thể cập nhật trạng thái: " + err.message);
     }
   };
 
@@ -106,9 +117,12 @@ export function BookingsTable() {
   };
 
   useEffect(() => {
-    if (!hostId || !connected) return;
+    if (!hostId || !connected) {
+      setError("Không thể kết nối hoặc thiếu ID chủ nhà.");
+      return;
+    }
 
-    console.log("Subscribing to: /topic/notifications/" + hostId);
+    console.log("Đang đăng ký nhận thông báo tại: /topic/notifications/" + hostId);
     fetchBookings();
     fetchMetrics();
 
@@ -128,19 +142,23 @@ export function BookingsTable() {
         subscription.unsubscribe();
       }
     };
-  }, [hostId, connected]);
+  }, [hostId, connected, subscribe]);
 
   return (
     <>
       <Card className="mb-4">
-        <Card.Header as="h5">Booking List</Card.Header>
+        <Card.Header as="h5">Danh sách đặt phòng</Card.Header>
         <Card.Body>
-          {error && <div className="text-danger mb-2">{error}</div>}
+          {error && (
+            <Alert variant="danger" onClose={() => setError(null)} dismissible>
+              {error}
+            </Alert>
+          )}
           <div className="mb-3">
-            <h6>Metrics</h6>
-            <p><strong>Total Bookings:</strong> {metrics.totalBookings}</p>
-            <p><strong>Available Rooms:</strong> {metrics.availableRooms}</p>
-            <p><strong>Revenue:</strong> {metrics.revenue?.toLocaleString()}</p>
+            <h6>Số liệu thống kê</h6>
+            <p><strong>Tổng số đặt phòng:</strong> {metrics.totalBookings}</p>
+            <p><strong>Phòng trống:</strong> {metrics.availableRooms}</p>
+            <p><strong>Doanh thu:</strong> {metrics.revenue?.toLocaleString('vi-VN')}đ</p>
           </div>
           <Button onClick={() => { fetchBookings(); fetchMetrics(); }} className="mb-3">
             Tải lại
@@ -148,49 +166,60 @@ export function BookingsTable() {
           <Table hover bordered responsive>
             <thead>
               <tr>
-                <th>User ID</th>
-                <th>Name</th>
+                <th>ID người dùng</th>
+                <th>Tên</th>
                 <th>Email</th>
-                <th>Check In</th>
-                <th>Check Out</th>
-                <th>Room Type</th>
-                <th>Room Price</th>
-                <th>Total People</th>
-                <th>Total Amount</th>
-                <th>Status</th>
+                <th>Ngày nhận phòng</th>
+                <th>Ngày trả phòng</th>
+                <th>Loại phòng</th>
+                <th>Giá phòng</th>
+                <th>Tổng số người</th>
+                <th>Tổng tiền</th>
+                <th>Trạng thái</th>
               </tr>
             </thead>
             <tbody>
-              {paginatedBookings.map((item, index) => (
-                <tr key={index} onClick={() => handleRowClick(item)} style={{ cursor: "pointer" }}>
-                  <td>{item.userId}</td>
-                  <td>{item.userName}</td>
-                  <td>{item.email}</td>
-                  <td>{item.checkInDate}</td>
-                  <td>{item.checkOutDate}</td>
-                  <td>{item.roomType}</td>
-                  <td>{item.roomPrice?.toLocaleString()}</td>
-                  <td>{item.totalPeople}</td>
-                  <td>{item.totalAmount?.toLocaleString()}</td>
-                  <td>
-                    <Badge
-                      bg={
-                        item.status === "PENDING"
-                          ? "warning"
-                          : item.status === "CONFIRMED"
-                            ? "primary"
-                            : item.status === "CANCELLED"
-                              ? "danger"
-                              : item.status === "CHECKED_OUT"
-                                ? "secondary"
-                                : "info"
-                      }
-                    >
-                      {item.status}
-                    </Badge>
+              {paginatedBookings.length === 0 ? (
+                <tr>
+                  <td colSpan="10" className="text-center">
+                    Chưa có đặt phòng nào
                   </td>
                 </tr>
-              ))}
+              ) : (
+                paginatedBookings.map((item, index) => (
+                  <tr key={index} onClick={() => handleRowClick(item)} style={{ cursor: "pointer" }}>
+                    <td>{item.userId}</td>
+                    <td>{item.userName}</td>
+                    <td>{item.email}</td>
+                    <td>{item.checkInDate}</td>
+                    <td>{item.checkOutDate}</td>
+                    <td>{item.roomType}</td>
+                    <td>{item.roomPrice?.toLocaleString('vi-VN')}đ</td>
+                    <td>{item.totalPeople}</td>
+                    <td>{item.totalAmount?.toLocaleString('vi-VN')}đ</td>
+                    <td>
+                      <Badge
+                        bg={
+                          item.status === "PENDING"
+                            ? "warning"
+                            : item.status === "CONFIRMED"
+                              ? "primary"
+                              : item.status === "CANCELLED"
+                                ? "danger"
+                                : item.status === "CHECKED_OUT"
+                                  ? "secondary"
+                                  : "info"
+                        }
+                      >
+                        {item.status === "PENDING" ? "Đang chờ" :
+                          item.status === "CONFIRMED" ? "Đã xác nhận" :
+                            item.status === "CANCELLED" ? "Đã hủy" :
+                              item.status === "CHECKED_OUT" ? "Đã trả phòng" : "Khác"}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </Table>
           {totalPages > 1 && (
@@ -227,27 +256,32 @@ export function BookingsTable() {
 
       <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" centered>
         <Modal.Header closeButton>
-          <Modal.Title>Booking Detail - {selectedUser?.userName}</Modal.Title>
+          <Modal.Title>Chi tiết đặt phòng - {selectedUser?.userName}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <p><strong>User ID:</strong> {selectedUser?.userId}</p>
+          <p><strong>ID người dùng:</strong> {selectedUser?.userId}</p>
           <p><strong>Email:</strong> {selectedUser?.email}</p>
-          <p><strong>Full Name:</strong> {selectedUser?.userName}</p>
-          <p><strong>Check In:</strong> {selectedUser?.checkInDate}</p>
-          <p><strong>Check Out:</strong> {selectedUser?.checkOutDate}</p>
-          <p><strong>Room Type:</strong> {selectedUser?.roomType}</p>
-          <p><strong>Room Price:</strong> {selectedUser?.roomPrice?.toLocaleString()}</p>
-          <p><strong>Total People:</strong> {selectedUser?.totalPeople}</p>
-          <p><strong>Total Amount:</strong> {selectedUser?.totalAmount?.toLocaleString()}</p>
-          <p><strong>Status:</strong> <Badge bg="info">{selectedUser?.status}</Badge></p>
-          <h5 className="mt-3">Services Used:</h5>
+          <p><strong>Họ tên:</strong> {selectedUser?.userName}</p>
+          <p><strong>Ngày nhận phòng:</strong> {selectedUser?.checkInDate}</p>
+          <p><strong>Ngày trả phòng:</strong> {selectedUser?.checkOutDate}</p>
+          <p><strong>Loại phòng:</strong> {selectedUser?.roomType}</p>
+          <p><strong>Giá phòng:</strong> {selectedUser?.roomPrice?.toLocaleString('vi-VN')}đ</p>
+          <p><strong>Tổng số người:</strong> {selectedUser?.totalPeople}</p>
+          <p><strong>Tổng tiền:</strong> {selectedUser?.totalAmount?.toLocaleString('vi-VN')}đ</p>
+          <p><strong>Trạng thái:</strong> <Badge bg="info">
+            {selectedUser?.status === "PENDING" ? "Đang chờ" :
+              selectedUser?.status === "CONFIRMED" ? "Đã xác nhận" :
+                selectedUser?.status === "CANCELLED" ? "Đã hủy" :
+                  selectedUser?.status === "CHECKED_OUT" ? "Đã trả phòng" : "Khác"}
+          </Badge></p>
+          <h5 className="mt-3">Dịch vụ sử dụng:</h5>
           {userServices.length === 0 ? (
-            <p>No services found</p>
+            <p>Không có dịch vụ nào</p>
           ) : (
             <ul>
               {userServices.map((s, idx) => (
                 <li key={idx}>
-                  {s.serviceType?.serviceName} - {s.price?.toLocaleString()} x {s.quantity || 1} = {(s.price * (s.quantity || 1)).toLocaleString()}
+                  {s.serviceType?.serviceName} - {s.price?.toLocaleString('vi-VN')}đ x {s.quantity || 1} = {(s.price * (s.quantity || 1)).toLocaleString('vi-VN')}đ
                 </li>
               ))}
             </ul>

@@ -137,3 +137,112 @@
   width: 100%;
   border-radius: 10px;
 }
+/* Thêm vào file CardStyles.css hiện tại */
+
+/* Container cho các card - sử dụng flexbox hoặc grid */
+.cards-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: stretch; /* Quan trọng: làm cho các card có chiều cao bằng nhau */
+}
+
+/* Hoặc nếu sử dụng CSS Grid */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  align-items: stretch;
+}
+
+/* Card có chiều cao bằng nhau */
+.service-card-equal-height {
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* Chiếm hết chiều cao có sẵn */
+  min-height: 400px; /* Chiều cao tối thiểu */
+}
+
+/* Container cho hình ảnh */
+.service-card-image-container {
+  flex-shrink: 0; /* Không cho phép co lại */
+  height: 200px; /* Chiều cao cố định cho hình ảnh */
+  overflow: hidden;
+}
+
+.service-card-image-container .service-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Body của card */
+.service-card-equal-height .service-card-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1; /* Chiếm hết không gian còn lại */
+  padding: 15px;
+}
+
+/* Title */
+.service-card-equal-height .service-card-title {
+  margin: 0 0 10px 0;
+  font-size: 1.1rem;
+  font-weight: bold;
+  line-height: 1.3;
+  /* Giới hạn số dòng để title không quá dài */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Location và description */
+.service-card-equal-height .service-card-location,
+.service-card-equal-height .service-card-description {
+  margin: 5px 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.service-card-equal-height .service-card-description {
+  flex: 1; /* Chiếm hết không gian còn lại */
+  /* Giới hạn số dòng để mô tả không quá dài */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Footer chứa giá - luôn ở cuối card */
+.service-card-footer {
+  margin-top: auto; /* Đẩy footer xuống cuối */
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+}
+
+.service-card-footer .service-card-price {
+  margin: 0;
+  font-weight: bold;
+  color: #e74c3c;
+  font-size: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .cards-container {
+    flex-direction: column;
+  }
+  
+  .cards-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .service-card-equal-height {
+    min-height: 350px;
+  }
+  
+  .service-card-image-container {
+    height: 180px;
+  }
+}

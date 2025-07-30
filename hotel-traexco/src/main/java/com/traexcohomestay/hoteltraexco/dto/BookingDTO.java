@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -28,11 +29,15 @@ public class BookingDTO {
     private Integer children;
     private Integer totalPeople;
     private BigDecimal totalAmount;
+    private BigDecimal depositAmount;
     private String status;
     private List<String> services;
     private List<ServiceDTO> serviceDetails;
     private List<String> roomImages;
     private List<String> homestayImages;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ")
+    private Instant createdAt;
+
     public List<ServiceDTO> getServiceDetails() {
         return serviceDetails;
     }

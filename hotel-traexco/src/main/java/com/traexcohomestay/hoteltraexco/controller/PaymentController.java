@@ -1,5 +1,6 @@
 package com.traexcohomestay.hoteltraexco.controller;
 
+
 import com.traexcohomestay.hoteltraexco.dto.PaymentDTO;
 import com.traexcohomestay.hoteltraexco.service.PaymentService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -10,16 +11,20 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+
 import java.io.IOException;
 import java.util.Map;
+
 
 @RestController
 @RequestMapping("/api/payments")
 public class PaymentController {
     private static final Logger logger = LoggerFactory.getLogger(PaymentController.class);
 
+
     @Autowired
     private PaymentService paymentService;
+
 
     @PostMapping
     public ResponseEntity<?> createPayment(@RequestBody PaymentDTO paymentDTO) {
@@ -40,6 +45,7 @@ public class PaymentController {
         }
     }
 
+
     @PostMapping("/create-payment-url")
     public ResponseEntity<String> createPaymentUrl(@RequestBody PaymentDTO paymentDTO) {
         logger.info("Received createPaymentUrl request with PaymentDTO: {}", paymentDTO);
@@ -55,6 +61,7 @@ public class PaymentController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi khi tạo URL thanh toán: " + e.getMessage());
         }
     }
+
 
     @GetMapping("/callback")
     public void handlePaymentCallback(
@@ -73,5 +80,54 @@ public class PaymentController {
                 momoResultCode, momoOrderId, momoAmount,
                 vnpSecureHash, params, response
         );
+    }
+
+    @GetMapping("/cancel")
+    public void handlePaymentCancel(
+            @RequestParam(value = "vnp_TxnRef", required = false) String vnpTxnRef,
+            @RequestParam(value = "orderId", required = false) String momoOrderId,
+            @RequestParam(value = "bookingId", required = false) Integer bookingId,
+            HttpServletResponse response) throws IOException {
+        logger.info("Received payment cancel request - vnpTxnRef: {}, momoOrderId: {}, bookingId: {}",
+                vnpTxnRef, momoOrderId, bookingId);
+
+        try {
+            paymentService.handlePaymentCancel(vnpTxnRef, momoOrderId, bookingId);
+            response.sendRedirect("http://localhost:3000/payment-cancelled?bookingId=" + bookingId);
+        } catch (Exception e) {
+            logger.error("Error handling payment cancel: {}", e.getMessage(), e);
+            response.sendRedirect("http://localhost:3000/payment-error?error=CancelFailed");
+        }
+    }
+
+    // Endpoint để check trạng thái payment
+    @GetMapping("/status/{bookingId}")
+    public ResponseEntity<Map<String, Object>> checkPaymentStatus(@PathVariable Integer bookingId) {
+        logger.info("Checking payment status for booking: {}", bookingId);
+        try {
+            Map<String, Object> status = paymentService.getPaymentStatus(bookingId);
+            return ResponseEntity.ok(status);
+        } catch (Exception e) {
+            logger.error("Error checking payment status: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi khi kiểm tra trạng thái thanh toán"));
+        }
+    }
+
+    // Endpoint để retry payment cho các payment bị failed
+    @PostMapping("/retry/{paymentId}")
+    public ResponseEntity<?> retryPayment(@PathVariable Integer paymentId) {
+        logger.info("Retrying payment: {}", paymentId);
+        try {
+            PaymentDTO result = paymentService.retryFailedPayment(paymentId);
+            return ResponseEntity.ok(result);
+        } catch (IllegalArgumentException e) {
+            logger.error("Invalid retry payment request: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            logger.error("Error retrying payment: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Lỗi khi thử lại thanh toán: " + e.getMessage());
+        }
     }
 }

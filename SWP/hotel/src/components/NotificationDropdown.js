@@ -1,21 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Dropdown } from 'react-bootstrap';
+import { Dropdown, Alert } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 import axios from '../utils/axiosConfig';
 import { useAuth } from '../context/AuthContext';
 import '@fortawesome/fontawesome-free/css/all.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const NotificationDropdown = ({ theme = 'dark' }) => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
+  const [error, setError] = useState('');
   const notificationDropdownRef = useRef(null);
   const stompClient = useRef(null);
 
-  // Style theo theme
   const iconStyle = {
     color: theme === 'light' ? '#333' : 'white',
     fontSize: '20px',
@@ -53,8 +54,10 @@ const NotificationDropdown = ({ theme = 'dark' }) => {
         });
         setNotifications(response.data);
         setUnreadNotifications(response.data.filter((n) => !n.status).length);
+        setError('');
       } catch (err) {
-        console.error('Error fetching notifications:', err);
+        console.error('Lỗi khi tải thông báo:', err);
+        setError('Không thể tải thông báo. Vui lòng thử lại.');
       }
     };
 
@@ -80,7 +83,8 @@ const NotificationDropdown = ({ theme = 'dark' }) => {
         });
       },
       onStompError: (error) => {
-        console.error('WebSocket connection error:', error);
+        console.error('Lỗi kết nối WebSocket:', error);
+        setError('Không thể kết nối WebSocket để nhận thông báo.');
       },
     });
     stompClient.current.activate();
@@ -107,8 +111,10 @@ const NotificationDropdown = ({ theme = 'dark' }) => {
         prev.map((n) => (n.id === notificationId ? { ...n, status: true } : n))
       );
       setUnreadNotifications((prev) => prev - 1);
+      setError('');
     } catch (err) {
-      console.error('Error marking notification as read:', err);
+      console.error('Lỗi khi đánh dấu thông báo đã đọc:', err);
+      setError('Không thể đánh dấu thông báo đã đọc.');
     }
   };
 
@@ -128,8 +134,10 @@ const NotificationDropdown = ({ theme = 'dark' }) => {
         prev.map((n) => ({ ...n, status: true }))
       );
       setUnreadNotifications(0);
+      setError('');
     } catch (err) {
-      console.error('Error marking all notifications as read:', err);
+      console.error('Lỗi khi đánh dấu tất cả thông báo đã đọc:', err);
+      setError('Không thể đánh dấu tất cả thông báo đã đọc.');
     }
   };
 
@@ -174,8 +182,11 @@ const NotificationDropdown = ({ theme = 'dark' }) => {
         }}
       >
         <Dropdown.Header style={{ fontWeight: 'bold' }}>Thông báo</Dropdown.Header>
-
-        {/* ✅ Vùng này sẽ cuộn nếu thông báo nhiều */}
+        {error && (
+          <Alert variant="danger" onClose={() => setError('')} dismissible style={{ margin: '10px' }}>
+            {error}
+          </Alert>
+        )}
         <div style={{ maxHeight: '300px', overflowY: 'auto', paddingRight: '6px' }}>
           {notifications.length === 0 ? (
             <Dropdown.Item disabled>Không có thông báo mới</Dropdown.Item>

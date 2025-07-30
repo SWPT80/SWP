@@ -8,19 +8,30 @@ import 'swiper/css/navigation';
 import '../assets/styles/Explore.css';
 import '../assets/styles/RoomCarousel.css';
 import hue from '../assets/images/hue.jpg';
+import chupanh from '../assets/images/chupanh.jpg';
+import daubep from '../assets/images/daubep.png';
+import doanchuanbisan from '../assets/images/doanchuanbisan.jpg';
+import matxa from '../assets/images/matxa.png';
+import daotao from '../assets/images/daotao.jpg';
+import trangidem from '../assets/images/trangidem.jpg';
+import lamtoc from '../assets/images/lamtoc.jpg';
+import spa from '../assets/images/spa.jpg';
+import anuong from '../assets/images/anuong.jpg';
+import mong from '../assets/images/mong.jpg';
+
 import { useNavigate } from 'react-router-dom';
 
 const serviceCategories = [
-  { name: 'Chụp ảnh', count: '22 dịch vụ', img: hue },
-  { name: 'Đầu bếp', count: '11 dịch vụ', img: hue },
-  { name: 'Đồ ăn chuẩn bị sẵn', count: '14 dịch vụ', img: hue },
-  { name: 'Massage', count: '14 dịch vụ', img: hue },
-  { name: 'Đào tạo', count: '9 dịch vụ', img: hue },
-  { name: 'Trang điểm', count: '11 dịch vụ', img: hue },
-  { name: 'Làm tóc', count: '9 dịch vụ', img: hue },
-  { name: 'Chăm sóc spa', count: '12 dịch vụ', img: hue },
-  { name: 'Dịch vụ ăn uống', count: '20 dịch vụ', img: hue },
-  { name: 'Làm móng', count: '14 dịch vụ', img: hue },
+  { name: 'Chụp ảnh', count: '22 dịch vụ', img: chupanh },
+  { name: 'Đầu bếp', count: '11 dịch vụ', img: daubep },
+  { name: 'Đồ ăn chuẩn bị sẵn', count: '14 dịch vụ', img: doanchuanbisan },
+  { name: 'Massage', count: '14 dịch vụ', img: matxa },
+  { name: 'Đào tạo', count: '9 dịch vụ', img: daotao },
+  { name: 'Trang điểm', count: '11 dịch vụ', img: trangidem },
+  { name: 'Làm tóc', count: '9 dịch vụ', img: lamtoc },
+  { name: 'Chăm sóc spa', count: '12 dịch vụ', img: spa },
+  { name: 'Dịch vụ ăn uống', count: '20 dịch vụ', img: anuong },
+  { name: 'Làm móng', count: '14 dịch vụ', img: mong },
 ];
 
 // ExploreServices Component

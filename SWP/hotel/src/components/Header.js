@@ -1,7 +1,6 @@
-// Header.js
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Navbar, Nav, Container, Dropdown, Button } from 'react-bootstrap';
+import { Navbar, Nav, Container, Dropdown, Button, Alert } from 'react-bootstrap';
 import logo from '../assets/images/logo.png';
 import '@fortawesome/fontawesome-free/css/all.css';
 import LanguageSelectorModal from './LanguageModal';
@@ -9,6 +8,7 @@ import AuthModal from './LoginSignupForm';
 import axios from 'axios';
 import '../assets/styles/Header.css';
 import NotificationDropdown from './NotificationDropdown';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -20,6 +20,7 @@ const Header = () => {
   const [user, setUser] = useState(null);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
   const userDropdownRef = useRef(null);
   const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
@@ -30,8 +31,8 @@ const Header = () => {
   const handleDropdownClick = (e) => {
     e.stopPropagation();
     if (e.target.tagName === 'A') {
-      setUserDropdownOpen(false); // Đóng dropdown
-      navigate(e.target.getAttribute('href')); // Chuyển trang
+      setUserDropdownOpen(false);
+      navigate(e.target.getAttribute('href'));
     }
   };
 
@@ -65,10 +66,12 @@ const Header = () => {
             fullName: response.data.fullName || response.data.email.split('@')[0],
             role: response.data.role ? response.data.role.toUpperCase() : null,
           });
-          setUnreadNotifications(3); // Giá trị mẫu, thay bằng API nếu cần
-          setUnreadMessages(2); // Giá trị mẫu, thay bằng API nếu cần
+          setUnreadNotifications(3);
+          setUnreadMessages(2);
+          setError('');
         } catch (err) {
-          console.error('Header - Error fetching user info:', err.response ? err.response.data : err.message);
+          console.error('Lỗi khi tải thông tin người dùng:', err.response ? err.response.data : err.message);
+          setError('Không thể tải thông tin người dùng. Vui lòng đăng nhập lại.');
           localStorage.removeItem('token');
           setUser(null);
         }
@@ -119,6 +122,11 @@ const Header = () => {
 
   return (
     <div className="super_container" style={{ position: 'relative', zIndex: 1050 }}>
+      {error && (
+        <Alert variant="danger" onClose={() => setError('')} dismissible style={{ position: 'absolute', top: '10px', left: '50%', transform: 'translateX(-50%)', zIndex: 10000, maxWidth: '500px' }}>
+          {error}
+        </Alert>
+      )}
       <Navbar
         expand="lg"
         className={`header ${isMenuOpen ? 'menu-open' : ''} ${isScrolled ? 'scrolled' : ''}`}
@@ -140,22 +148,20 @@ const Header = () => {
           <Navbar.Collapse id="basic-navbar-nav">
             <Nav className="mx-auto">
               <Nav.Link as={Link} to="/" className="main_nav_item" style={{ color: 'white', fontSize: '16px', fontWeight: 500, textTransform: 'uppercase', padding: '10px 15px' }}>
-                Home
+                Trang chủ
               </Nav.Link>
 
               <Nav.Link as={Link} to="/offer" className="main_nav_item" style={{ color: 'white', fontSize: '16px', fontWeight: 500, textTransform: 'uppercase', padding: '10px 15px' }}>
-                Offers
+                Ưu đãi
               </Nav.Link>
 
-              {/* Chỉ hiển thị link Booked khi đã đăng nhập */}
               {user && (
                 <Nav.Link as={Link} to="/booked" className="main_nav_item" style={{ color: 'white', fontSize: '16px', fontWeight: 500, textTransform: 'uppercase', padding: '10px 15px' }}>
-                  Booked
+                  Đã đặt
                 </Nav.Link>
               )}
             </Nav>
             <div className="right_nav d-flex align-items-center">
-              {/* Become Host Button */}
               <Button
                 as={Link}
                 to="/become-host"
@@ -173,7 +179,6 @@ const Header = () => {
                 Trở thành Host
               </Button>
 
-              {/* Language Selector */}
               <div
                 className="language_selector me-3"
                 onClick={() => setIsLanguageModalOpen(true)}
@@ -195,10 +200,8 @@ const Header = () => {
                 <i className="fas fa-globe"></i>
               </div>
 
-              {/* Notification Icon - Hiển thị khi đã đăng nhập */}
               {user && <NotificationDropdown />}
 
-              {/* Message Icon - Hiển thị khi đã đăng nhập */}
               {user && (
                 <Dropdown show={messageDropdownOpen} onToggle={() => setMessageDropdownOpen(!messageDropdownOpen)}>
                   <Dropdown.Toggle
@@ -234,7 +237,7 @@ const Header = () => {
                       <Dropdown.Item disabled>Không có tin nhắn mới</Dropdown.Item>
                     ) : (
                       <Dropdown.Item as={Link} to="/messages" onClick={() => setMessageDropdownOpen(false)}>
-                        Tin nhắn mới 1
+                        Tin nhắn mới
                       </Dropdown.Item>
                     )}
                     <Dropdown.Item as={Link} to="/messages" onClick={() => setMessageDropdownOpen(false)}>
@@ -244,7 +247,6 @@ const Header = () => {
                 </Dropdown>
               )}
 
-              {/* User Dropdown */}
               <Dropdown show={userDropdownOpen} onToggle={() => setUserDropdownOpen(!userDropdownOpen)}>
                 <Dropdown.Toggle
                   as="div"
@@ -304,7 +306,7 @@ const Header = () => {
                       </Dropdown.Item>
                       <Dropdown.Item as={Link} to="/wishlists" onClick={() => setUserDropdownOpen(false)} style={{ color: '#333', padding: '12px 20px' }}>
                         <i className="fas fa-heart me-2"></i>Danh sách yêu thích
-                      </Dropdown.Item>  
+                      </Dropdown.Item>
                       <Dropdown.Item as={Link} to="/become-host" onClick={() => setUserDropdownOpen(false)} style={{ color: '#333', padding: '12px 20px' }}>
                         <i className="fas fa-home me-2"></i>Trở thành Host
                       </Dropdown.Item>
@@ -340,7 +342,6 @@ const Header = () => {
         </Container>
       </Navbar>
 
-      {/* Mobile Menu */}
       <div className={`menu trans_500 ${isMenuOpen ? 'active' : ''}`}>
         <div className="menu_content d-flex flex-column align-items-center justify-content-center text-center">
           <div className="menu_close_container" onClick={() => setIsMenuOpen(false)}>
@@ -352,14 +353,14 @@ const Header = () => {
             </Link>
           </div>
           <ul id="menuItems">
-            <li className="menu_item"><Link to="/" onClick={() => setIsMenuOpen(false)}>Home</Link></li>
-            <li className="menu_item"><Link to="/about" onClick={() => setIsMenuOpen(false)}>About Us</Link></li>
-            <li className="menu_item"><Link to="/offers" onClick={() => setIsMenuOpen(false)}>Offers</Link></li>
+            <li className="menu_item"><Link to="/" onClick={() => setIsMenuOpen(false)}>Trang chủ</Link></li>
+            <li className="menu_item"><Link to="/about" onClick={() => setIsMenuOpen(false)}>Giới thiệu</Link></li>
+            <li className="menu_item"><Link to="/offers" onClick={() => setIsMenuOpen(false)}>Ưu đãi</Link></li>
             {user && (
-              <li className="menu_item"><Link to="/booked" onClick={() => setIsMenuOpen(false)}>Booked</Link></li>
+              <li className="menu_item"><Link to="/booked" onClick={() => setIsMenuOpen(false)}>Đã đặt</Link></li>
             )}
-            <li className="menu_item"><Link to="/news" onClick={() => setIsMenuOpen(false)}>News</Link></li>
-            <li className="menu_item"><Link to="/contact" onClick={() => setIsMenuOpen(false)}>Contact</Link></li>
+            <li className="menu_item"><Link to="/news" onClick={() => setIsMenuOpen(false)}>Tin tức</Link></li>
+            <li className="menu_item"><Link to="/contact" onClick={() => setIsMenuOpen(false)}>Liên hệ</Link></li>
             {user ? (
               <>
                 <li className="menu_item">

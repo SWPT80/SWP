@@ -225,7 +225,7 @@
 
 #service_options {
   position: absolute;
-  top: 120%;
+  top: 120%;  
   left: 0;
   transform: translateX(0);
   min-width: 600px;
@@ -602,4 +602,155 @@
     background: linear-gradient(135deg, #fa9e1b, #ff6b35);
     color: #ffffff;
   }
+}
+/* Thêm vào file Search.css */
+
+/* Search Suggestions */
+.search-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: black;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  max-height: 250px;
+  overflow-y: auto;
+  z-index: 1000;
+  margin-top: 1px;
+}
+
+.search-suggestion-item {
+  padding: 12px 15px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.search-suggestion-item:hover {
+  background-color: #f8f9fa;
+  color: #007bff;
+}
+
+.search-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.search-suggestion-item i {
+  color: #6c757d;
+  width: 16px;
+  text-align: center;
+}
+
+.search-suggestion-item:hover i {
+  color: #007bff;
+}
+
+/* Experience Suggestions Specific */
+.experience-suggestion {
+  padding: 10px 15px;
+}
+
+.experience-suggestion-content {
+  width: 100%;
+}
+
+.experience-name {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.experience-location {
+  font-size: 0.85rem;
+  color: #6c757d;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 24px;
+}
+
+.experience-suggestion:hover .experience-name {
+  color: #007bff;
+}
+
+.experience-suggestion:hover .experience-location {
+  color: #0056b3;
+}
+
+/* Scrollbar cho suggestions */
+.search-suggestions::-webkit-scrollbar {
+  width: 6px;
+}
+
+.search-suggestions::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.search-suggestions::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.search-suggestions::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Animation */
+.search-suggestions {
+  animation: fadeInDown 0.2s ease-out;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .search-suggestions {
+    font-size: 14px;
+  }
+  
+  .search-suggestion-item {
+    padding: 10px 12px;
+  }
+  
+  .experience-name {
+    font-size: 14px;
+  }
+  
+  .experience-location {
+    font-size: 12px;
+  }
+}
+
+/* Loading state (nếu cần) */
+.search-suggestions-empty,
+.search-suggestions-loading {
+  color: #495057; /* -> màu xám đậm hơn, dễ đọc hơn trên nền trắng */
+}
+
+/* Highlight matched text (nổi bật hơn) */
+.suggestion-highlight {
+  background-color: #fff3cd;  /* vàng nhạt */
+  color: #856404;             /* nâu đậm, dễ đọc */
+  padding: 1px 3px;
+  border-radius: 2px;
+  font-weight: 500;
 }

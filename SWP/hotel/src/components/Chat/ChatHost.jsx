@@ -1,24 +1,27 @@
 import React, { useEffect, useState } from "react";
 import ChatPopupManager from "./ChatPopupManager";
+import { Alert } from "react-bootstrap";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 export default function HostChatPage() {
   const [userList, setUserList] = useState([]);
   const [lastMessages, setLastMessages] = useState({});
   const [debugInfo, setDebugInfo] = useState(null);
+  const [error, setError] = useState(null);
 
-  // Mock data cho demo - thay thế bằng real data từ context
+  // Mock data cho demo - thay thế bằng dữ liệu thật từ context
   const user = { id: 1, fullname: "Host Demo", username: "host1", role: "HOST" };
   const isLoggedIn = true;
 
-  // Kiểm tra authentication và role
+  // Kiểm tra xác thực và vai trò
   useEffect(() => {
     if (!isLoggedIn || !user) {
-      console.log("User not logged in or not found");
+      setError("Người dùng chưa đăng nhập hoặc không tìm thấy.");
       return;
     }
 
     if (user.role !== "HOST") {
-      console.log("User is not a host");
+      setError("Người dùng không phải là chủ nhà.");
       return;
     }
   }, [user, isLoggedIn]);
@@ -28,13 +31,12 @@ export default function HostChatPage() {
     try {
       const response = await fetch(`http://localhost:8080/api/homestays/by-host/${hostId}`);
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`Lỗi HTTP! Trạng thái: ${response.status}`);
       }
       const homestays = await response.json();
-
-
       return homestays;
     } catch (error) {
+      setError("Không thể tải danh sách homestay.");
       return [];
     }
   };
@@ -44,13 +46,14 @@ export default function HostChatPage() {
     try {
       const response = await fetch(`http://localhost:8080/api/bookings/homestay/${homestayId}`);
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`Lỗi HTTP! Trạng thái: ${response.status}`);
       }
       const bookings = await response.json();
-      console.log(`✅ Bookings for homestay ${homestayId}:`, bookings);
+      console.log(`✅ Đặt phòng cho homestay ${homestayId}:`, bookings);
       return bookings;
     } catch (error) {
-      console.error(`❌ Error fetching bookings for homestay ${homestayId}:`, error);
+      console.error(`❌ Lỗi khi tải đặt phòng cho homestay ${homestayId}:`, error);
+      setError(`Không thể tải đặt phòng cho homestay ${homestayId}.`);
       return [];
     }
   };
@@ -60,92 +63,88 @@ export default function HostChatPage() {
     try {
       const response = await fetch(`http://localhost:8080/api/users/${userId}`);
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`Lỗi HTTP! Trạng thái: ${response.status}`);
       }
       const userInfo = await response.json();
       return userInfo;
     } catch (error) {
-      console.error(`❌ Error fetching user info for ${userId}:`, error);
+      console.error(`❌ Lỗi khi tải thông tin người dùng ${userId}:`, error);
+      setError(`Không thể tải thông tin người dùng ${userId}.`);
       return null;
     }
   };
 
-  // *** PHƯƠNG PHÁP MỚI: Sử dụng API getUsersWithHomestaysForHost với từng homestayId ***
+  // PHƯƠNG PHÁP MỚI: Sử dụng API getUsersWithHomestaysForHost với từng homestayId
   const fetchUserListUsingNewAPI = async () => {
     if (!user || user.role !== "HOST") return;
 
     try {
-
-
       // Bước 1: Lấy tất cả homestays của host
       const homestays = await getHomestaysByHost(user.id);
       if (homestays.length === 0) {
-
         setUserList([]);
+        setError("Không tìm thấy homestay nào cho chủ nhà này.");
         return;
       }
 
       // Bước 2: Gọi API getUsersWithHomestaysForHost cho từng homestay
       const allUsersWithHomestay = [];
-      
-      for (const homestay of homestays) {
-        console.log(`🏠 Processing homestay: ${homestay.name} (ID: ${homestay.id})`);
 
-        
+      for (const homestay of homestays) {
+        console.log(`🏠 Đang xử lý homestay: ${homestay.name} (ID: ${homestay.id})`);
+
         try {
-          // ✅ FIX: Đảm bảo homestayId là số nguyên, không phải "default"
           const homestayId = parseInt(homestay.id);
           if (isNaN(homestayId)) {
-            console.error(`❌ Invalid homestayId: ${homestay.id}`);
+            console.error(`❌ ID homestay không hợp lệ: ${homestay.id}`);
+            setError(`ID homestay không hợp lệ: ${homestay.id}`);
             continue;
           }
 
           const response = await fetch(
             `http://localhost:8080/api/chat/users/homestay?hostId=${user.id}&homestayId=${homestayId}`
           );
-          
+
           if (response.ok) {
             const users = await response.json();
-            console.log(`✅ Found ${users.length} users for homestay ${homestayId}:`, users);
-            
-            // Xử lý từng user từ API response
+            console.log(`✅ Tìm thấy ${users.length} người dùng cho homestay ${homestayId}:`, users);
+
             users.forEach(userDto => {
               allUsersWithHomestay.push({
-                id: `${userDto.userId}-${homestayId}`, // unique id với homestayId đã validate
+                id: `${userDto.userId}-${homestayId}`,
                 userId: userDto.userId,
-                homestayId: homestayId, // ✅ Đảm bảo là số nguyên
+                homestayId: homestayId,
                 homestayName: homestay.name,
-                fullname: userDto.fullname || "User",
-                avatar: userDto.avatar || 
-                  `https://ui-avatars.com/api/?name=${encodeURIComponent(userDto.fullname || "User")}&background=0084ff&color=fff`,
+                fullname: userDto.fullname || "Người dùng",
+                avatar: userDto.avatar ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(userDto.fullname || "Người dùng")}&background=0084ff&color=fff`,
                 conversationId: userDto.conversationId,
                 lastMessage: userDto.lastMessage,
                 lastMessageTime: userDto.lastMessageTime,
-                // Thêm thông tin homestay
                 homestayLocation: homestay.location,
                 homestayDescription: homestay.description
               });
             });
           } else {
-            console.log(`⚠️ No users found for homestay ${homestayId} (Status: ${response.status})`);
+            console.log(`⚠️ Không tìm thấy người dùng cho homestay ${homestayId} (Trạng thái: ${response.status})`);
             if (response.status === 400) {
-              console.error(`❌ Bad Request for homestayId ${homestayId}. Check if it's a valid integer.`);
+              setError(`Yêu cầu không hợp lệ cho homestay ${homestayId}. Vui lòng kiểm tra ID homestay.`);
             }
           }
         } catch (error) {
-          console.error(`❌ Error fetching users for homestay ${homestay.id}:`, error);
+          console.error(`❌ Lỗi khi tải người dùng cho homestay ${homestay.id}:`, error);
+          setError(`Không thể tải người dùng cho homestay ${homestay.id}.`);
         }
       }
 
-      // Loại bỏ duplicate (nếu có)
+      // Loại bỏ trùng lặp
       const uniqueUsers = allUsersWithHomestay.reduce((acc, current) => {
         const existingUser = acc.find(item => item.id === current.id);
         if (!existingUser) {
           acc.push(current);
         } else {
-          // Nếu trùng, lấy cái có lastMessageTime mới hơn
-          if (current.lastMessageTime && (!existingUser.lastMessageTime || 
-              new Date(current.lastMessageTime) > new Date(existingUser.lastMessageTime))) {
+          if (current.lastMessageTime && (!existingUser.lastMessageTime ||
+            new Date(current.lastMessageTime) > new Date(existingUser.lastMessageTime))) {
             const index = acc.findIndex(item => item.id === current.id);
             acc[index] = current;
           }
@@ -153,16 +152,16 @@ export default function HostChatPage() {
         return acc;
       }, []);
 
-      console.log("🎉 Final processed users with homestayId:", uniqueUsers);
+      console.log("🎉 Danh sách người dùng cuối cùng:", uniqueUsers);
       setUserList(uniqueUsers);
-      setDebugInfo({ 
-        method: "NEW_API", 
-        homestaysCount: homestays.length, 
+      setDebugInfo({
+        method: "NEW_API",
+        homestaysCount: homestays.length,
         usersCount: uniqueUsers.length,
-        users: uniqueUsers 
+        users: uniqueUsers
       });
 
-      // Xử lý lastMessages nếu cần (đã có từ API rồi)
+      // Xử lý lastMessages
       const newLastMessages = {};
       uniqueUsers.forEach(user => {
         if (user.lastMessage) {
@@ -175,8 +174,8 @@ export default function HostChatPage() {
       setLastMessages(newLastMessages);
 
     } catch (error) {
-
-      throw error; // Re-throw để fallback method có thể catch
+      setError("Lỗi khi tải danh sách người dùng bằng API mới.");
+      throw error;
     }
   };
 
@@ -185,45 +184,38 @@ export default function HostChatPage() {
     if (!user || user.role !== "HOST") return;
 
     try {
-
-
-      // Bước 1: Lấy tất cả homestays của host
       const homestays = await getHomestaysByHost(user.id);
       if (homestays.length === 0) {
-        console.log("No homestays found for this host");
+        console.log("Không tìm thấy homestay nào cho chủ nhà này");
         setUserList([]);
+        setError("Không tìm thấy homestay nào cho chủ nhà này.");
         return;
       }
 
-      // Bước 2: Lấy tất cả bookings cho mỗi homestay
       const allUsersWithHomestay = [];
       for (const homestay of homestays) {
-        // ✅ FIX: Validate homestayId trước khi sử dụng
         const homestayId = parseInt(homestay.id);
         if (isNaN(homestayId)) {
-
+          setError(`ID homestay không hợp lệ: ${homestay.id}`);
           continue;
         }
 
         const bookings = await getBookingsForHomestay(homestayId);
-
-        // Lọc chỉ lấy booking đã confirmed hoặc completed
         const validBookings = bookings.filter(booking =>
           ['CONFIRMED', 'COMPLETED', 'CHECKED_OUT'].includes(booking.status)
         );
 
         for (const booking of validBookings) {
-          // Bước 3: Lấy thông tin user cho mỗi booking
           const userInfo = await getUserInfo(booking.userId || booking.user_id);
           if (userInfo) {
             allUsersWithHomestay.push({
-              id: `${userInfo.id}-${homestayId}`, // unique id với homestayId đã validate
+              id: `${userInfo.id}-${homestayId}`,
               userId: userInfo.id,
-              homestayId: homestayId, // ✅ Đảm bảo là số nguyên
+              homestayId: homestayId,
               homestayName: homestay.name,
-              fullname: userInfo.fullname || userInfo.username || "User",
-              avatar: userInfo.avatar || 
-                `https://ui-avatars.com/api/?name=${encodeURIComponent(userInfo.fullname || userInfo.username || "User")}&background=0084ff&color=fff`,
+              fullname: userInfo.fullname || userInfo.username || "Người dùng",
+              avatar: userInfo.avatar ||
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(userInfo.fullname || userInfo.username || "Người dùng")}&background=0084ff&color=fff`,
               bookingId: booking.id,
               bookingStatus: booking.status
             });
@@ -231,7 +223,6 @@ export default function HostChatPage() {
         }
       }
 
-      // Loại bỏ duplicate users (cùng user book nhiều lần cùng homestay)
       const uniqueUsers = allUsersWithHomestay.reduce((acc, current) => {
         const existingUser = acc.find(item => item.id === current.id);
         if (!existingUser) {
@@ -241,19 +232,17 @@ export default function HostChatPage() {
       }, []);
 
       setUserList(uniqueUsers);
-      setDebugInfo({ 
-        method: "FALLBACK", 
-        homestaysCount: homestays.length, 
+      setDebugInfo({
+        method: "FALLBACK",
+        homestaysCount: homestays.length,
         usersCount: uniqueUsers.length,
-        users: uniqueUsers 
+        users: uniqueUsers
       });
 
-      // Lấy tin nhắn cuối cùng
       if (uniqueUsers.length > 0) {
         const lastMessagesPromises = uniqueUsers.map(async (entry) => {
           try {
-            // ✅ FIX: Đảm bảo homestayId là số nguyên khi gọi API messages
-            console.log(`Fetching last message for userId: ${entry.userId}, homestayId: ${entry.homestayId}`);
+            console.log(`Tải tin nhắn cuối cho userId: ${entry.userId}, homestayId: ${entry.homestayId}`);
             const msgResponse = await fetch(
               `http://localhost:8080/api/chat/messages/last?userId=${entry.userId}&homestayId=${entry.homestayId}`
             );
@@ -265,7 +254,6 @@ export default function HostChatPage() {
                 timestamp: msg.timestamp,
               };
             } else {
-
               return {
                 id: entry.id,
                 content: "Chưa có tin nhắn nào",
@@ -273,8 +261,6 @@ export default function HostChatPage() {
               };
             }
           } catch (err) {
-
-            
             return {
               id: entry.id,
               content: "Khách hàng mới, chưa có cuộc trò chuyện",
@@ -298,26 +284,26 @@ export default function HostChatPage() {
       }
     } catch (error) {
       setUserList([]);
+      setError("Lỗi khi tải danh sách người dùng bằng phương pháp dự phòng.");
     }
   };
 
-  // UseEffect để fetch data - thử API mới trước, fallback về phương pháp cũ
+  // UseEffect để tải dữ liệu
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Thử API mới trước (sử dụng ChatService.getUsersWithHomestaysForHost)
         await fetchUserListUsingNewAPI();
       } catch (error) {
-        // Nếu không được thì dùng phương pháp booking fallback
         try {
           await fetchUserListWithHomestayId();
         } catch (fallbackError) {
-          console.error("❌ Both methods failed:", fallbackError);
+          console.error("❌ Cả hai phương pháp đều thất bại:", fallbackError);
           setUserList([]);
-          setDebugInfo({ 
-            method: "BOTH_FAILED", 
-            error: fallbackError.message 
+          setDebugInfo({
+            method: "BOTH_FAILED",
+            error: fallbackError.message
           });
+          setError("Cả hai phương pháp tải dữ liệu đều thất bại.");
         }
       }
     };
@@ -336,6 +322,7 @@ export default function HostChatPage() {
         fontSize: "18px",
         color: "#65676b"
       }}>
+        {error && <Alert variant="danger" onClose={() => setError(null)} dismissible>{error}</Alert>}
         Đang kiểm tra quyền truy cập...
       </div>
     );
@@ -358,7 +345,7 @@ export default function HostChatPage() {
             marginBottom: "10px",
             textShadow: "0 2px 4px rgba(0,0,0,0.1)"
           }}>
-            Chào mừng Host {user.fullname || user.username}
+            Chào mừng Chủ nhà {user.fullname || user.username}
           </h1>
           <p style={{
             fontSize: "1.2rem",
@@ -370,7 +357,14 @@ export default function HostChatPage() {
         </div>
       </div>
 
-      {/* Debug Info - Enhanced */}
+      {/* Thông báo lỗi */}
+      {error && (
+        <div style={{ maxWidth: "1200px", margin: "0 auto 20px", padding: "0 20px" }}>
+          <Alert variant="danger" onClose={() => setError(null)} dismissible>{error}</Alert>
+        </div>
+      )}
+
+      {/* Debug Info */}
       {debugInfo && (
         <div style={{
           maxWidth: "1200px",
@@ -378,38 +372,38 @@ export default function HostChatPage() {
           padding: "0 20px"
         }}>
           <div style={{
-            background: debugInfo.method === "NEW_API" ? "#d4edda" : 
-                       debugInfo.method === "FALLBACK" ? "#fff3cd" : "#f8d7da",
-            border: `1px solid ${debugInfo.method === "NEW_API" ? "#c3e6cb" : 
-                                debugInfo.method === "FALLBACK" ? "#ffeaa7" : "#f5c6cb"}`,
+            background: debugInfo.method === "NEW_API" ? "#d4edda" :
+              debugInfo.method === "FALLBACK" ? "#fff3cd" : "#f8d7da",
+            border: `1px solid ${debugInfo.method === "NEW_API" ? "#c3e6cb" :
+              debugInfo.method === "FALLBACK" ? "#ffeaa7" : "#f5c6cb"}`,
             borderRadius: "8px",
             padding: "15px",
             marginBottom: "20px"
           }}>
-            <h4 style={{ 
-              color: debugInfo.method === "NEW_API" ? "#155724" : 
-                     debugInfo.method === "FALLBACK" ? "#856404" : "#721c24",
-              marginBottom: "10px" 
+            <h4 style={{
+              color: debugInfo.method === "NEW_API" ? "#155724" :
+                debugInfo.method === "FALLBACK" ? "#856404" : "#721c24",
+              marginBottom: "10px"
             }}>
-              🔍 Debug Info - Method: {debugInfo.method}
+              🔍 Thông tin Debug - Phương pháp: {debugInfo.method}
             </h4>
-            <div style={{ 
-              fontSize: "14px", 
+            <div style={{
+              fontSize: "14px",
               marginBottom: "10px",
-              color: debugInfo.method === "NEW_API" ? "#155724" : 
-                     debugInfo.method === "FALLBACK" ? "#856404" : "#721c24"
+              color: debugInfo.method === "NEW_API" ? "#155724" :
+                debugInfo.method === "FALLBACK" ? "#856404" : "#721c24"
             }}>
-              <strong>Homestays:</strong> {debugInfo.homestaysCount || 0} | 
-              <strong> Users:</strong> {debugInfo.usersCount || 0}
+              <strong>Homestays:</strong> {debugInfo.homestaysCount || 0} |
+              <strong> Người dùng:</strong> {debugInfo.usersCount || 0}
               {debugInfo.error && (
                 <div style={{ color: "#721c24", marginTop: "5px" }}>
-                  <strong>Error:</strong> {debugInfo.error}
+                  <strong>Lỗi:</strong> {debugInfo.error}
                 </div>
               )}
             </div>
             <details>
               <summary style={{ cursor: "pointer", fontWeight: "bold", marginBottom: "5px" }}>
-                View Raw Data
+                Xem dữ liệu gốc
               </summary>
               <pre style={{
                 background: "#f8f9fa",
@@ -427,7 +421,7 @@ export default function HostChatPage() {
         </div>
       )}
 
-      {/* Main Content */}
+      {/* Nội dung chính */}
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 20px" }}>
         {userList.length > 0 ? (
           <div style={{
@@ -451,7 +445,7 @@ export default function HostChatPage() {
               marginBottom: "30px",
               lineHeight: "1.5"
             }}>
-              Click vào nút chat ở góc dưới bên phải để bắt đầu trò chuyện với khách hàng
+              Nhấn vào nút chat ở góc dưới bên phải để bắt đầu trò chuyện với khách hàng
             </p>
 
             {/* Danh sách khách hàng */}
@@ -481,14 +475,12 @@ export default function HostChatPage() {
                     e.currentTarget.style.boxShadow = "none";
                   }}
                   onClick={() => {
-                    // Log để debug - hiển thị homestayId đã được validate
-                    console.log("🔥 Opening chat with customer:", {
+                    console.log("🔥 Mở chat với khách hàng:", {
                       ...customer,
                       homestayIdType: typeof customer.homestayId,
                       homestayIdValid: Number.isInteger(customer.homestayId)
                     });
-                    
-                    // Mở chat với khách hàng này
+
                     window.dispatchEvent(new CustomEvent("open-chat", {
                       detail: customer
                     }));
@@ -520,26 +512,25 @@ export default function HostChatPage() {
                         🏠 {customer.homestayName || `Homestay ID: ${customer.homestayId}`}
                       </div>
                       <div style={{ fontSize: "12px", color: "#999", marginTop: "2px" }}>
-                        👤 User ID: {customer.userId} | 🏠 Homestay ID: {customer.homestayId}
-                        {/* ✅ Hiển thị validation status */}
-                        <span style={{ 
-                          marginLeft: "8px", 
-                          fontSize: "10px", 
-                          padding: "1px 4px", 
-                          background: Number.isInteger(customer.homestayId) ? "#e8f5e8" : "#fee", 
-                          color: Number.isInteger(customer.homestayId) ? "#2d7d2d" : "#d00", 
-                          borderRadius: "3px" 
+                        👤 ID Người dùng: {customer.userId} | 🏠 ID Homestay: {customer.homestayId}
+                        <span style={{
+                          marginLeft: "8px",
+                          fontSize: "10px",
+                          padding: "1px 4px",
+                          background: Number.isInteger(customer.homestayId) ? "#e8f5e8" : "#fee",
+                          color: Number.isInteger(customer.homestayId) ? "#2d7d2d" : "#d00",
+                          borderRadius: "3px"
                         }}>
-                          {Number.isInteger(customer.homestayId) ? "✅ Valid" : "❌ Invalid"}
+                          {Number.isInteger(customer.homestayId) ? "✅ Hợp lệ" : "❌ Không hợp lệ"}
                         </span>
                         {customer.bookingStatus && (
-                          <span style={{ 
-                            marginLeft: "8px", 
-                            fontSize: "11px", 
-                            padding: "2px 6px", 
-                            background: "#e8f5e8", 
-                            color: "#2d7d2d", 
-                            borderRadius: "3px" 
+                          <span style={{
+                            marginLeft: "8px",
+                            fontSize: "11px",
+                            padding: "2px 6px",
+                            background: "#e8f5e8",
+                            color: "#2d7d2d",
+                            borderRadius: "3px"
                           }}>
                             {customer.bookingStatus}
                           </span>
@@ -592,10 +583,10 @@ export default function HostChatPage() {
         )}
       </div>
 
-      {/* Chat Manager - Luôn hiển thị */}
+      {/* Chat Manager */}
       <ChatPopupManager
         currentUserId={user.id}
-        listToChatWith={userList} // ✅ userList đã có homestayId đầy đủ và đã validate
+        listToChatWith={userList}
         type="hostToUser"
         lastMessages={lastMessages}
       />
@@ -618,7 +609,7 @@ export default function HostChatPage() {
         💬 Chat ({userList.length})
         {userList.length > 0 && userList[0].homestayId && Number.isInteger(userList[0].homestayId) && (
           <div style={{ fontSize: "10px", opacity: 0.8 }}>
-            ✅ HomestayId validated
+            ✅ HomestayId đã được xác thực
           </div>
         )}
       </div>

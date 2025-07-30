@@ -1,7 +1,8 @@
-// ChatPopupManager.js - Left-positioned version
 import React, { useState, useEffect } from "react";
 import ChatPopup from "./ChatPopup";
 import { FaFacebookMessenger } from "react-icons/fa";
+import { Alert } from "react-bootstrap";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 const BASE_URL = "http://localhost:8080";
 
@@ -18,8 +19,9 @@ const ChatPopupManager = ({
   const [showList, setShowList] = useState(false);
   const [hasNewMessage, setHasNewMessage] = useState(false);
   const [enhancedUserList, setEnhancedUserList] = useState([]);
+  const [error, setError] = useState(null);
 
-  // Function để fetch thêm homestayId cho users
+  // Hàm để lấy thêm homestayId cho người dùng
   const enhanceUsersWithHomestayId = async (users) => {
     try {
       const enhancedUsers = await Promise.all(
@@ -41,11 +43,13 @@ const ChatPopupManager = ({
                 homestayName: data.homestayName || null,
               };
             } else {
-              console.warn(`❌ Không lấy được homestay info cho user ${user.id}`);
+              console.warn(`❌ Không lấy được thông tin homestay cho người dùng ${user.id}`);
+              setError(`Không lấy được thông tin homestay cho người dùng ${user.id}`);
               return user;
             }
           } catch (error) {
-            console.error(`❌ Error fetching homestay for user ${user.id}:`, error);
+            console.error(`❌ Lỗi khi tải homestay cho người dùng ${user.id}:`, error);
+            setError(`Lỗi khi tải thông tin homestay cho người dùng ${user.id}`);
             return user;
           }
         })
@@ -53,17 +57,22 @@ const ChatPopupManager = ({
 
       return enhancedUsers;
     } catch (error) {
-      console.error("❌ Error enhancing users:", error);
+      console.error("❌ Lỗi khi cải tiến danh sách người dùng:", error);
+      setError("Lỗi khi cải tiến danh sách người dùng.");
       return users;
     }
   };
 
-  // Enhance users khi listToChatWith thay đổi
+  // Cải tiến danh sách người dùng khi listToChatWith thay đổi
   useEffect(() => {
     if (listToChatWith && listToChatWith.length > 0) {
-      enhanceUsersWithHomestayId(listToChatWith).then(setEnhancedUserList);
+      enhanceUsersWithHomestayId(listToChatWith).then((enhancedUsers) => {
+        setEnhancedUserList(enhancedUsers);
+        setError(null);
+      });
     } else {
       setEnhancedUserList([]);
+      setError("Danh sách người dùng trống.");
     }
   }, [listToChatWith]);
 
@@ -79,6 +88,8 @@ const ChatPopupManager = ({
 
       if (!alreadyOpen) {
         setOpenPopups((prev) => [...prev, target]);
+      } else {
+        setError("Cuộc trò chuyện đã được mở.");
       }
 
       setShowList(false);
@@ -89,15 +100,17 @@ const ChatPopupManager = ({
     return () => {
       window.removeEventListener("open-chat", handleOpenChat);
     };
-  }, []);
+  }, [openPopups]);
 
-  // Mở popup khi click danh sách
+  // Mở popup khi nhấn vào danh sách
   const openChatWith = (targetUser) => {
-    console.log("🔥 Opening chat with user:", targetUser);
+    console.log("🔥 Mở chat với người dùng:", targetUser);
     console.log("📍 HomestayId:", targetUser.homestayId);
 
     if (!openPopups.find((u) => u.id === targetUser.id)) {
       setOpenPopups([...openPopups, targetUser]);
+    } else {
+      setError("Cuộc trò chuyện với người dùng này đã được mở.");
     }
     setShowList(false);
     setHasNewMessage(false);
@@ -118,6 +131,8 @@ const ChatPopupManager = ({
 
     if (newOpenPopups.length > 0) {
       setOpenPopups((prev) => [...prev, ...newOpenPopups]);
+    } else if (openChatIds.length > 0 && newOpenPopups.length === 0) {
+      setError("Không tìm thấy người dùng để mở cuộc trò chuyện.");
     }
   }, [openChatIds, enhancedUserList, openPopups]);
 
@@ -125,13 +140,32 @@ const ChatPopupManager = ({
 
   return (
     <>
-      {/* Nút mở danh sách chat - MOVED TO LEFT */}
+      {/* Thông báo lỗi */}
+      {error && (
+        <div
+          style={{
+            position: "fixed",
+            top: "20px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 10000,
+            maxWidth: "500px",
+            width: "90%",
+          }}
+        >
+          <Alert variant="danger" onClose={() => setError(null)} dismissible>
+            {error}
+          </Alert>
+        </div>
+      )}
+
+      {/* Nút mở danh sách chat */}
       {!showList && openPopups.length === 0 && (
         <div
           style={{
             position: "fixed",
             bottom: "24px",
-            left: "24px", // Changed from right to left
+            left: "24px",
             zIndex: 9998,
           }}
         >
@@ -195,7 +229,7 @@ const ChatPopupManager = ({
         </div>
       )}
 
-      {/* Danh sách người để chọn chat - MOVED TO LEFT */}
+      {/* Danh sách người để chọn chat */}
       {showList && (
         <>
           <div
@@ -215,7 +249,7 @@ const ChatPopupManager = ({
             style={{
               position: "fixed",
               bottom: "90px",
-              left: "24px", // Changed from right to left
+              left: "24px",
               zIndex: 9998,
               background: "#fff",
               borderRadius: "16px",
@@ -241,7 +275,7 @@ const ChatPopupManager = ({
                 borderBottom: "1px solid #e4e6ea",
               }}
             >
-              Chọn người để chat
+              Chọn người để trò chuyện
             </div>
 
             {usersToShow.length === 0 ? (
@@ -253,7 +287,7 @@ const ChatPopupManager = ({
                   fontSize: "14px",
                 }}
               >
-                Chưa có ai để chat
+                Chưa có ai để trò chuyện
               </div>
             ) : (
               usersToShow.map((target) => (
@@ -385,7 +419,7 @@ const ChatPopupManager = ({
         </>
       )}
 
-      {/* Hiển thị các popup chat đang mở - MOVED TO LEFT */}
+      {/* Hiển thị các popup chat đang mở */}
       {openPopups.map((target, idx) => (
         <ChatPopup
           key={`${target.id}-${target.homestayId || 'no-homestay'}`}
@@ -393,8 +427,8 @@ const ChatPopupManager = ({
           targetUser={target}
           type={type}
           onClose={() => closePopup(target.id)}
-          positionOffset={idx * 370}
-          position="left" // Add position prop
+          positionOffset={idx * 370 + startPositionOffset}
+          position="left"
         />
       ))}
     </>

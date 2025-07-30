@@ -1,71 +1,119 @@
-import { useState } from "react"
-import { Container, Row, Col, Table, Button, Form, Pagination, Card, Modal, Alert } from "react-bootstrap"
-import { Camera, Circle, Wifi, Lamp, Edit, Trash2, Plus } from "lucide-react"
-
-const facilitiesData = [
-  {
-    id: "1101",
-    type: "Aroma",
-    name: "Cairo Tate",
-    icon: <Camera size={40} className="text-dark" />,
-  },
-  {
-    id: "1102",
-    type: "Cleanliness",
-    name: "Ryan Rodgers",
-    icon: <Circle size={40} className="text-dark" />,
-  },
-  {
-    id: "1103",
-    type: "Internet",
-    name: "Wifi",
-    icon: <Wifi size={40} className="text-dark" />,
-  },
-  {
-    id: "1104",
-    type: "Lighting",
-    name: "Auto Mation",
-    icon: <Lamp size={40} className="text-dark" />,
-  },
-]
+import { useEffect, useState } from "react"
+import {
+  Container,
+  Row,
+  Col,
+  Table,
+  Button,
+  Form,
+  Pagination,
+  Card,
+  Modal,
+  Alert,
+  Spinner,
+} from "react-bootstrap"
+import { Edit, Trash2, Plus } from "lucide-react";
+import axios from "axios"
+import removeAccents from "remove-accents";
+import { useNavigate } from "react-router-dom";
 
 export default function FacilitiesList() {
+
+  const navigate = useNavigate();
+  const [facilities, setFacilities] = useState([])
   const [searchTerm, setSearchTerm] = useState("")
   const [entriesPerPage, setEntriesPerPage] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteAlert, setShowDeleteAlert] = useState(false)
-  const [facilities, setFacilities] = useState(facilitiesData)
   const [currentFacility, setCurrentFacility] = useState(null)
+  const [hostId, setHostId] = useState(() => localStorage.getItem("hostId"));
   const [formData, setFormData] = useState({
-    type: "",
-    name: "",
-    image: null,
+    typeId: "",
+    typeName: "",
+    iconClass: "",
   })
+  const [loading, setLoading] = useState(true)
+  const [homestays, setHomestays] = useState([]);
+  useEffect(() => {
+    if (hostId) {
+      axios.get(`http://localhost:8080/api/homestays/by-host/${hostId}`)
+        .then(res => {
+          console.log("Fetched homestays:", res.data); // ✅ debug
+          setHomestays(res.data);
+          if (res.data.length === 1) {
+            const hId = res.data[0].id;
+            setFormData(prev => ({ ...prev, homestayId: hId }));
+            console.log("Set homestayId:", hId);
+          }
+        })
+        .catch(err => console.error("Failed to fetch homestays", err));
+    }
+  }, [hostId]);
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/", { replace: true });
+      return;
+    }
+    // Nếu chưa có hostId => gọi /me
+    if (!hostId) {
+      axios.get("http://localhost:8080/api/auth/me", {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(res => {
+          const user = res.data;
+          if (user.role !== 'HOST') {
+            navigate("/", { replace: true });
+            return;
+          }
+          localStorage.setItem("hostId", user.id);
+          setHostId(user.id);
+        })
+        .catch(() => navigate("/", { replace: true }));
+    }
+  }, [navigate, hostId]);
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, entriesPerPage]);
 
-  const filteredFacilities = facilities.filter(
-    (facility) =>
-      facility.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      facility.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      facility.id.includes(searchTerm),
-  )
+  useEffect(() => {
+    fetchFacilities()
+  }, [])
 
-  const totalEntries = filteredFacilities.length
-  const startEntry = (currentPage - 1) * entriesPerPage + 1
-  const endEntry = Math.min(currentPage * entriesPerPage, totalEntries)
+  const fetchFacilities = async () => {
+    if (!formData.homestayId) return; // ⛔ tránh lỗi nếu homestay chưa sẵn sàng
+
+    try {
+      const response = await axios.get(
+        `http://localhost:8080/api/amenities/homestay/${formData.homestayId}`
+      );
+      setFacilities(response.data);
+    } catch (error) {
+      console.error("Error fetching facilities:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    if (formData.homestayId) {
+      fetchFacilities();
+    }
+  }, [formData.homestayId]);
+
 
   const handleAddFacility = () => {
-    setFormData({ type: "", name: "", image: null })
+    setFormData({ typeId: "", typeName: "", iconClass: "" })
     setShowAddModal(true)
   }
 
   const handleEdit = (facility) => {
     setCurrentFacility(facility)
     setFormData({
-      type: facility.type,
-      name: facility.name,
-      image: null,
+      typeId: facility.typeId,
+      typeName: facility.typeName,
+      iconClass: facility.iconClass,
     })
     setShowEditModal(true)
   }
@@ -75,60 +123,36 @@ export default function FacilitiesList() {
     setShowDeleteAlert(true)
   }
 
-  const handleSave = () => {
-    if (!formData.type || !formData.name) return
-
-    const newId = Math.max(...facilities.map((f) => Number.parseInt(f.id))) + 1
-    const iconMap = {
-      Aroma: <Camera size={40} className="text-dark" />,
-      Cleanliness: <Circle size={40} className="text-dark" />,
-      Internet: <Wifi size={40} className="text-dark" />,
-      Lighting: <Lamp size={40} className="text-dark" />,
+  const handleSave = async () => {
+    try {
+      await axios.post("http://localhost:8080/api/amenities", formData)
+      fetchFacilities()
+      setShowAddModal(false)
+    } catch (error) {
+      console.error("Error adding facility:", error)
     }
-
-    const newFacility = {
-      id: newId.toString(),
-      type: formData.type,
-      name: formData.name,
-      icon: iconMap[formData.type] || <Camera size={40} className="text-dark" />,
-    }
-
-    setFacilities([...facilities, newFacility])
-    setShowAddModal(false)
-    setFormData({ type: "", name: "", image: null })
   }
 
-  const handleUpdate = () => {
-    if (!formData.type || !formData.name) return
-
-    const iconMap = {
-      Aroma: <Camera size={40} className="text-dark" />,
-      Cleanliness: <Circle size={40} className="text-dark" />,
-      Internet: <Wifi size={40} className="text-dark" />,
-      Lighting: <Lamp size={40} className="text-dark" />,
+  const handleUpdate = async () => {
+    try {
+      await axios.put(`http://localhost:8080/api/amenities/${currentFacility.typeId}`, formData)
+      fetchFacilities()
+      setShowEditModal(false)
+      setCurrentFacility(null)
+    } catch (error) {
+      console.error("Error updating facility:", error)
     }
-
-    const updatedFacilities = facilities.map((facility) =>
-      facility.id === currentFacility.id
-        ? {
-            ...facility,
-            type: formData.type,
-            name: formData.name,
-            icon: iconMap[formData.type] || facility.icon,
-          }
-        : facility,
-    )
-
-    setFacilities(updatedFacilities)
-    setShowEditModal(false)
-    setCurrentFacility(null)
   }
 
-  const confirmDelete = () => {
-    const updatedFacilities = facilities.filter((facility) => facility.id !== currentFacility.id)
-    setFacilities(updatedFacilities)
-    setShowDeleteAlert(false)
-    setCurrentFacility(null)
+  const confirmDelete = async () => {
+    try {
+      await axios.delete(`http://localhost:8080/api/amenities/${currentFacility.typeId}`)
+      fetchFacilities()
+      setShowDeleteAlert(false)
+      setCurrentFacility(null)
+    } catch (error) {
+      console.error("Error deleting facility:", error)
+    }
   }
 
   const handleInputChange = (field, value) => {
@@ -138,24 +162,41 @@ export default function FacilitiesList() {
     }))
   }
 
+  const filteredFacilities = facilities.filter((facility) => {
+    const search = removeAccents(searchTerm.trim().toLowerCase());
+    const typeName = removeAccents(facility.typeName?.toLowerCase() || "");
+    const iconClass = removeAccents(facility.iconClass?.toLowerCase() || "");
+    const typeId = facility.typeId?.toString() || "";
+
+    return (
+      typeName.includes(search) ||
+      iconClass.includes(search) ||
+      typeId.includes(search)
+    );
+  });
+
+  const indexOfLastEntry = currentPage * entriesPerPage;
+  const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
+  const currentFacilities = filteredFacilities.slice(indexOfFirstEntry, indexOfLastEntry);
+  const totalEntries = filteredFacilities.length
+  const startEntry = (currentPage - 1) * entriesPerPage + 1
+  const endEntry = Math.min(currentPage * entriesPerPage, totalEntries)
+
   return (
     <Container fluid className="p-4">
       <Card>
         <Card.Body>
-          {/* Header */}
           <Row className="mb-4 align-items-center">
             <Col>
-              <h4 className="mb-0 fw-bold">Facilites Details List</h4>
+              <h4 className="mb-0 fw-bold">Facilities Details List</h4>
             </Col>
             <Col xs="auto">
               <Button variant="dark" onClick={handleAddFacility} className="d-flex align-items-center gap-2">
-                <Plus size={16} />
-                Add Facilites
+                <Plus size={16} /> Add Facilities
               </Button>
             </Col>
           </Row>
 
-          {/* Controls */}
           <Row className="mb-3 align-items-center">
             <Col xs="auto">
               <div className="d-flex align-items-center gap-2">
@@ -181,7 +222,6 @@ export default function FacilitiesList() {
                 <Form.Control
                   type="text"
                   size="sm"
-                  placeholder=""
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   style={{ width: "200px" }}
@@ -190,69 +230,47 @@ export default function FacilitiesList() {
             </Col>
           </Row>
 
-          {/* Table */}
-          <Table responsive className="mb-4">
-            <thead className="table-light">
-              <tr>
-                <th className="fw-semibold">
-                  Amentity ID
-                  <span className="ms-1">↕</span>
-                </th>
-                <th className="fw-semibold">
-                  Amentity TYPE
-                  <span className="ms-1">↕</span>
-                </th>
-                <th className="fw-semibold">
-                  Amentity NAME
-                  <span className="ms-1">↕</span>
-                </th>
-                <th className="fw-semibold">
-                  Amentity IMAGE
-                  <span className="ms-1">↕</span>
-                </th>
-                <th className="fw-semibold">
-                  ACTIONS
-                  <span className="ms-1">↕</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredFacilities.map((facility) => (
-                <tr key={facility.id}>
-                  <td className="align-middle">{facility.id}</td>
-                  <td className="align-middle">{facility.type}</td>
-                  <td className="align-middle">{facility.name}</td>
-                  <td className="align-middle text-center">
-                    <div className="d-flex justify-content-center">{facility.icon}</div>
-                  </td>
-                  <td className="align-middle">
-                    <div className="d-flex gap-2">
-                      <Button
-                        variant="outline-primary"
-                        size="sm"
-                        onClick={() => handleEdit(facility)}
-                        className="d-flex align-items-center justify-content-center"
-                        style={{ width: "32px", height: "32px" }}
-                      >
-                        <Edit size={14} />
-                      </Button>
-                      <Button
-                        variant="outline-danger"
-                        size="sm"
-                        onClick={() => handleDelete(facility)}
-                        className="d-flex align-items-center justify-content-center"
-                        style={{ width: "32px", height: "32px" }}
-                      >
-                        <Trash2 size={14} />
-                      </Button>
-                    </div>
-                  </td>
+          {loading ? (
+            <div className="text-center">
+              <Spinner animation="border" variant="primary" />
+            </div>
+          ) : (
+            <Table responsive className="mb-4">
+              <thead className="table-light">
+                <tr>
+                  <th>ID</th>
+                  <th>Type</th>
+                  <th>Name</th>
+                  <th>Icon</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </Table>
+              </thead>
+              <tbody>
+                {currentFacilities.map((facility) => (
+                  <tr key={facility.typeId}>
+                    <td>{facility.typeId}</td>
+                    <td>{facility.iconClass}</td>
+                    <td>{facility.typeName}</td>
+                    <td>
+                      <i className={`${facility.iconClass} fa-2x text-dark`} />
+                    </td>
 
-          {/* Footer */}
+                    <td>
+                      <div className="d-flex gap-2">
+                        <Button variant="outline-primary" size="sm" onClick={() => handleEdit(facility)}>
+                          <Edit size={14} />
+                        </Button>
+                        <Button variant="outline-danger" size="sm" onClick={() => handleDelete(facility)}>
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          )}
+
           <Row className="align-items-center">
             <Col>
               <span className="text-muted">
@@ -267,17 +285,35 @@ export default function FacilitiesList() {
                 >
                   Previous
                 </Pagination.Prev>
-                <Pagination.Item active>{currentPage}</Pagination.Item>
-                <Pagination.Next disabled={endEntry >= totalEntries} onClick={() => setCurrentPage((prev) => prev + 1)}>
+
+                {Array.from({ length: Math.ceil(totalEntries / entriesPerPage) }, (_, i) => i + 1)
+                  .map((page) => (
+                    <Pagination.Item
+                      key={page}
+                      active={page === currentPage}
+                      onClick={() => setCurrentPage(page)}
+                    >
+                      {page}
+                    </Pagination.Item>
+                  ))}
+
+
+                <Pagination.Next
+                  disabled={currentPage === Math.ceil(totalEntries / entriesPerPage)}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, Math.ceil(totalEntries / entriesPerPage)))
+                  }
+                >
                   Next
                 </Pagination.Next>
               </Pagination>
+
             </Col>
           </Row>
         </Card.Body>
       </Card>
 
-      {/* Add Facility Modal */}
+      {/* Add Modal */}
       <Modal show={showAddModal} onHide={() => setShowAddModal(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>Add Facility</Modal.Title>
@@ -285,36 +321,20 @@ export default function FacilitiesList() {
         <Modal.Body>
           <Form>
             <Form.Group className="mb-3">
-              <Form.Label>
-                Add Facility Type <span className="text-danger">*</span>
-              </Form.Label>
-              <Form.Select value={formData.type} onChange={(e) => handleInputChange("type", e.target.value)}>
-                <option value="">Choose Room Type</option>
-                <option value="Aroma">Aroma</option>
-                <option value="Cleanliness">Cleanliness</option>
-                <option value="Internet">Internet</option>
-                <option value="Lighting">Lighting</option>
-              </Form.Select>
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Facility Name</Form.Label>
+              <Form.Label>Facility Type Name</Form.Label>
               <Form.Control
                 type="text"
-                placeholder="Add Facility Name"
-                value={formData.name}
-                onChange={(e) => handleInputChange("name", e.target.value)}
+                value={formData.typeName}
+                onChange={(e) => handleInputChange("typeName", e.target.value)}
               />
             </Form.Group>
-
             <Form.Group className="mb-3">
-              <Form.Label>Facility Image</Form.Label>
-              <div className="d-flex align-items-center gap-3">
-                <Button variant="outline-secondary" size="sm">
-                  Chọn tệp
-                </Button>
-                <span className="text-muted">Không có tệp nào được chọn</span>
-              </div>
+              <Form.Label>Facility Icon Class</Form.Label>
+              <Form.Control
+                type="text"
+                value={formData.iconClass}
+                onChange={(e) => handleInputChange("iconClass", e.target.value)}
+              />
             </Form.Group>
           </Form>
         </Modal.Body>
@@ -322,18 +342,13 @@ export default function FacilitiesList() {
           <Button variant="secondary" onClick={() => setShowAddModal(false)}>
             Close
           </Button>
-          <Button
-            variant="primary"
-            onClick={handleSave}
-            disabled={!formData.type || !formData.name}
-            style={{ backgroundColor: "#6f42c1", borderColor: "#6f42c1" }}
-          >
+          <Button variant="primary" onClick={handleSave}>
             Save changes
           </Button>
         </Modal.Footer>
       </Modal>
 
-      {/* Edit Facility Modal */}
+      {/* Edit Modal */}
       <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>Edit Facility</Modal.Title>
@@ -341,36 +356,20 @@ export default function FacilitiesList() {
         <Modal.Body>
           <Form>
             <Form.Group className="mb-3">
-              <Form.Label>
-                Add Facility Type <span className="text-danger">*</span>
-              </Form.Label>
-              <Form.Select value={formData.type} onChange={(e) => handleInputChange("type", e.target.value)}>
-                <option value="">Choose Room Type</option>
-                <option value="Aroma">Aroma</option>
-                <option value="Cleanliness">Cleanliness</option>
-                <option value="Internet">Internet</option>
-                <option value="Lighting">Lighting</option>
-              </Form.Select>
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Facility Name</Form.Label>
+              <Form.Label>Facility Type Name</Form.Label>
               <Form.Control
                 type="text"
-                placeholder="Add Facility Name"
-                value={formData.name}
-                onChange={(e) => handleInputChange("name", e.target.value)}
+                value={formData.typeName}
+                onChange={(e) => handleInputChange("typeName", e.target.value)}
               />
             </Form.Group>
-
             <Form.Group className="mb-3">
-              <Form.Label>Facility Image</Form.Label>
-              <div className="d-flex align-items-center gap-3">
-                <Button variant="outline-secondary" size="sm">
-                  Chọn tệp
-                </Button>
-                <span className="text-muted">Không có tệp nào được chọn</span>
-              </div>
+              <Form.Label>Facility Icon Class</Form.Label>
+              <Form.Control
+                type="text"
+                value={formData.iconClass}
+                onChange={(e) => handleInputChange("iconClass", e.target.value)}
+              />
             </Form.Group>
           </Form>
         </Modal.Body>
@@ -378,18 +377,13 @@ export default function FacilitiesList() {
           <Button variant="secondary" onClick={() => setShowEditModal(false)}>
             Close
           </Button>
-          <Button
-            variant="primary"
-            onClick={handleUpdate}
-            disabled={!formData.type || !formData.name}
-            style={{ backgroundColor: "#6f42c1", borderColor: "#6f42c1" }}
-          >
+          <Button variant="primary" onClick={handleUpdate}>
             Update changes
           </Button>
         </Modal.Footer>
       </Modal>
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Modal */}
       <Modal show={showDeleteAlert} onHide={() => setShowDeleteAlert(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>Confirm Delete</Modal.Title>
@@ -398,7 +392,7 @@ export default function FacilitiesList() {
           <p>Are you sure you want to delete this facility?</p>
           {currentFacility && (
             <Alert variant="warning">
-              <strong>Facility:</strong> {currentFacility.type} - {currentFacility.name}
+              <strong>Facility:</strong> {currentFacility.typeName} - {currentFacility.iconClass}
             </Alert>
           )}
         </Modal.Body>

@@ -7,19 +7,25 @@ import 'swiper/css/autoplay';
 import 'swiper/css/navigation';
 import '../assets/styles/Explore.css';
 import '../assets/styles/RoomCarousel.css';
-import hue from '../assets/images/hue.jpg';
+import hue1 from '../assets/images/hue1.jpg';
+import hoian from '../assets/images/hoian.jpg';
+import sapa from '../assets/images/sapa.jpg';
+import phuquoc from '../assets/images/phuquoc.jpg';
+import hagiang from '../assets/images/hagiang.jpg';
+import dalat from '../assets/images/dalat.jpg';
+
 import { useNavigate } from 'react-router-dom';
 import FavoriteHeart from '../components/FavoriteHeart';
 import { useAuth } from '../context/AuthContext';
 
 // Định nghĩa mảng địa điểm ban đầu (số lượng sẽ được cập nhật)
 const initialExperienceDestinations = [
-  { name: 'Huế', activities: '0 trải nghiệm', img: hue },
-  { name: 'Hội An', activities: '0 trải nghiệm', img: hue },
-  { name: 'Sapa', activities: '0 trải nghiệm', img: hue },
-  { name: 'Phú Quốc', activities: '0 trải nghiệm', img: hue },
-  { name: 'Hà Giang', activities: '0 trải nghiệm', img: hue },
-  { name: 'Đà Lạt', activities: '0 trải nghiệm', img: hue },
+  { name: 'Huế', activities: '0 trải nghiệm', img: hue1 },
+  { name: 'Hội An', activities: '0 trải nghiệm', img: hoian },
+  { name: 'Sapa', activities: '0 trải nghiệm', img: sapa },
+  { name: 'Phú Quốc', activities: '0 trải nghiệm', img: phuquoc },
+  { name: 'Hà Giang', activities: '0 trải nghiệm', img: hagiang },
+  { name: 'Đà Lạt', activities: '0 trải nghiệm', img: dalat },
 ];
 
 // Hàm ánh xạ homestayId với địa điểm

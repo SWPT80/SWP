@@ -1,5 +1,6 @@
 import React from 'react';
-import { Modal, Button } from 'react-bootstrap';
+import { Modal, Button, Alert } from 'react-bootstrap';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const LoginRequiredModal = ({ show, onClose }) => {
   return (
@@ -8,7 +9,9 @@ const LoginRequiredModal = ({ show, onClose }) => {
         <Modal.Title>Thông báo</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <p>⚠️ Bạn cần đăng nhập để sử dụng tính năng này.</p>
+        <Alert variant="warning">
+          ⚠️ Bạn cần đăng nhập để sử dụng tính năng này.
+        </Alert>
       </Modal.Body>
       <Modal.Footer>
         <Button variant="primary" onClick={onClose}>Đóng</Button>

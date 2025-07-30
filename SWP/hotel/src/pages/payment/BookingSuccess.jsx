@@ -1,13 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
-  Container,
-  Card,
-  Button,
-  Alert,
-  Spinner,
-  ListGroup,
-  Badge
-} from 'react-bootstrap';
+import { Container, Card, Button, Alert, Spinner, ListGroup, Badge } from 'react-bootstrap';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import axios from '../../utils/axiosConfig';
@@ -58,6 +50,9 @@ const BookingSuccess = () => {
         setError(err.response?.status === 401
           ? 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.'
           : err.response?.data?.message || 'Không thể tải thông tin đặt phòng. Vui lòng liên hệ hỗ trợ.');
+        if (err.response?.status === 401) {
+          navigate('/admin/login');
+        }
       } finally {
         setLoading(false);
       }
@@ -66,22 +61,11 @@ const BookingSuccess = () => {
     fetchBookingDetails();
   }, [location, isLoggedIn, navigate]);
 
-  const handleReport = () => {
-    navigate(`/report?bookingId=${bookingDetails.id}`, {
-      state: {
-        bookingId: bookingDetails.id,
-        userId: bookingDetails.user?.id,
-        homestayId: bookingDetails.homestay?.id,
-        roomNumber: bookingDetails.roomNumber,
-        services: bookingDetails.serviceDetails || [],
-      },
-    });
-  };
-
   const formattedAmount = (amount) =>
     new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND',
+      minimumFractionDigits: 0
     }).format(amount || 0);
 
   const formatDate = (dateString) => {
@@ -167,7 +151,9 @@ const BookingSuccess = () => {
                       </Badge>
                     </ListGroup.Item>
                     <ListGroup.Item>
-                      <strong>Tổng tiền:</strong> {formattedAmount(bookingDetails.totalAmount)}
+                      <strong>Tổng tiền:</strong> {bookingDetails.depositAmount && bookingDetails.depositAmount > 0
+                        ? `${formattedAmount(bookingDetails.depositAmount)} (Đặt cọc)`
+                        : formattedAmount(bookingDetails.totalAmount)}
                     </ListGroup.Item>
                   </ListGroup>
                 </Card.Body>
@@ -199,20 +185,6 @@ const BookingSuccess = () => {
               )}
 
               <div className="text-center mt-4">
-                <Button
-                  variant="danger"
-                  onClick={handleReport}
-                >
-                  Báo cáo vi phạm
-                </Button>
-
-                <Button
-                  variant="success"
-                  onClick={() => navigate(`/review?bookingId=${bookingDetails.id}`)}
-                >
-                  Gửi đánh giá
-                </Button>
-
                 <Button
                   variant="primary"
                   size="lg"

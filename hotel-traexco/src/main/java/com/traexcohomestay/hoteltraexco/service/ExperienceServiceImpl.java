@@ -35,23 +35,19 @@ public class ExperienceServiceImpl implements ExperienceService {
     @Override
     @Transactional(readOnly = true)
     public List<ExperienceDTO> getAllExperiences() {
-        return experienceRepository.findAll().stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+        return experienceRepository.findAll().stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<ExperienceDTO> getAllExperiencesPaged(Pageable pageable) {
-        return experienceRepository.findAll(pageable)
-                .map(this::convertToDTO);
+        return experienceRepository.findAll(pageable).map(this::convertToDTO);
     }
 
     @Override
     @Transactional(readOnly = true)
     public ExperienceDTO getExperienceById(Integer id) {
-        Experience experience = experienceRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Experience not found with id: " + id));
+        Experience experience = experienceRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Experience not found with id: " + id));
         return convertToDTO(experience);
     }
 
@@ -64,19 +60,16 @@ public class ExperienceServiceImpl implements ExperienceService {
 
     @Override
     public ExperienceDTO updateExperience(Integer id, ExperienceDTO experienceDTO) {
-        Experience experience = experienceRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Experience not found with id: " + id));
+        Experience experience = experienceRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Experience not found with id: " + id));
 
         experience.setPrice(experienceDTO.getPrice());
         experience.setSpecialNotes(experienceDTO.getSpecialNotes());
         experience.setStatus(experienceDTO.getStatus());
 
-        Homestay homestay = homestayRepository.findById(experienceDTO.getHomestayId())
-                .orElseThrow(() -> new ResourceNotFoundException("Homestay not found with id: " + experienceDTO.getHomestayId()));
+        Homestay homestay = homestayRepository.findById(experienceDTO.getHomestayId()).orElseThrow(() -> new ResourceNotFoundException("Homestay not found with id: " + experienceDTO.getHomestayId()));
         experience.setHomestay(homestay);
 
-        ExperienceType experienceType = experienceTypeRepository.findById(experienceDTO.getTypeId())
-                .orElseThrow(() -> new ResourceNotFoundException("ExperienceType not found with id: " + experienceDTO.getTypeId()));
+        ExperienceType experienceType = experienceTypeRepository.findById(experienceDTO.getTypeId()).orElseThrow(() -> new ResourceNotFoundException("ExperienceType not found with id: " + experienceDTO.getTypeId()));
         experience.setExperienceType(experienceType);
 
         // Update images
@@ -98,17 +91,14 @@ public class ExperienceServiceImpl implements ExperienceService {
 
     @Override
     public void deleteExperience(Integer id) {
-        Experience experience = experienceRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Experience not found with id: " + id));
+        Experience experience = experienceRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Experience not found with id: " + id));
         experienceRepository.delete(experience);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<ExperienceDTO> findByHomestayId(Integer homestayId) {
-        return experienceRepository.findByHomestay_HomestayId(homestayId).stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+        return experienceRepository.findByHomestay_HomestayId(homestayId).stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
     private ExperienceDTO convertToDTO(Experience experience) {
@@ -119,6 +109,16 @@ public class ExperienceServiceImpl implements ExperienceService {
         dto.setPrice(experience.getPrice());
         dto.setSpecialNotes(experience.getSpecialNotes());
         dto.setStatus(experience.getStatus());
+
+        // ✅ Thêm dòng này để set location từ homestay
+        dto.setLocation(experience.getHomestay().getLocation());
+        dto.setHomestayId(experience.getHomestay().getHomestayId());
+        // 👇 Lấy từ ExperienceType
+        ExperienceType type = experience.getExperienceType();
+        if (type != null) {
+            dto.setExperienceName(type.getExperienceName());
+            dto.setDescription(type.getDescription());
+        }
 
         if (experience.getExperienceImages() != null) {
             List<ExperienceImageDTO> imageDTOs = experience.getExperienceImages().stream().map(image -> {
@@ -133,6 +133,7 @@ public class ExperienceServiceImpl implements ExperienceService {
         return dto;
     }
 
+
     private Experience convertToEntity(ExperienceDTO dto) {
         Experience experience = new Experience();
         experience.setId(dto.getId());
@@ -140,12 +141,10 @@ public class ExperienceServiceImpl implements ExperienceService {
         experience.setSpecialNotes(dto.getSpecialNotes());
         experience.setStatus(dto.getStatus());
 
-        Homestay homestay = homestayRepository.findById(dto.getHomestayId())
-                .orElseThrow(() -> new ResourceNotFoundException("Homestay not found with id: " + dto.getHomestayId()));
+        Homestay homestay = homestayRepository.findById(dto.getHomestayId()).orElseThrow(() -> new ResourceNotFoundException("Homestay not found with id: " + dto.getHomestayId()));
         experience.setHomestay(homestay);
 
-        ExperienceType experienceType = experienceTypeRepository.findById(dto.getTypeId())
-                .orElseThrow(() -> new ResourceNotFoundException("ExperienceType not found with id: " + dto.getTypeId()));
+        ExperienceType experienceType = experienceTypeRepository.findById(dto.getTypeId()).orElseThrow(() -> new ResourceNotFoundException("ExperienceType not found with id: " + dto.getTypeId()));
         experience.setExperienceType(experienceType);
 
         if (dto.getImages() != null) {
@@ -161,4 +160,5 @@ public class ExperienceServiceImpl implements ExperienceService {
 
         return experience;
     }
+
 }
