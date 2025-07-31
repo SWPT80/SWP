@@ -1,10 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Alert } from 'react-bootstrap';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const EditCustomer = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const [user, setUser] = useState({
     fullName: '',
@@ -24,10 +28,11 @@ const EditCustomer = () => {
       })
       .then((res) => {
         setUser(res.data);
+        setError('');
       })
       .catch((err) => {
-        console.error('Lỗi lấy thông tin user:', err);
-        alert('Không thể tải thông tin khách hàng.');
+        console.error('Lỗi khi tải thông tin khách hàng:', err);
+        setError('Không thể tải thông tin khách hàng.');
       });
   }, [id]);
 
@@ -47,12 +52,13 @@ const EditCustomer = () => {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then(() => {
-        alert('Cập nhật thành công');
+        setSuccess('Cập nhật khách hàng thành công.');
+        setError('');
         navigate('/admin/all-customer');
       })
       .catch((err) => {
-        console.error('Lỗi cập nhật:', err);
-        alert('Cập nhật thất bại');
+        console.error('Lỗi khi cập nhật khách hàng:', err);
+        setError('Cập nhật khách hàng thất bại.');
       });
   };
 
@@ -63,10 +69,21 @@ const EditCustomer = () => {
           <div className="page-header">
             <div className="row align-items-center">
               <div className="col">
-                <h3 className="page-title mt-5">Edit Customer</h3>
+                <h3 className="page-title mt-5">Chỉnh sửa khách hàng</h3>
               </div>
             </div>
           </div>
+
+          {error && (
+            <Alert variant="danger" onClose={() => setError('')} dismissible>
+              {error}
+            </Alert>
+          )}
+          {success && (
+            <Alert variant="success" onClose={() => setSuccess('')} dismissible>
+              {success}
+            </Alert>
+          )}
 
           <div className="row">
             <div className="col-lg-12">
@@ -74,19 +91,20 @@ const EditCustomer = () => {
                 <div className="row formtype">
                   <div className="col-md-4">
                     <div className="form-group">
-                      <label>Full Name</label>
+                      <label>Họ và tên</label>
                       <input
                         className="form-control"
                         name="fullName"
                         value={user.fullName}
                         onChange={handleChange}
+                        disabled
                       />
                     </div>
                   </div>
 
                   <div className="col-md-4">
                     <div className="form-group">
-                      <label>Username</label>
+                      <label>Tên đăng nhập</label>
                       <input
                         className="form-control"
                         name="userName"
@@ -104,65 +122,69 @@ const EditCustomer = () => {
                         name="email"
                         value={user.email}
                         onChange={handleChange}
+                        disabled
                       />
                     </div>
                   </div>
 
                   <div className="col-md-4">
                     <div className="form-group">
-                      <label>Phone</label>
+                      <label>Số điện thoại</label>
                       <input
                         className="form-control"
                         name="phone"
                         value={user.phone}
                         onChange={handleChange}
+                        disabled
                       />
                     </div>
                   </div>
 
                   <div className="col-md-4">
                     <div className="form-group">
-                      <label>Birthdate</label>
+                      <label>Ngày sinh</label>
                       <input
                         type="date"
                         className="form-control"
                         name="birthdate"
                         value={user.birthdate || ''}
                         onChange={handleChange}
+                        disabled
                       />
                     </div>
                   </div>
 
                   <div className="col-md-4">
                     <div className="form-group">
-                      <label>Address</label>
+                      <label>Địa chỉ</label>
                       <input
                         className="form-control"
                         name="address"
                         value={user.address}
                         onChange={handleChange}
+                        disabled
                       />
                     </div>
                   </div>
 
                   <div className="col-md-4">
                     <div className="form-group">
-                      <label>Status</label>
+                      <label>Trạng thái</label>
                       <select
                         className="form-control"
                         name="status"
                         value={user.status ? 'true' : 'false'}
                         onChange={handleStatusChange}
                       >
-                        <option value="true">Active</option>
-                        <option value="false">Inactive</option>
+                        <option value="true">Hoạt động</option>
+                        <option value="false">Không hoạt động</option>
                       </select>
                     </div>
                   </div>
                 </div>
               </form>
               <button type="button" className="btn btn-primary buttonedit" onClick={handleSave}>
-                Save
+                Lưu
               </button>
             </div>
           </div>

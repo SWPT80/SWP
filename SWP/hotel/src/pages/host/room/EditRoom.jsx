@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
-import { 
-  Snackbar, 
-  Alert, 
-  LinearProgress, 
+import {
+  Snackbar,
+  Alert,
+  LinearProgress,
   Box,
   CircularProgress,
-  Typography 
+  Typography
 } from "@mui/material";
 import RoomForm from "../../../components/host/RoomForm";
 import axios from "axios";
@@ -33,9 +33,9 @@ export default function EditRoom() {
       startTime: Date.now(),
       progress: 0
     };
-    
+
     setSnackbars(prev => [...prev, newSnackbar]);
-    
+
     // Update progress bar
     const progressInterval = setInterval(() => {
       setSnackbars(prev => prev.map(snackbar => {
@@ -47,7 +47,7 @@ export default function EditRoom() {
         return snackbar;
       }));
     }, 50);
-    
+
     // Auto hide after duration
     setTimeout(() => {
       clearInterval(progressInterval);
@@ -127,7 +127,7 @@ export default function EditRoom() {
 
       if (file) {
         showSnackbar("Uploading images...", "info", 8000);
-        
+
         const formDataImg = new FormData();
         formDataImg.append("images", file);
         formDataImg.append("homestayId", homestayId);
@@ -138,7 +138,7 @@ export default function EditRoom() {
 
       showSnackbar("Room updated successfully!", "success");
       setTimeout(() => navigate("/host/rooms"), 1500);
-      
+
     } catch (err) {
       console.error("Update error:", err);
       if (err.response?.status === 400) {
@@ -154,12 +154,12 @@ export default function EditRoom() {
   };
 
   if (!formData) return (
-    <Box sx={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      alignItems: 'center', 
+    <Box sx={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
       justifyContent: 'center',
-      minHeight: '50vh' 
+      minHeight: '50vh'
     }}>
       <CircularProgress size={60} />
       <Typography variant="h6" sx={{ mt: 2 }}>
@@ -169,61 +169,64 @@ export default function EditRoom() {
   );
 
   return (
-    <Box sx={{ mt: 4, mx: 2 }}>
-      <RoomForm
-        title="Edit Room"
-        formData={formData}
-        onChange={handleChange}
-        onSubmit={handleSubmit}
-        onCancel={() => navigate("/host/rooms")}
-      />
+    <div className="pt-5">
+      <Box sx={{ mt: 4, mx: 2 }}>
+        <RoomForm
+          title="Chỉnh sửa phòng"
+          formData={formData}
+          onChange={handleChange}
+          onSubmit={handleSubmit}
+          onCancel={() => navigate("/host/rooms")}
+        />
 
-      {/* Material-UI Snackbars */}
-      {snackbars.map((snackbar, index) => (
-        <Snackbar
-          key={snackbar.id}
-          open={snackbar.open}
-          anchorOrigin={{ 
-            vertical: 'top', 
-            horizontal: 'right' 
-          }}
-          sx={{ 
-            mt: index * 7, // Stack multiple snackbars
-            maxWidth: '400px'
-          }}
-        >
-          <Alert 
-            severity={snackbar.severity}
-            onClose={() => hideSnackbar(snackbar.id)}
-            sx={{ 
-              width: '100%',
-              '& .MuiAlert-message': {
-                width: '100%'
-              }
+        {/* Material-UI Snackbars */}
+        {snackbars.map((snackbar, index) => (
+          <Snackbar
+            key={snackbar.id}
+            open={snackbar.open}
+            anchorOrigin={{
+              vertical: 'top',
+              horizontal: 'right'
+            }}
+            sx={{
+              mt: index * 7, // Stack multiple snackbars
+              maxWidth: '400px'
             }}
           >
-            <Box>
-              <Typography variant="body2">
-                {snackbar.message}
-              </Typography>
-              {/* Progress Bar */}
-              <LinearProgress 
-                variant="determinate" 
-                value={snackbar.progress}
-                sx={{ 
-                  mt: 1,
-                  height: 3,
-                  borderRadius: 1,
-                  backgroundColor: 'rgba(255,255,255,0.3)',
-                  '& .MuiLinearProgress-bar': {
-                    backgroundColor: 'rgba(255,255,255,0.8)'
-                  }
-                }}
-              />
-            </Box>
-          </Alert>
-        </Snackbar>
-      ))}
-    </Box>
+            <Alert
+              severity={snackbar.severity}
+              onClose={() => hideSnackbar(snackbar.id)}
+              sx={{
+                width: '100%',
+                '& .MuiAlert-message': {
+                  width: '100%'
+                }
+              }}
+            >
+              <Box>
+                <Typography variant="body2">
+                  {snackbar.message}
+                </Typography>
+                {/* Progress Bar */}
+                <LinearProgress
+                  variant="determinate"
+                  value={snackbar.progress}
+                  sx={{
+                    mt: 1,
+                    height: 3,
+                    borderRadius: 1,
+                    backgroundColor: 'rgba(255,255,255,0.3)',
+                    '& .MuiLinearProgress-bar': {
+                      backgroundColor: 'rgba(255,255,255,0.8)'
+                    }
+                  }}
+                />
+              </Box>
+            </Alert>
+          </Snackbar>
+        ))}
+      </Box>
+    </div>
+
   );
 }

@@ -1,0 +1,83 @@
+/* Sidebar Container */
+.host-sidebar {
+    position: fixed;
+    left: 0;
+    /* top: 80px; */
+    height: calc(100vh - 80px);
+    width: 280px;
+    background: linear-gradient(135deg, rgba(94, 120, 239, 0.95) 0%, rgba(123, 29, 218, 0.95) 100%);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    overflow-y: auto;
+    padding: 20px 0;
+}
+
+/* Logo */
+.host-sidebar h1 {
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 30px;
+}
+
+/* Sidebar Link */
+.host-sidebar .nav-link {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    color: white;
+    font-size: 14px;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    margin: 5px 10px;
+    position: relative;
+}
+
+.host-sidebar .nav-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffd166;
+    transform: translateX(4px);
+}
+
+/* Active Link */
+.host-sidebar .nav-link.active {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+}
+
+/* Icons */
+.host-sidebar .nav-link .lucide-icon {
+    margin-right: 10px;
+    font-size: 16px;
+}
+
+/* Submenu */
+.host-sidebar .submenu {
+    background: rgba(255, 255, 255, 0.05);
+    border-left: 2px solid rgba(255, 255, 255, 0.2);
+    margin-left: 15px;
+    margin-top: 5px;
+    border-radius: 8px;
+    padding: 5px 0;
+}
+
+.host-sidebar .submenu .nav-link {
+    padding: 10px 30px;
+    font-size: 13px;
+    color: #e0e0e0;
+}
+
+.host-sidebar .submenu .nav-link:hover {
+    color: #fcbf49;
+    background: rgba(255, 255, 255, 0.07);
+}
+
+/* Arrow indicator */
+.host-sidebar .toggle-arrow {
+    margin-left: auto;
+    font-size: 12px;
+    color: white;
+}

@@ -41,7 +41,7 @@ export default function AddRoom() {
       progress: 0
     };
     setToasts(prev => [...prev, newToast]);
-    
+
     // Update progress bar
     const progressInterval = setInterval(() => {
       setToasts(prev => prev.map(toast => {
@@ -53,7 +53,7 @@ export default function AddRoom() {
         return toast;
       }));
     }, 50);
-    
+
     // Auto hide after duration
     setTimeout(() => {
       clearInterval(progressInterval);
@@ -174,7 +174,7 @@ export default function AddRoom() {
     // Validate required fields
     const requiredFields = ['roomType', 'roomCapacity', 'roomPrice'];
     const missingFields = requiredFields.filter(field => !formData[field]);
-    
+
     if (missingFields.length > 0) {
       showToast(`Please fill in: ${missingFields.join(', ')}`, "warning");
       return;
@@ -227,9 +227,9 @@ export default function AddRoom() {
   };
 
   return (
-    <>
+    <div className="pt-5">
       <RoomForm
-        title="➕ Add New Room"
+        title="➕ Thêm Phòng Mới"
         formData={formData}
         onChange={handleChange}
         onSubmit={handleSubmit}
@@ -266,10 +266,10 @@ export default function AddRoom() {
                 {toast.message}
                 {/* Progress Bar */}
                 <div className="mt-2">
-                  <div 
-                    className="progress" 
-                    style={{ 
-                      height: '3px', 
+                  <div
+                    className="progress"
+                    style={{
+                      height: '3px',
                       backgroundColor: 'rgba(255,255,255,0.3)',
                       borderRadius: '2px'
                     }}
@@ -291,6 +291,6 @@ export default function AddRoom() {
           </div>
         ))}
       </ToastContainer>
-    </>
+    </div>
   );
 }

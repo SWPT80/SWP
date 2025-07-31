@@ -1,6 +1,9 @@
 ﻿import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { Alert } from 'react-bootstrap';
+import 'bootstrap/dist/css/bootstrap.min.css';
+
 const PAGE_SIZE = 10;
 
 const AllCustomer = () => {
@@ -8,6 +11,7 @@ const AllCustomer = () => {
   const [openIndex, setOpenIndex] = useState(null);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,10 +32,16 @@ const AllCustomer = () => {
       .get('http://localhost:8080/api/admin/users/customers', {
         headers: { Authorization: `Bearer ${token}` },
       })
-      .then((res) => setCustomers(res.data))
+      .then((res) => {
+        setCustomers(res.data);
+        setError('');
+        if (res.data.length === 0) {
+          setError('Không tìm thấy khách hàng nào.');
+        }
+      })
       .catch((err) => {
-        console.error('Lỗi khi lấy danh sách users:', err);
-        alert('Không thể tải danh sách khách hàng. Có thể bạn không có quyền.');
+        console.error('Lỗi khi tải danh sách khách hàng:', err);
+        setError('Không thể tải danh sách khách hàng. Có thể bạn không có quyền.');
       });
   };
 
@@ -49,23 +59,35 @@ const AllCustomer = () => {
           params: { keyword: keyword.trim() },
           headers: { Authorization: `Bearer ${token}` },
         })
-        .then((res) => setCustomers(res.data))
-        .catch((err) => console.error('Lỗi tìm kiếm:', err));
+        .then((res) => {
+          setCustomers(res.data);
+          setError('');
+          if (res.data.length === 0) {
+            setError('Không tìm thấy khách hàng nào khớp với từ khóa.');
+          }
+        })
+        .catch((err) => {
+          console.error('Lỗi khi tìm kiếm khách hàng:', err);
+          setError('Lỗi khi tìm kiếm khách hàng. Vui lòng thử lại.');
+        });
     }
   };
 
   const handleDelete = (id) => {
     const token = localStorage.getItem('token');
-    if (!window.confirm('Bạn có chắc muốn xóa người dùng này?')) return;
+    if (!window.confirm('Bạn có chắc muốn xóa khách hàng này?')) return;
 
     axios
       .delete(`http://localhost:8080/api/admin/users/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-      .then(() => setCustomers((prev) => prev.filter((c) => c.id !== id)))
+      .then(() => {
+        setCustomers((prev) => prev.filter((c) => c.id !== id));
+        setError('');
+      })
       .catch((err) => {
-        console.error('Lỗi khi xóa user:', err);
-        alert('Xóa thất bại.');
+        console.error('Lỗi khi xóa khách hàng:', err);
+        setError('Xóa khách hàng thất bại.');
       });
   };
 
@@ -85,7 +107,7 @@ const AllCustomer = () => {
             <div className="row align-items-center">
               <div className="col-md-6 d-flex align-items-center">
                 <h4 className="card-title mt-2">
-                  <i className="fas fa-users text-primary mr-2"></i>All Customers
+                  <i className="fas fa-users text-primary mr-2"></i>Tất cả khách hàng
                 </h4>
               </div>
               <div className="col-md-6 text-end">
@@ -123,23 +145,30 @@ const AllCustomer = () => {
             <div className="col-sm-12">
               <div className="card card-table">
                 <div className="card-body booking_card">
+                  {error && (
+                    <Alert variant="info" onClose={() => setError('')} dismissible>
+                      {error}
+                    </Alert>
+                  )}
                   <div className="table-responsive">
                     <table className="table table-striped table-hover table-center mb-0">
                       <thead>
                         <tr>
-                          <th>Full Name</th>
-                          <th>Username</th>
+                          <th>Họ và tên</th>
+                          <th>Tên đăng nhập</th>
                           <th>Email</th>
-                          <th>Phone</th>
-                          <th>Address</th>
-                          <th>Status</th>
-                          <th className="text-right">Actions</th>
+                          <th>Số điện thoại</th>
+                          <th>Địa chỉ</th>
+                          <th>Trạng thái</th>
+                          <th className="text-right">Hành động</th>
                         </tr>
                       </thead>
                       <tbody>
                         {visibleCustomers.length === 0 ? (
                           <tr>
-                            <td colSpan="7" className="text-center">Không tìm thấy khách hàng</td>
+                            <td colSpan="7" className="text-center">
+                              <Alert variant="info">Không tìm thấy khách hàng.</Alert>
+                            </td>
                           </tr>
                         ) : (
                           visibleCustomers.map((c, index) => (
@@ -151,9 +180,9 @@ const AllCustomer = () => {
                               <td>{c.address}</td>
                               <td>
                                 {c.status ? (
-                                  <span className="badge badge-success">Active</span>
+                                  <span className="badge badge-success">Hoạt động</span>
                                 ) : (
-                                  <span className="badge badge-danger">Inactive</span>
+                                  <span className="badge badge-danger">Không hoạt động</span>
                                 )}
                               </td>
                               <td className="text-right">
@@ -169,13 +198,7 @@ const AllCustomer = () => {
                                       className="dropdown-item"
                                       onClick={() => navigate(`/admin/edit-customer/${c.id}`)}
                                     >
-                                      <i className="fas fa-pencil-alt"></i> Edit
-                                    </button>
-                                    <button
-                                      className="dropdown-item"
-                                      onClick={() => handleDelete(c.id)}
-                                    >
-                                      <i className="fas fa-trash-alt"></i> Delete
+                                      <i className="fas fa-pencil-alt"></i> Chỉnh sửa
                                     </button>
                                   </div>
                                 </div>
@@ -188,7 +211,7 @@ const AllCustomer = () => {
                   </div>
 
                   <div className="d-flex justify-content-between align-items-center mt-3">
-                    <span>Page {currentPage} / {totalPages}</span>
+                    <span>Trang {currentPage} / {totalPages}</span>
                     <nav>
                       <ul className="pagination mb-0">
                         <li className={`page-item ${currentPage === 1 && 'disabled'}`}>
@@ -211,7 +234,7 @@ const AllCustomer = () => {
           </div>
         </div>
       </div>
-    </div >
+    </div>
   );
 };
 

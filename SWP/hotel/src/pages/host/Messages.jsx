@@ -151,7 +151,8 @@ export default function Messages() {
     <div style={{
       background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
       minHeight: "100vh",
-      paddingBottom: "2rem"
+      paddingBottom: "2rem",
+      paddingTop: "5rem"
     }}>
       {/* Header */}
       <div style={{
@@ -163,11 +164,11 @@ export default function Messages() {
       }}>
         <Container>
           <div className="text-center text-white">
-            <MessageCircle size={48} className="mb-3" />
-            <h1 style={{ fontWeight: "700", fontSize: "2.5rem", marginBottom: "0.5rem" }}>
+            <MessageCircle size={48} className="mb-3" color="white" />
+            <h1 style={{ fontWeight: "700", fontSize: "2.5rem", marginBottom: "0.5rem", color: "white" }}>
               Quản lý tin nhắn
             </h1>
-            <p style={{ fontSize: "1.2rem", opacity: 0.9 }}>
+            <p style={{ fontSize: "1.2rem", opacity: 0.9, color: "white" }}>
               Kết nối và trò chuyện với khách hàng của bạn
             </p>
           </div>

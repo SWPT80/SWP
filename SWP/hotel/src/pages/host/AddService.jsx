@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import axios from '../../utils/axiosConfig'; // axios config sẵn
+import axios from '../../utils/axiosConfig';
 import { useNavigate } from 'react-router-dom';
+import { Alert } from 'react-bootstrap';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const AddService = () => {
     const navigate = useNavigate();
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
 
     const [service, setService] = useState({
         homestayId: '',
@@ -20,43 +24,41 @@ const AddService = () => {
 
     useEffect(() => {
         const hostId = localStorage.getItem('hostId');
-        console.log('Host ID from localStorage:', hostId);
+        console.log('Host ID từ localStorage:', hostId);
 
         if (!hostId) {
-            alert('Không tìm thấy Host ID. Vui lòng đăng nhập lại.');
+            setError('Không tìm thấy Host ID. Vui lòng đăng nhập lại.');
             return;
         }
 
-        // Load service types
         axios
             .get('/api/service-types')
             .then((res) => {
-                console.log('Service types loaded:', res.data);
+                console.log('Loại dịch vụ đã tải:', res.data);
                 setServiceTypes(res.data);
+                setError('');
             })
             .catch((err) => {
-                console.error('Lỗi khi load service types:', err);
-                alert('Không thể tải danh sách loại dịch vụ.');
+                console.error('Lỗi khi tải danh sách loại dịch vụ:', err);
+                setError('Không thể tải danh sách loại dịch vụ.');
             });
 
-        // Load homestays của host
         axios
             .get(`/api/homestays/by-host/${hostId}`)
             .then((res) => {
-                console.log('Homestays loaded:', res.data);
+                console.log('Homestay đã tải:', res.data);
                 setHomestays(res.data);
-
+                setError('');
                 if (res.data.length === 0) {
-                    alert('Bạn chưa có homestay nào. Vui lòng tạo homestay trước.');
+                    setError('Bạn chưa có homestay nào. Vui lòng tạo homestay trước.');
                 }
             })
             .catch((err) => {
-                console.error('Lỗi khi load homestays:', err);
-                alert('Không thể tải danh sách homestay.');
+                console.error('Lỗi khi tải danh sách homestay:', err);
+                setError('Không thể tải danh sách homestay.');
             });
     }, []);
 
-    // Cập nhật form
     const handleChange = (e) => {
         const { name, value } = e.target;
 
@@ -68,76 +70,76 @@ const AddService = () => {
                 [name]: value,
             };
 
-            // Xử lý đặc biệt cho typeId để cập nhật serviceName
             if (name === 'typeId' && value) {
                 const typeIdInt = parseInt(value, 10);
-                console.log(`Looking for service type with ID: ${typeIdInt}`);
+                console.log(`Tìm loại dịch vụ với ID: ${typeIdInt}`);
 
                 const selectedType = serviceTypes.find((t) => t.id === typeIdInt);
                 if (selectedType) {
                     updatedService.serviceName = selectedType.serviceName;
-                    console.log(`Set serviceName to: ${selectedType.serviceName}`);
+                    console.log(`Đặt serviceName thành: ${selectedType.serviceName}`);
                 } else {
-                    console.warn(`Service type not found for ID: ${typeIdInt}`);
+                    console.warn(`Không tìm thấy loại dịch vụ với ID: ${typeIdInt}`);
                     updatedService.serviceName = '';
                 }
             }
 
-            console.log('Updated service state:', updatedService);
+            console.log('Trạng thái dịch vụ đã cập nhật:', updatedService);
             return updatedService;
         });
     };
 
     const handleAdd = () => {
-        // Validate form data trước khi parse
         if (!service.homestayId || !service.typeId || !service.price) {
-            alert("Vui lòng điền đầy đủ thông tin bắt buộc.");
+            setError("Vui lòng điền đầy đủ thông tin bắt buộc.");
+            setSuccess('');
             return;
         }
 
-        console.log("=== FORM SUBMISSION DEBUG ===");
-        console.log("Raw form values:", {
+        console.log("=== GỬI FORM ===");
+        console.log("Giá trị form:", {
             homestayId: service.homestayId,
             typeId: service.typeId,
             price: service.price
         });
 
-        console.log("Data types:", {
+        console.log("Kiểu dữ liệu:", {
             homestayIdType: typeof service.homestayId,
             typeIdType: typeof service.typeId,
             priceType: typeof service.price
         });
 
-        // Parse với validation tốt hơn
         const homestayId = parseInt(service.homestayId, 10);
         const typeId = parseInt(service.typeId, 10);
         const price = parseFloat(service.price);
 
-        console.log("Parsed values:", {
+        console.log("Giá trị sau khi parse:", {
             homestayId,
             typeId,
             price
         });
 
-        // Kiểm tra parse có thành công không
         if (isNaN(homestayId) || homestayId <= 0) {
-            console.error("Homestay ID parse failed:", {
+            console.error("Lỗi parse Homestay ID:", {
                 original: service.homestayId,
                 parsed: homestayId,
                 isString: typeof service.homestayId === 'string',
                 isNumber: !isNaN(Number(service.homestayId))
             });
-            alert(`Homestay ID không hợp lệ: "${service.homestayId}" (type: ${typeof service.homestayId})`);
+            setError(`Homestay ID không hợp lệ: "${service.homestayId}"`);
+            setSuccess('');
             return;
         }
 
         if (isNaN(typeId) || typeId <= 0) {
-            alert("Service Type ID không hợp lệ: " + service.typeId);
+            setError("ID loại dịch vụ không hợp lệ: " + service.typeId);
+            setSuccess('');
             return;
         }
 
         if (isNaN(price) || price <= 0) {
-            alert("Giá không hợp lệ: " + service.price);
+            setError("Giá không hợp lệ: " + service.price);
+            setSuccess('');
             return;
         }
 
@@ -148,24 +150,25 @@ const AddService = () => {
             specialNotes: service.specialNotes || "",
             status: 'pending',
             images: imageFile
-                ? [{ imageUrl: '/uploads/' + imageFile.name, status: true }]
+                ? [{ imageUrl: '/Uploads/' + imageFile.name, status: true }]
                 : [],
         };
 
-        console.log("Final payload:", payload);
+        console.log("Payload cuối cùng:", payload);
 
         axios
             .post('/api/services', payload)
             .then((response) => {
-                console.log("Success response:", response.data);
-                alert('Thêm dịch vụ thành công, chờ admin duyệt');
+                console.log("Phản hồi thành công:", response.data);
+                setSuccess('Thêm dịch vụ thành công, chờ admin duyệt.');
+                setError('');
                 navigate('/host/services');
             })
             .catch((err) => {
-                console.error('Full error object:', err);
-                console.error('Error response:', err.response);
+                console.error('Đối tượng lỗi:', err);
+                console.error('Phản hồi lỗi:', err.response);
 
-                let errorMessage = 'Thêm thất bại';
+                let errorMessage = 'Thêm dịch vụ thất bại';
                 if (err.response?.data) {
                     if (typeof err.response.data === 'string') {
                         errorMessage += ': ' + err.response.data;
@@ -178,7 +181,8 @@ const AddService = () => {
                     errorMessage += ': ' + err.message;
                 }
 
-                alert(errorMessage);
+                setError(errorMessage);
+                setSuccess('');
             });
     };
 
@@ -189,17 +193,27 @@ const AddService = () => {
                     <div className="page-header">
                         <div className="row align-items-center">
                             <div className="col">
-                                <h3 className="page-title mt-5">Add Service</h3>
+                                <h3 className="page-title mt-5">Thêm dịch vụ</h3>
                             </div>
                         </div>
                     </div>
+
+                    {error && (
+                        <Alert variant="danger" onClose={() => setError('')} dismissible>
+                            {error}
+                        </Alert>
+                    )}
+                    {success && (
+                        <Alert variant="success" onClose={() => setSuccess('')} dismissible>
+                            {success}
+                        </Alert>
+                    )}
 
                     <div className="row">
                         <div className="col-lg-12">
                             <div className="card">
                                 <div className="card-body">
                                     <form>
-                                        {/* Hàng 1: Homestay và Service Type */}
                                         <div className="row mb-3">
                                             <div className="col-md-6">
                                                 <div className="form-group">
@@ -213,13 +227,9 @@ const AddService = () => {
                                                     >
                                                         <option value="">-- Chọn Homestay --</option>
                                                         {homestays.map((h) => {
-                                                            // Debug log để xem cấu trúc dữ liệu
-                                                            console.log('Homestay option:', h);
-
-                                                            // Thử các trường có thể là ID
+                                                            console.log('Tùy chọn homestay:', h);
                                                             const homestayId = h.homestayId || h.id || h.homestay_id;
                                                             const homestayName = h.homestayName || h.name || h.homestay_name;
-
                                                             return (
                                                                 <option key={homestayId} value={homestayId}>
                                                                     {homestayName} (ID: {homestayId})
@@ -227,11 +237,10 @@ const AddService = () => {
                                                             );
                                                         })}
                                                     </select>
-                                                    {/* Debug info hiển thị trong UI */}
                                                     {homestays.length > 0 && (
                                                         <small className="text-muted">
-                                                            Debug: {homestays.length} homestays loaded.
-                                                            First homestay ID: {homestays[0].homestayId || homestays[0].id || 'undefined'}
+                                                            Debug: Đã tải {homestays.length} homestay.
+                                                            ID homestay đầu tiên: {homestays[0]?.homestayId || homestays[0]?.id || 'không xác định'}
                                                         </small>
                                                     )}
                                                 </div>
@@ -239,7 +248,7 @@ const AddService = () => {
 
                                             <div className="col-md-6">
                                                 <div className="form-group">
-                                                    <label className="form-label">Service Type <span className="text-danger">*</span></label>
+                                                    <label className="form-label">Loại dịch vụ <span className="text-danger">*</span></label>
                                                     <select
                                                         className="form-control"
                                                         name="typeId"
@@ -258,11 +267,10 @@ const AddService = () => {
                                             </div>
                                         </div>
 
-                                        {/* Hàng 2: Service Name và Price */}
                                         <div className="row mb-3">
                                             <div className="col-md-6">
                                                 <div className="form-group">
-                                                    <label className="form-label">Service Name</label>
+                                                    <label className="form-label">Tên dịch vụ</label>
                                                     <input
                                                         className="form-control"
                                                         type="text"
@@ -275,7 +283,7 @@ const AddService = () => {
 
                                             <div className="col-md-6">
                                                 <div className="form-group">
-                                                    <label className="form-label">Giá (VND) <span className="text-danger">*</span></label>
+                                                    <label className="form-label">Giá (đ) <span className="text-danger">*</span></label>
                                                     <input
                                                         className="form-control"
                                                         name="price"
@@ -291,7 +299,6 @@ const AddService = () => {
                                             </div>
                                         </div>
 
-                                        {/* Hàng 3: Special Notes */}
                                         <div className="row mb-3">
                                             <div className="col-12">
                                                 <div className="form-group">
@@ -308,11 +315,10 @@ const AddService = () => {
                                             </div>
                                         </div>
 
-                                        {/* Hàng 4: Upload Image */}
                                         <div className="row mb-4">
                                             <div className="col-md-6">
                                                 <div className="form-group">
-                                                    <label className="form-label">Upload Ảnh (tùy chọn)</label>
+                                                    <label className="form-label">Tải ảnh lên (tùy chọn)</label>
                                                     <input
                                                         type="file"
                                                         className="form-control"
@@ -324,7 +330,6 @@ const AddService = () => {
                                             </div>
                                         </div>
 
-                                        {/* Submit Button */}
                                         <div className="row">
                                             <div className="col-12">
                                                 <div className="d-flex justify-content-end">
@@ -341,7 +346,7 @@ const AddService = () => {
                                                         onClick={handleAdd}
                                                     >
                                                         <i className="fas fa-plus me-2"></i>
-                                                        Add Service
+                                                        Thêm dịch vụ
                                                     </button>
                                                 </div>
                                             </div>

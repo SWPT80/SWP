@@ -4,10 +4,13 @@ import "../../assets/css/Dashboard.css";
 import LineChartDashboard from '../../components/admin/LineChartDashboard';
 import DonutChartDashboard from '../../components/admin/DonutChartDashboard';
 import { useNavigate } from 'react-router-dom';
+import { Alert } from 'react-bootstrap';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const Dashboard = () => {
   const [bookings, setBookings] = useState([]);
   const [showAll, setShowAll] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
   const [activeUsers, setActiveUsers] = useState(0);
   const [totalHosts, setTotalHosts] = useState(0);
@@ -16,40 +19,60 @@ const Dashboard = () => {
   useEffect(() => {
     const token = localStorage.getItem('token');
 
-    // Lấy danh sách bookings
     axios.get('http://localhost:8080/api/bookings/with-user-info', {
       headers: {
         Authorization: `Bearer ${token}`
       }
     })
-      .then(res => setBookings(res.data))
+      .then(res => {
+        setBookings(res.data);
+        setError('');
+        if (res.data.length === 0) {
+          setError('Không tìm thấy đơn đặt phòng nào.');
+        }
+      })
       .catch(err => {
-        console.error("Lỗi khi lấy danh sách booking:", err.response?.data || err.message);
-        alert("Bạn không có quyền truy cập.");
+        console.error("Lỗi khi tải danh sách đặt phòng:", err.response?.data || err.message);
+        setError('Bạn không có quyền truy cập hoặc không thể tải danh sách đặt phòng.');
       });
 
-    // Lấy số người dùng đang hoạt động
     axios.get('http://localhost:8080/api/monitor/active-users')
-      .then(res => setActiveUsers(res.data))
-      .catch(err => console.error("Lỗi khi lấy số người dùng đang hoạt động:", err));
+      .then(res => {
+        setActiveUsers(res.data);
+        setError('');
+      })
+      .catch(err => {
+        console.error("Lỗi khi tải số người dùng đang hoạt động:", err);
+        setError('Không thể tải số người dùng đang hoạt động.');
+      });
 
-    // ✅ Lấy tổng số host
     axios.get('http://localhost:8080/api/admin/users/count/hosts', {
       headers: {
         Authorization: `Bearer ${token}`
       }
     })
-      .then(res => setTotalHosts(res.data))
-      .catch(err => console.error("Lỗi khi lấy số lượng host:", err));
+      .then(res => {
+        setTotalHosts(res.data);
+        setError('');
+      })
+      .catch(err => {
+        console.error("Lỗi khi tải số lượng chủ nhà:", err);
+        setError('Không thể tải số lượng chủ nhà.');
+      });
 
-    // ✅ Lấy tổng số customer
     axios.get('http://localhost:8080/api/admin/users/count/customers', {
       headers: {
         Authorization: `Bearer ${token}`
       }
     })
-      .then(res => setTotalCustomers(res.data))
-      .catch(err => console.error("Lỗi khi lấy số lượng customer:", err));
+      .then(res => {
+        setTotalCustomers(res.data);
+        setError('');
+      })
+      .catch(err => {
+        console.error("Lỗi khi tải số lượng khách hàng:", err);
+        setError('Không thể tải số lượng khách hàng.');
+      });
   }, []);
 
   const displayedBookings = showAll ? bookings : bookings.slice(0, 5);
@@ -58,21 +81,28 @@ const Dashboard = () => {
     <div className="main-wrapper">
       <div className="page-wrapper">
         <div className="content container-fluid">
+          {error && (
+            <Alert variant="info" onClose={() => setError('')} dismissible>
+              {error}
+            </Alert>
+          )}
           <div className="page-header">
             <div className="row align-items-center">
               <div className="col">
-                <h4 className="card-title mt-2">Hello Admin!
-                  <ul>Dashboard</ul>
+                <h4 className="card-title mt-2">Xin chào Quản trị viên!
+                  <ul>Bảng điều khiển</ul>
                 </h4>
               </div>
             </div>
           </div>
 
           <div className="row">
-            {[{ title: 'Total Booking', value: bookings.length, icon: 'user-plus' },
-            { title: 'Total Customers', value: totalCustomers, icon: 'users' },
-            { title: 'Total Hosts', value: totalHosts, icon: 'user-check' },
-            { title: 'Active Users', value: activeUsers, icon: 'users' }].map((card, index) => (
+            {[
+              { title: 'Tổng đơn đặt phòng', value: bookings.length, icon: 'user-plus' },
+              { title: 'Tổng khách hàng', value: totalCustomers, icon: 'users' },
+              { title: 'Tổng chủ nhà', value: totalHosts, icon: 'user-check' },
+              { title: 'Người dùng đang hoạt động', value: activeUsers, icon: 'users' }
+            ].map((card, index) => (
               <div className="col-xl-3 col-sm-6 col-12" key={index}>
                 <div className="card board1 fill">
                   <div className="card-body">
@@ -97,7 +127,7 @@ const Dashboard = () => {
             <div className="col-md-12 col-lg-6">
               <div className="card card-chart">
                 <div className="card-header">
-                  <h4 className="card-title">Revenue</h4>
+                  <h4 className="card-title">Doanh thu</h4>
                 </div>
                 <div className="card-body">
                   <LineChartDashboard />
@@ -107,7 +137,7 @@ const Dashboard = () => {
             <div className="col-md-12 col-lg-6">
               <div className="card card-chart">
                 <div className="card-header">
-                  <h4 className="card-title">ROOMS BOOKED</h4>
+                  <h4 className="card-title">Phòng đã đặt</h4>
                 </div>
                 <div className="card-body">
                   <DonutChartDashboard />
@@ -120,13 +150,13 @@ const Dashboard = () => {
             <div className="col-md-12 d-flex">
               <div className="card card-table flex-fill">
                 <div className="card-header">
-                  <h4 className="card-title float-left mt-2">Booking</h4>
+                  <h4 className="card-title float-left mt-2">Đơn đặt phòng</h4>
                   <button
                     type="button"
                     className="btn btn-primary float-right veiwbutton"
                     onClick={() => navigate('/admin/all-booking')}
                   >
-                    View All
+                    Xem tất cả
                   </button>
                 </div>
                 <div className="card-body">
@@ -134,34 +164,37 @@ const Dashboard = () => {
                     <table className="table table-hover table-center">
                       <thead>
                         <tr>
-                          <th>Booking ID</th>
-                          <th>Customer</th>
-                          <th>Room</th>
-                          <th>Check-in</th>
-                          <th>Check-out</th>
-                          <th>Total</th>
-                          <th>Status</th>
+                          <th>Mã đặt phòng</th>
+                          <th>Khách hàng</th>
+                          <th>Phòng</th>
+                          <th>Nhận phòng</th>
+                          <th>Trả phòng</th>
+                          <th>Tổng tiền</th>
+                          <th>Trạng thái</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {displayedBookings.map((b) => (
-                          <tr key={b.id}>
-                            <td>{b.id}</td>
-                            <td>{b.userId}</td>
-                            <td>{b.roomNumber}</td>
-                            <td>{b.checkInDate}</td>
-                            <td>{b.checkOutDate}</td>
-                            <td>{b.totalAmount?.toLocaleString()} VND</td>
-                            <td>
-                              <span className={`badge ${b.status === 'booked' ? 'badge-success' : 'badge-secondary'}`}>
-                                {b.status}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                        {bookings.length === 0 && (
+                        {displayedBookings.length > 0 ? (
+                          displayedBookings.map((b) => (
+                            <tr key={b.id}>
+                              <td>{b.id}</td>
+                              <td>{b.userId}</td>
+                              <td>{b.roomNumber}</td>
+                              <td>{b.checkInDate}</td>
+                              <td>{b.checkOutDate}</td>
+                              <td>{b.totalAmount?.toLocaleString()} đ</td>
+                              <td>
+                                <span className={`badge ${b.status === 'booked' ? 'badge-success' : 'badge-secondary'}`}>
+                                  {b.status === 'booked' ? 'Đã đặt' : b.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
                           <tr>
-                            <td colSpan="7" className="text-center">No bookings found</td>
+                            <td colSpan="7" className="text-center">
+                              <Alert variant="info">Không tìm thấy đơn đặt phòng nào.</Alert>
+                            </td>
                           </tr>
                         )}
                       </tbody>

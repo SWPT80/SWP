@@ -1,0 +1,247 @@
+/* Dashboard.css - Simple & Clean Styling */
+
+/* Main Layout */
+.main-wrapper {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+.content.container-fluid {
+    max-width: 100%;
+    padding: 0 15px;
+}
+
+/* Page Header */
+.page-header {
+    margin-bottom: 30px;
+}
+
+.page-title {
+    color: #333;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.breadcrumb {
+    background: none;
+    padding: 0;
+    margin: 0;
+}
+
+.breadcrumb-item {
+    color: #6c757d;
+}
+
+.breadcrumb-item.active {
+    color: #495057;
+}
+
+/* Dashboard Cards */
+.cardDashboard {
+    background: #fff;
+    border: 1px solid #e3e6f0;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    transition: box-shadow 0.3s ease;
+}
+
+.cardDashboard:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Metric Cards */
+.cardDashboard.board1 {
+    background: linear-gradient(45deg, #4e73df, #224abe);
+    color: white;
+    border: none;
+}
+
+.cardDashboard-body {
+    padding: 20px;
+}
+
+.dash-widget-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card_widget_header {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.dash-widget-header h6 {
+    margin: 0;
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.dash-widget-header .opacity-7 {
+    opacity: 0.3;
+    font-size: 2rem;
+}
+
+/* Card Headers */
+.card-header {
+    background-color: #f8f9fc;
+    border-bottom: 1px solid #e3e6f0;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-title {
+    color: #5a5c69;
+    font-weight: 600;
+    margin: 0;
+}
+
+/* Buttons & Dropdowns */
+.dropdown-toggle {
+    background-color: #4e73df;
+    border-color: #4e73df;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 0.875rem;
+}
+
+.dropdown-toggle:hover {
+    background-color: #3654d1;
+    border-color: #3654d1;
+}
+
+.dropdown-menu {
+    border: 1px solid #e3e6f0;
+    border-radius: 4px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fc;
+}
+
+.veiwbutton {
+    background-color: #1cc88a;
+    border-color: #1cc88a;
+    border-radius: 4px;
+    padding: 8px 16px;
+    font-size: 0.875rem;
+}
+
+.veiwbutton:hover {
+    background-color: #17a673;
+    border-color: #17a673;
+}
+
+/* Chart Cards */
+.cardDashboard.card-chart {
+    overflow: hidden;
+}
+
+.cardDashboard.card-chart .cardDashboard-body {
+    padding: 20px;
+    height: 350px;
+}
+
+/* Table Card */
+.cardDashboard.card-table {
+    overflow: hidden;
+}
+
+.card-table .cardDashboard-body {
+    padding: 0;
+}
+
+/* Loading States */
+.text-center.py-5 {
+    color: #6c757d;
+    padding: 40px 0;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .page-wrapper {
+        padding: 15px;
+    }
+
+    .page-title {
+        font-size: 1.5rem;
+    }
+
+    .cardDashboard-body {
+        padding: 15px;
+    }
+
+    .card-header {
+        padding: 12px 15px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .card-header .d-flex {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .dash-widget-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .card_widget_header {
+        font-size: 1.75rem;
+    }
+
+    .cardDashboard.card-chart .cardDashboard-body {
+        height: 300px;
+        padding: 15px;
+    }
+}
+
+@media (max-width: 576px) {
+    .page-wrapper {
+        padding: 10px;
+    }
+
+    .cardDashboard-body {
+        padding: 12px;
+    }
+
+    .card-header {
+        padding: 10px 12px;
+    }
+
+    .card_widget_header {
+        font-size: 1.5rem;
+    }
+
+    .cardDashboard.card-chart .cardDashboard-body {
+        height: 250px;
+        padding: 12px;
+    }
+}
+
+/* Ensure no overflow */
+* {
+    box-sizing: border-box;
+}
+
+.row {
+    margin-left: -15px;
+    margin-right: -15px;
+}
+
+.col-xl-3,
+.col-sm-6,
+.col-12,
+.col-md-12,
+.col-lg-6 {
+    padding-left: 15px;
+    padding-right: 15px;
+}

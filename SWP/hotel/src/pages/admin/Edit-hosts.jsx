@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
+import { Alert } from 'react-bootstrap';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const EditHost = () => {
-    /* --- Lấy id từ URL --- */
-    const { id } = useParams();          //  -> phải khớp với :id trong Route
+    const { id } = useParams();
     const navigate = useNavigate();
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
 
-    /* --- State --- */
     const [host, setHost] = useState({
         fullName: "",
         userName: "",
@@ -19,23 +21,28 @@ const EditHost = () => {
         status: true,
     });
 
-    /* --- Load data lần đầu --- */
     useEffect(() => {
-        if (!id) return;                         // phòng trường hợp id chưa có
+        if (!id) {
+            setError('Không tìm thấy ID chủ nhà.');
+            return;
+        }
+
         const token = localStorage.getItem("token");
 
         axios
             .get(`http://localhost:8080/api/host/${id}`, {
                 headers: { Authorization: `Bearer ${token}` },
             })
-            .then((res) => setHost(res.data))
+            .then((res) => {
+                setHost(res.data);
+                setError('');
+            })
             .catch((err) => {
-                console.error("Lỗi lấy thông tin host:", err);
-                alert("Không thể tải thông tin host. Bạn có thể không có quyền.");
+                console.error("Lỗi khi tải thông tin chủ nhà:", err);
+                setError("Không thể tải thông tin chủ nhà. Bạn có thể không có quyền.");
             });
     }, [id]);
 
-    /* --- Handler --- */
     const handleChange = (e) => {
         const { name, value } = e.target;
         setHost((prev) => ({ ...prev, [name]: value }));
@@ -48,42 +55,52 @@ const EditHost = () => {
                 headers: { Authorization: `Bearer ${token}` },
             })
             .then(() => {
-                alert("Cập nhật thành công");
+                setSuccess("Cập nhật chủ nhà thành công.");
+                setError('');
                 navigate("/admin/all-hosts");
             })
             .catch((err) => {
-                console.error("Lỗi cập nhật:", err);
-                alert("Cập nhật thất bại");
+                console.error("Lỗi khi cập nhật chủ nhà:", err);
+                setError("Cập nhật chủ nhà thất bại.");
             });
     };
 
-    /* --- UI --- */
     return (
         <div className="main-wrapper">
             <div className="page-wrapper">
                 <div className="content container-fluid">
                     <div className="page-header">
-                        <h3 className="page-title mt-5">Edit Host</h3>
+                        <h3 className="page-title mt-5">Chỉnh sửa chủ nhà</h3>
                     </div>
+
+                    {error && (
+                        <Alert variant="danger" onClose={() => setError('')} dismissible>
+                            {error}
+                        </Alert>
+                    )}
+                    {success && (
+                        <Alert variant="success" onClose={() => setSuccess('')} dismissible>
+                            {success}
+                        </Alert>
+                    )}
 
                     <div className="row">
                         <div className="col-lg-12">
                             <form>
                                 <div className="row formtype">
-                                    {/* Full name */}
                                     <div className="col-md-4">
-                                        <label>Full Name</label>
+                                        <label>Họ và tên</label>
                                         <input
                                             className="form-control"
                                             name="fullName"
                                             value={host.fullName}
                                             onChange={handleChange}
+                                            disabled
                                         />
                                     </div>
 
-                                    {/* Username (read‑only) */}
                                     <div className="col-md-4">
-                                        <label>Username</label>
+                                        <label>Tên đăng nhập</label>
                                         <input
                                             className="form-control"
                                             name="userName"
@@ -92,7 +109,6 @@ const EditHost = () => {
                                         />
                                     </div>
 
-                                    {/* Email */}
                                     <div className="col-md-4">
                                         <label>Email</label>
                                         <input
@@ -100,46 +116,46 @@ const EditHost = () => {
                                             name="email"
                                             value={host.email}
                                             onChange={handleChange}
+                                            disabled
                                         />
                                     </div>
 
-                                    {/* Phone */}
                                     <div className="col-md-4">
-                                        <label>Phone</label>
+                                        <label>Số điện thoại</label>
                                         <input
                                             className="form-control"
                                             name="phone"
                                             value={host.phone}
                                             onChange={handleChange}
+                                            disabled
                                         />
                                     </div>
 
-                                    {/* Birthdate */}
                                     <div className="col-md-4">
-                                        <label>Birthdate</label>
+                                        <label>Ngày sinh</label>
                                         <input
                                             type="date"
                                             className="form-control"
                                             name="birthdate"
                                             value={host.birthdate || ""}
                                             onChange={handleChange}
+                                            disabled
                                         />
                                     </div>
 
-                                    {/* Address */}
                                     <div className="col-md-4">
-                                        <label>Address</label>
+                                        <label>Địa chỉ</label>
                                         <input
                                             className="form-control"
                                             name="address"
                                             value={host.address}
                                             onChange={handleChange}
+                                            disabled
                                         />
                                     </div>
 
-                                    {/* Status */}
                                     <div className="col-md-4">
-                                        <label>Status</label>
+                                        <label>Trạng thái</label>
                                         <select
                                             className="form-control"
                                             name="status"
@@ -151,8 +167,8 @@ const EditHost = () => {
                                                 }))
                                             }
                                         >
-                                            <option value="true">Active</option>
-                                            <option value="false">Inactive</option>
+                                            <option value="true">Hoạt động</option>
+                                            <option value="false">Không hoạt động</option>
                                         </select>
                                     </div>
                                 </div>
@@ -163,7 +179,7 @@ const EditHost = () => {
                                 className="btn btn-primary buttonedit"
                                 onClick={handleSave}
                             >
-                                Save
+                                Lưu
                             </button>
                         </div>
                     </div>

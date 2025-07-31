@@ -1,5 +1,7 @@
-﻿import React, { useEffect, useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Alert } from 'react-bootstrap';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const PAGE_SIZE = 10;
 
@@ -7,6 +9,7 @@ const AllBooking = () => {
   const [bookings, setBookings] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -17,14 +20,19 @@ const AllBooking = () => {
           Authorization: `Bearer ${token}`,
         },
       })
-      .then((res) => setBookings(res.data))
+      .then((res) => {
+        setBookings(res.data);
+        setError('');
+        if (res.data.length === 0) {
+          setError('Không tìm thấy đơn đặt phòng nào.');
+        }
+      })
       .catch((err) => {
-        console.error('Lỗi khi lấy danh sách booking:', err);
-        alert("Bạn không có quyền truy cập.");
+        console.error('Lỗi khi tải danh sách đặt phòng:', err);
+        setError('Không thể tải danh sách đặt phòng. Có thể bạn không có quyền truy cập.');
       });
   }, []);
 
-  // Lọc bookings theo searchTerm (không phân biệt hoa thường)
   const filteredBookings = bookings.filter((b) => {
     const term = searchTerm.toLowerCase();
     return (
@@ -55,7 +63,7 @@ const AllBooking = () => {
               <div className="col">
                 <h4 className="card-title mt-2">
                   <i className="fas fa-clipboard-list text-primary me-2"></i>
-                  All Bookings
+                  Tất cả đơn đặt phòng
                 </h4>
               </div>
               <div className="col-md-6 text-end">
@@ -80,7 +88,7 @@ const AllBooking = () => {
                     value={searchTerm}
                     onChange={(e) => {
                       setSearchTerm(e.target.value);
-                      setCurrentPage(1); // Reset về trang đầu khi search
+                      setCurrentPage(1);
                     }}
                     style={{
                       width: '100%',
@@ -96,18 +104,23 @@ const AllBooking = () => {
             <div className="col-sm-12">
               <div className="card card-table">
                 <div className="card-body booking_card">
+                  {error && (
+                    <Alert variant="info" onClose={() => setError('')} dismissible>
+                      {error}
+                    </Alert>
+                  )}
                   <div className="table-responsive">
                     <table className="table table-striped table-hover table-center mb-0">
                       <thead>
                         <tr>
-                          <th>Booking ID</th>
-                          <th>Homestay Name</th>
-                          <th>Customer</th>
-                          <th>Room</th>
-                          <th>Check‑in</th>
-                          <th>Check‑out</th>
-                          <th>Total</th>
-                          <th>Status</th>
+                          <th>Mã đặt phòng</th>
+                          <th>Tên homestay</th>
+                          <th>Khách hàng</th>
+                          <th>Phòng</th>
+                          <th>Nhận phòng</th>
+                          <th>Trả phòng</th>
+                          <th>Tổng tiền</th>
+                          <th>Trạng thái</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -116,18 +129,18 @@ const AllBooking = () => {
                             <tr key={b.id}>
                               <td>{b.id}</td>
                               <td>{b.homestayName}</td>
-                              <td>{b.userFullName || 'N/A'}</td>
-                              <td>{b.roomNumber || 'N/A'}</td>
+                              <td>{b.userFullName || 'Không có'}</td>
+                              <td>{b.roomNumber || 'Không có'}</td>
                               <td>{b.checkInDate}</td>
                               <td>{b.checkOutDate}</td>
-                              <td>{b.totalAmount?.toLocaleString()} VND</td>
+                              <td>{b.totalAmount?.toLocaleString()} đ</td>
                               <td>{b.status}</td>
                             </tr>
                           ))
                         ) : (
                           <tr>
                             <td colSpan="8" className="text-center">
-                              Không tìm thấy booking nào
+                              <Alert variant="info">Không tìm thấy đơn đặt phòng nào.</Alert>
                             </td>
                           </tr>
                         )}
@@ -137,7 +150,7 @@ const AllBooking = () => {
 
                   <div className="d-flex justify-content-between align-items-center mt-3">
                     <span>
-                      Page {currentPage} / {totalPages}
+                      Trang {currentPage} / {totalPages}
                     </span>
                     <nav>
                       <ul className="pagination mb-0">

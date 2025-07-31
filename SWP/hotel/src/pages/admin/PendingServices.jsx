@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "../../utils/axiosConfig";
-import { Form, Row, Col } from "react-bootstrap";
+import { Form, Row, Col, Alert } from "react-bootstrap";
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const PAGE_SIZE = 10;
 
@@ -11,6 +12,8 @@ const PendingServices = () => {
   const [searchType, setSearchType] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [homestayMap, setHomestayMap] = useState({});
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   useEffect(() => {
     fetchPendingServices();
@@ -33,10 +36,14 @@ const PendingServices = () => {
       const res = await axios.get("/api/services/pending");
       setPendingServices(res.data);
       setFilteredServices(res.data);
+      setError('');
+      if (res.data.length === 0) {
+        setError('Không tìm thấy dịch vụ đang chờ duyệt.');
+      }
       await fetchHomestayNames(res.data);
     } catch (err) {
-      console.error("Error fetching pending services:", err);
-      alert("Unable to load services list.");
+      console.error("Lỗi khi tải danh sách dịch vụ đang chờ duyệt:", err);
+      setError("Không thể tải danh sách dịch vụ. Vui lòng thử lại.");
     }
   };
 
@@ -50,29 +57,33 @@ const PendingServices = () => {
         return acc;
       }, {});
       setHomestayMap(map);
+      setError('');
     } catch (err) {
-      console.error("Error fetching homestay names:", err);
+      console.error("Lỗi khi tải tên homestay:", err);
+      setError("Không thể tải tên homestay. Vui lòng thử lại.");
     }
   };
 
   const handleApprove = async (id) => {
     try {
       await axios.patch(`/api/services/${id}/status?status=approved`);
-      alert("Service approved successfully!");
+      setSuccess("Duyệt dịch vụ thành công!");
       setPendingServices((prev) => prev.filter((s) => s.id !== id));
+      setError('');
     } catch {
-      alert("Error approving service.");
+      setError("Lỗi khi duyệt dịch vụ.");
     }
   };
 
   const handleReject = async (id) => {
-    const reason = prompt("Enter rejection reason (optional):");
+    const reason = prompt("Nhập lý do từ chối (tùy chọn):");
     try {
       await axios.patch(`/api/services/${id}/status?status=rejected`);
-      alert("Service has been rejected.");
+      setSuccess("Từ chối dịch vụ thành công.");
       setPendingServices((prev) => prev.filter((s) => s.id !== id));
+      setError('');
     } catch {
-      alert("Error rejecting service.");
+      setError("Lỗi khi từ chối dịch vụ.");
     }
   };
 
@@ -91,24 +102,33 @@ const PendingServices = () => {
     <div className="main-wrapper">
       <div className="page-wrapper">
         <div className="content container-fluid">
-          {/* Header */}
           <div className="page-header">
             <div className="row align-items-center">
               <div className="col">
                 <h4 className="card-title">
                   <i className="fas fa-tools text-primary me-2"></i>
-                  Pending Services
+                  Dịch vụ đang chờ duyệt
                 </h4>
               </div>
             </div>
           </div>
 
-          {/* Filters */}
+          {error && (
+            <Alert variant="info" onClose={() => setError('')} dismissible>
+              {error}
+            </Alert>
+          )}
+          {success && (
+            <Alert variant="success" onClose={() => setSuccess('')} dismissible>
+              {success}
+            </Alert>
+          )}
+
           <Row className="mb-4">
             <Col md={6}>
               <Form.Control
                 type="text"
-                placeholder="Search by Homestay ID or Name"
+                placeholder="Tìm kiếm theo ID hoặc tên homestay"
                 value={searchHomestayId}
                 onChange={(e) => setSearchHomestayId(e.target.value)}
               />
@@ -116,27 +136,26 @@ const PendingServices = () => {
             <Col md={6}>
               <Form.Control
                 type="text"
-                placeholder="Search by Service Type"
+                placeholder="Tìm kiếm theo loại dịch vụ"
                 value={searchType}
                 onChange={(e) => setSearchType(e.target.value)}
               />
             </Col>
           </Row>
 
-          {/* Table */}
           <div className="card card-table">
             <div className="card-body">
               <div className="table-responsive">
                 <table className="table table-hover table-striped align-middle mb-0">
                   <thead className="table-light">
                     <tr>
-                      <th>ID</th>
+                      <th>Mã dịch vụ</th>
                       <th>Homestay</th>
-                      <th>Service Type</th>
-                      <th>Price</th>
-                      <th>Notes</th>
-                      <th>Status</th>
-                      <th>Actions</th>
+                      <th>Loại dịch vụ</th>
+                      <th>Giá</th>
+                      <th>Ghi chú</th>
+                      <th>Trạng thái</th>
+                      <th>Hành động</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -145,13 +164,13 @@ const PendingServices = () => {
                         <tr key={s.id}>
                           <td>{s.id}</td>
                           <td>
-                            {s.homestayId} - {homestayMap[s.homestayId] || "N/A"}
+                            {s.homestayId} - {homestayMap[s.homestayId] || "Không có"}
                           </td>
-                          <td>{s.serviceType?.serviceName || "N/A"}</td>
-                          <td>{s.price?.toLocaleString()} VND</td>
+                          <td>{s.serviceType?.serviceName || "Không có"}</td>
+                          <td>{s.price?.toLocaleString()} đ</td>
                           <td>{s.specialNotes || "-"}</td>
                           <td>
-                            <span className="badge bg-warning text-dark">Pending</span>
+                            <span className="badge bg-warning text-dark">Chờ duyệt</span>
                           </td>
                           <td>
                             <div className="d-flex flex-column gap-2 align-items-center">
@@ -159,13 +178,13 @@ const PendingServices = () => {
                                 className="btn btn-outline-success btn-sm rounded-pill px-3 shadow-sm w-100"
                                 onClick={() => handleApprove(s.id)}
                               >
-                                <i className="bi bi-check-circle me-1"></i> Approve
+                                <i className="bi bi-check-circle me-1"></i> Duyệt
                               </button>
                               <button
                                 className="btn btn-outline-danger btn-sm rounded-pill px-3 shadow-sm w-100"
                                 onClick={() => handleReject(s.id)}
                               >
-                                <i className="bi bi-x-circle me-1"></i> Reject
+                                <i className="bi bi-x-circle me-1"></i> Từ chối
                               </button>
                             </div>
                           </td>
@@ -174,7 +193,7 @@ const PendingServices = () => {
                     ) : (
                       <tr>
                         <td colSpan="7" className="text-center py-3">
-                          No services found.
+                          <Alert variant="info">Không tìm thấy dịch vụ nào.</Alert>
                         </td>
                       </tr>
                     )}
@@ -184,22 +203,18 @@ const PendingServices = () => {
             </div>
           </div>
 
-          {/* Pagination - with ellipsis */}
           <div className="d-flex justify-content-between align-items-center mt-4">
             <span>
-              Page {currentPage} / {totalPages}
+              Trang {currentPage} / {totalPages}
             </span>
             <nav>
               <ul className="pagination mb-0">
-                {/* First & Prev */}
                 <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
                   <button className="page-link" onClick={() => changePage(1)}>«</button>
                 </li>
                 <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
                   <button className="page-link" onClick={() => changePage(currentPage - 1)}>‹</button>
                 </li>
-
-                {/* Page Numbers with Ellipsis */}
                 {(() => {
                   const maxPagesToShow = 5;
                   let start = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
@@ -252,8 +267,6 @@ const PendingServices = () => {
 
                   return pageItems;
                 })()}
-
-                {/* Next & Last */}
                 <li className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}>
                   <button className="page-link" onClick={() => changePage(currentPage + 1)}>›</button>
                 </li>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { Container, Row, Col, Card, Dropdown } from 'react-bootstrap';
+import { Container, Row, Col, Card, Dropdown, Alert } from 'react-bootstrap';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -14,16 +14,15 @@ import {
   Filler
 } from 'chart.js';
 import HostChatApp from "../../components/Chat/ChatHost";
-import "../../assets/css/Dashboard.css";
 import { useNavigate } from "react-router-dom";
 import { BookingsTable } from "../../components/host/BookingsTable";
+import '../../assets/styles/Dashboard.css'
 
 ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, Title, Tooltip, Legend, Filler);
 
 export default function Dashboard() {
-    const navigate = useNavigate();
-
-    const [hostId, setHostId] = useState(() => localStorage.getItem("hostId"));
+  const navigate = useNavigate();
+  const [hostId, setHostId] = useState(() => localStorage.getItem("hostId"));
   const [timeRange, setTimeRange] = useState('day');
   const [activeTab, setActiveTab] = useState('room');
   const [revenueChart, setRevenueChart] = useState({ labels: [], datasets: [] });
@@ -41,14 +40,15 @@ export default function Dashboard() {
     bookings: true,
     charts: true
   });
+  const [error, setError] = useState('');
 
-   useEffect(() => {
+  useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
+      setError("Không tìm thấy token. Vui lòng đăng nhập lại.");
       navigate("/", { replace: true });
       return;
     }
-    // Nếu chưa có hostId => gọi /me
     if (!hostId) {
       axios.get("http://localhost:8080/api/auth/me", {
         headers: { Authorization: `Bearer ${token}` }
@@ -56,15 +56,21 @@ export default function Dashboard() {
         .then(res => {
           const user = res.data;
           if (user.role !== 'HOST') {
+            setError("Bạn không phải là chủ nhà. Vui lòng đăng nhập bằng tài khoản chủ nhà.");
             navigate("/", { replace: true });
             return;
           }
           localStorage.setItem("hostId", user.id);
           setHostId(user.id);
+          setError('');
         })
-        .catch(() => navigate("/", { replace: true }));
+        .catch(() => {
+          setError("Lỗi xác thực. Vui lòng đăng nhập lại.");
+          navigate("/", { replace: true });
+        });
     }
   }, [navigate, hostId]);
+
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
@@ -78,8 +84,10 @@ export default function Dashboard() {
           revenue: response.data.revenue,
           rating: 4.5
         });
+        setError('');
       } catch (error) {
-        console.error("Error fetching metrics:", error);
+        console.error("Lỗi khi tải số liệu:", error);
+        setError("Không thể tải số liệu thống kê.");
       } finally {
         setLoading(prev => ({ ...prev, metrics: false }));
       }
@@ -92,8 +100,13 @@ export default function Dashboard() {
           headers: { Authorization: `Bearer ${token}` }
         });
         setBookings(response.data);
+        setError('');
+        if (response.data.length === 0) {
+          setError('Không tìm thấy đơn đặt phòng nào.');
+        }
       } catch (error) {
-        console.error("Error fetching bookings:", error.response?.data || error.message);
+        console.error("Lỗi khi tải danh sách đặt phòng:", error.response?.data || error.message);
+        setError("Không thể tải danh sách đặt phòng.");
       } finally {
         setLoading(prev => ({ ...prev, bookings: false }));
       }
@@ -102,24 +115,23 @@ export default function Dashboard() {
     const fetchCharts = async () => {
       try {
         const rangeLabel = {
-          day: 'Day ',
-          month: 'Month ',
-          year: 'Year '
+          day: 'Ngày ',
+          month: 'Tháng ',
+          year: 'Năm '
         };
 
         const fillTimeLabels = (range) => {
-          if (range === 'day') return Array.from({ length: 31 }, (_, i) => `Day ${i + 1}`);
-          if (range === 'month') return Array.from({ length: 12 }, (_, i) => `Month ${i + 1}`);
+          if (range === 'day') return Array.from({ length: 31 }, (_, i) => `Ngày ${i + 1}`);
+          if (range === 'month') return Array.from({ length: 12 }, (_, i) => `Tháng ${i + 1}`);
           if (range === 'year') {
             const currentYear = new Date().getFullYear();
-            return Array.from({ length: 5 }, (_, i) => `Year ${currentYear - 4 + i}`);
+            return Array.from({ length: 5 }, (_, i) => `Năm ${currentYear - 4 + i}`);
           }
           return [];
         };
 
         const timeLabels = fillTimeLabels(timeRange);
 
-        // Fetch revenue data
         const revenueUrl = activeTab === 'room'
           ? `http://localhost:8080/api/reports/revenue/room?hostId=${hostId}&range=${timeRange}`
           : `http://localhost:8080/api/reports/revenue/service?hostId=${hostId}&range=${timeRange}`;
@@ -135,7 +147,7 @@ export default function Dashboard() {
         setRevenueChart({
           labels: timeLabels,
           datasets: [{
-            label: 'Total Revenue',
+            label: 'Tổng doanh thu',
             data: revenueValues,
             borderColor: activeTab === 'room' ? 'rgba(255, 105, 180, 1)' : 'rgba(255, 159, 64, 1)',
             backgroundColor: activeTab === 'room' ? 'rgba(255, 105, 180, 0.2)' : 'rgba(255, 159, 64, 0.2)',
@@ -143,7 +155,6 @@ export default function Dashboard() {
           }]
         });
 
-        // Fetch booking/service data
         const bookingUrl = activeTab === 'room'
           ? `http://localhost:8080/api/reports/count/bookings?hostId=${hostId}&range=${timeRange}`
           : `http://localhost:8080/api/reports/count/services?hostId=${hostId}&range=${timeRange}`;
@@ -174,25 +185,29 @@ export default function Dashboard() {
         }));
 
         setRoomChart({ labels: timeLabels, datasets });
+        setError('');
       } catch (error) {
-        console.error("Error fetching chart data:", error);
+        console.error("Lỗi khi tải dữ liệu biểu đồ:", error);
+        setError("Không thể tải dữ liệu biểu đồ.");
       } finally {
         setLoading(prev => ({ ...prev, charts: false }));
       }
     };
 
-    fetchMetrics();
-    fetchBookings();
-    fetchCharts();
+    if (hostId) {
+      fetchMetrics();
+      fetchBookings();
+      fetchCharts();
+    }
   }, [hostId, timeRange, activeTab]);
 
   const overallRating = 4.5;
   const ratingDetails = [
-    { label: 'Cleanliness', value: 4.5 },
-    { label: 'Facilities', value: 4.0 },
-    { label: 'Room Comfort', value: 4.2 },
-    { label: 'Service', value: 4.3 },
-    { label: 'Value for money', value: 4.1 }
+    { label: 'Vệ sinh', value: 4.5 },
+    { label: 'Tiện nghi', value: 4.0 },
+    { label: 'Tiện nghi phòng', value: 4.2 },
+    { label: 'Dịch vụ', value: 4.3 },
+    { label: 'Giá trị', value: 4.1 }
   ];
 
   const displayedBookings = showAll ? bookings : bookings.slice(0, 5);
@@ -208,37 +223,41 @@ export default function Dashboard() {
     <div className="main-wrapper">
       <div className="page-wrapper">
         <div className="content container-fluid">
+          {error && (
+            <Alert variant="danger" onClose={() => setError('')} dismissible>
+              {error}
+            </Alert>
+          )}
           <div className="page-header">
             <div className="row">
               <div className="col-sm-12 mt-5">
-                <h3 className="page-title mt-3">Host Dashboard</h3>
+                <h3 className="page-title mt-3">Bảng điều khiển của Host</h3>
                 <ul className="breadcrumb">
-                  <li className="breadcrumb-item active">Dashboard</li>
+                  <li className="breadcrumb-item active">Bảng điều khiển</li>
                 </ul>
               </div>
             </div>
           </div>
 
-          {/* Metrics Cards */}
           <div className="row">
             {[
               {
-                title: 'Total Bookings',
+                title: 'Tổng đơn đặt phòng',
                 value: loading.metrics ? '...' : metrics.totalBookings,
                 icon: 'user-plus'
               },
               {
-                title: 'Available Rooms',
+                title: 'Phòng trống',
                 value: loading.metrics ? '...' : metrics.availableRooms,
                 icon: 'home'
               },
               {
-                title: 'Revenue',
+                title: 'Doanh thu',
                 value: loading.metrics ? '...' : formatCurrency(metrics.revenue),
                 icon: 'dollar-sign'
               },
               {
-                title: 'Rating',
+                title: 'Đánh giá',
                 value: overallRating,
                 icon: 'star'
               }
@@ -263,26 +282,25 @@ export default function Dashboard() {
             ))}
           </div>
 
-          {/* Charts Row */}
           <div className="row">
             <div className="col-md-12 col-lg-6">
               <div className="cardDashboard card-chart">
                 <div className="card-header">
-                  <h4 className="card-title">Revenue Overview</h4>
+                  <h4 className="card-title">Tổng quan doanh thu</h4>
                   <Dropdown>
                     <Dropdown.Toggle variant="secondary" size="sm">
-                      {timeRange.charAt(0).toUpperCase() + timeRange.slice(1)}
+                      {timeRange === 'day' ? 'Ngày' : timeRange === 'month' ? 'Tháng' : 'Năm'}
                     </Dropdown.Toggle>
                     <Dropdown.Menu>
-                      <Dropdown.Item onClick={() => setTimeRange('day')}>Day</Dropdown.Item>
-                      <Dropdown.Item onClick={() => setTimeRange('month')}>Month</Dropdown.Item>
-                      <Dropdown.Item onClick={() => setTimeRange('year')}>Year</Dropdown.Item>
+                      <Dropdown.Item onClick={() => setTimeRange('day')}>Ngày</Dropdown.Item>
+                      <Dropdown.Item onClick={() => setTimeRange('month')}>Tháng</Dropdown.Item>
+                      <Dropdown.Item onClick={() => setTimeRange('year')}>Năm</Dropdown.Item>
                     </Dropdown.Menu>
                   </Dropdown>
                 </div>
                 <div className="cardDashboard-body">
                   {loading.charts ? (
-                    <div className="text-center py-5">Loading chart...</div>
+                    <div className="text-center py-5">Đang tải biểu đồ...</div>
                   ) : (
                     <Line
                       data={revenueChart}
@@ -296,32 +314,32 @@ export default function Dashboard() {
             <div className="col-md-12 col-lg-6">
               <div className="cardDashboard card-chart">
                 <div className="card-header">
-                  <h4 className="card-title">{activeTab === 'room' ? 'Room Bookings' : 'Service Usage'}</h4>
+                  <h4 className="card-title">{activeTab === 'room' ? 'Đơn đặt phòng' : 'Sử dụng dịch vụ'}</h4>
                   <div className="d-flex">
                     <Dropdown className="mr-2">
                       <Dropdown.Toggle variant="secondary" size="sm">
-                        {timeRange.charAt(0).toUpperCase() + timeRange.slice(1)}
+                        {timeRange === 'day' ? 'Ngày' : timeRange === 'month' ? 'Tháng' : 'Năm'}
                       </Dropdown.Toggle>
                       <Dropdown.Menu>
-                        <Dropdown.Item onClick={() => setTimeRange('day')}>Day</Dropdown.Item>
-                        <Dropdown.Item onClick={() => setTimeRange('month')}>Month</Dropdown.Item>
-                        <Dropdown.Item onClick={() => setTimeRange('year')}>Year</Dropdown.Item>
+                        <Dropdown.Item onClick={() => setTimeRange('day')}>Ngày</Dropdown.Item>
+                        <Dropdown.Item onClick={() => setTimeRange('month')}>Tháng</Dropdown.Item>
+                        <Dropdown.Item onClick={() => setTimeRange('year')}>Năm</Dropdown.Item>
                       </Dropdown.Menu>
                     </Dropdown>
                     <Dropdown>
                       <Dropdown.Toggle variant="info" size="sm">
-                        {activeTab === 'room' ? 'Rooms' : 'Services'}
+                        {activeTab === 'room' ? 'Phòng' : 'Dịch vụ'}
                       </Dropdown.Toggle>
                       <Dropdown.Menu>
-                        <Dropdown.Item onClick={() => setActiveTab('room')}>Rooms</Dropdown.Item>
-                        <Dropdown.Item onClick={() => setActiveTab('service')}>Services</Dropdown.Item>
+                        <Dropdown.Item onClick={() => setActiveTab('room')}>Phòng</Dropdown.Item>
+                        <Dropdown.Item onClick={() => setActiveTab('service')}>Dịch vụ</Dropdown.Item>
                       </Dropdown.Menu>
                     </Dropdown>
                   </div>
                 </div>
                 <div className="cardDashboard-body">
                   {loading.charts ? (
-                    <div className="text-center py-5">Loading chart...</div>
+                    <div className="text-center py-5">Đang tải biểu đồ...</div>
                   ) : (
                     <Line
                       data={roomChart}
@@ -342,30 +360,26 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Bookings Table */}
           <div className="row">
             <div className="col-md-12 d-flex">
               <div className="cardDashboard card-table flex-fill">
                 <div className="card-header">
-                  <h4 className="card-title float-left mt-2">Recent Bookings</h4>
+                  <h4 className="card-title float-left mt-2">Đơn đặt phòng gần đây</h4>
                   <button
                     type="button"
                     className="btn btn-primary float-right veiwbutton"
                     onClick={() => setShowAll(!showAll)}
                     disabled={loading.bookings}
                   >
-                    {showAll ? 'Show Less' : 'View All'}
+                    {showAll ? 'Thu gọn' : 'Xem tất cả'}
                   </button>
                 </div>
                 <div className="cardDashboard-body">
-                    <BookingsTable></BookingsTable>
+                  <BookingsTable></BookingsTable>
                 </div>
               </div>
             </div>
           </div>
-
-          
-
         </div>
       </div>
     </div>

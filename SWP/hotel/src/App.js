@@ -55,6 +55,7 @@ import RoomPricing from "./pages/host/room/RoomPricing";
 import FacilitiesList from "./pages/host/FacilitiesList";
 import EditService from "./pages/host/EditService";
 import AddService from "./pages/host/AddService";
+import HostAccountSettings from "./components/host/HostAccountSettings";
 
 // Payment Pages
 import PaymentCheckout from "./pages/payment/Payment-checkout";
@@ -146,6 +147,7 @@ function App() {
               <Route path="occupancy" element={<Occupancy />} />
               <Route path="bookings" element={<HostBooking />} />
               <Route path="facilities" element={<FacilitiesList />} />
+              <Route path="/host/account-settings" element={<HostAccountSettings />} />
             </Route>
 
             {/* Booking/Payment Routes */}

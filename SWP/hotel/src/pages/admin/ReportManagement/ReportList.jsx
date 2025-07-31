@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { fetchAdminReports } from './reportApi';
 import ReportDetailModal from './ReportDetailModal';
+import { Alert } from 'react-bootstrap';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const PAGE_SIZE = 10;
 
@@ -8,9 +10,21 @@ const ReportList = () => {
     const [reports, setReports] = useState([]);
     const [selectedReport, setSelectedReport] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
+    const [error, setError] = useState('');
 
     useEffect(() => {
-        fetchAdminReports().then(res => setReports(res.data));
+        fetchAdminReports()
+            .then(res => {
+                setReports(res.data);
+                setError('');
+                if (res.data.length === 0) {
+                    setError('Không có báo cáo nào.');
+                }
+            })
+            .catch(err => {
+                console.error('Lỗi khi tải danh sách báo cáo:', err);
+                setError('Không thể tải danh sách báo cáo. Vui lòng thử lại.');
+            });
     }, []);
 
     const totalPages = Math.ceil(reports.length / PAGE_SIZE);
@@ -23,7 +37,6 @@ const ReportList = () => {
         setCurrentPage(page);
     };
 
-    // Function to get status badge class and text
     const getStatusDisplay = (status) => {
         const statusConfig = {
             'pending': {
@@ -111,6 +124,11 @@ const ReportList = () => {
                         <div className="col-sm-12">
                             <div className="card card-table">
                                 <div className="card-body">
+                                    {error && (
+                                        <Alert variant="info" onClose={() => setError('')} dismissible>
+                                            {error}
+                                        </Alert>
+                                    )}
                                     <div className="table-responsive">
                                         <table className="table table-striped table-hover table-center mb-0">
                                             <thead>
@@ -124,31 +142,32 @@ const ReportList = () => {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {displayedReports.map(report => {
-                                                    const statusDisplay = getStatusDisplay(report.status);
-                                                    return (
-                                                        <tr key={report.id}>
-                                                            <td>{report.homestayName || 'null'}</td>
-                                                            <td>{report.title}</td>
-                                                            <td>{report.reportType}</td>
-                                                            <td>
-                                                                <span className={statusDisplay.class}>
-                                                                    {statusDisplay.text}
-                                                                </span>
-                                                            </td>
-                                                            <td>{new Date(report.createdAt).toLocaleString()}</td>
-                                                            <td className="text-right">
-                                                                <button
-                                                                    className="btn btn-sm btn-primary"
-                                                                    onClick={() => setSelectedReport(report)}
-                                                                >
-                                                                    Xem
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                })}
-                                                {reports.length === 0 && (
+                                                {displayedReports.length > 0 ? (
+                                                    displayedReports.map(report => {
+                                                        const statusDisplay = getStatusDisplay(report.status);
+                                                        return (
+                                                            <tr key={report.id}>
+                                                                <td>{report.homestayName || 'Không có'}</td>
+                                                                <td>{report.title}</td>
+                                                                <td>{report.reportType}</td>
+                                                                <td>
+                                                                    <span className={statusDisplay.class}>
+                                                                        {statusDisplay.text}
+                                                                    </span>
+                                                                </td>
+                                                                <td>{new Date(report.createdAt).toLocaleString()}</td>
+                                                                <td className="text-right">
+                                                                    <button
+                                                                        className="btn btn-sm btn-primary"
+                                                                        onClick={() => setSelectedReport(report)}
+                                                                    >
+                                                                        Xem
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })
+                                                ) : (
                                                     <tr>
                                                         <td colSpan="6" className="text-center">
                                                             Không có báo cáo nào
@@ -177,7 +196,6 @@ const ReportList = () => {
                                                 </ul>
                                             </nav>
                                         )}
-
                                     </div>
                                 </div>
                             </div>

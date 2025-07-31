@@ -1,5 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import { Alert } from 'react-bootstrap';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const PAGE_SIZE = 10;
 
@@ -8,6 +11,7 @@ const AllHost = () => {
     const [openIndex, setOpenIndex] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [searchKeyword, setSearchKeyword] = useState('');
+    const [error, setError] = useState('');
 
     useEffect(() => {
         const token = localStorage.getItem("token");
@@ -16,8 +20,17 @@ const AllHost = () => {
             .get('http://localhost:8080/api/host', {
                 headers: { Authorization: `Bearer ${token}` }
             })
-            .then((res) => setHosts(res.data))
-            .catch((err) => console.error('Lỗi khi lấy danh sách host:', err));
+            .then((res) => {
+                setHosts(res.data);
+                setError('');
+                if (res.data.length === 0) {
+                    setError('Không tìm thấy chủ nhà nào.');
+                }
+            })
+            .catch((err) => {
+                console.error('Lỗi khi tải danh sách chủ nhà:', err);
+                setError('Không thể tải danh sách chủ nhà. Vui lòng thử lại.');
+            });
 
         const handleClickOutside = (event) => {
             if (!event.target.closest('.dropdown')) {
@@ -34,16 +47,19 @@ const AllHost = () => {
 
     const handleDelete = (id) => {
         const token = localStorage.getItem("token");
-        if (!window.confirm('Bạn có chắc muốn xóa host này?')) return;
+        if (!window.confirm('Bạn có chắc muốn xóa chủ nhà này?')) return;
 
         axios
             .delete(`http://localhost:8080/api/host/${id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             })
-            .then(() => setHosts((prev) => prev.filter((u) => u.userId !== id)))
+            .then(() => {
+                setHosts((prev) => prev.filter((u) => u.userId !== id));
+                setError('');
+            })
             .catch((err) => {
-                console.error('Lỗi khi xóa host:', err);
-                alert('Xóa thất bại.');
+                console.error('Lỗi khi xóa chủ nhà:', err);
+                setError('Xóa chủ nhà thất bại.');
             });
     };
 
@@ -74,7 +90,7 @@ const AllHost = () => {
                         <div className="row align-items-center">
                             <div className="col-md-6">
                                 <h4 className="card-title mt-2">
-                                    <i className="fas fa-users-cog text-warning mr-2"></i>All Hosts
+                                    <i className="fas fa-users-cog text-warning mr-2"></i>Tất cả chủ nhà
                                 </h4>
                             </div>
                             <div className="col-md-6 text-end">
@@ -112,23 +128,30 @@ const AllHost = () => {
                         <div className="col-sm-12">
                             <div className="card card-table">
                                 <div className="card-body booking_card">
+                                    {error && (
+                                        <Alert variant="info" onClose={() => setError('')} dismissible>
+                                            {error}
+                                        </Alert>
+                                    )}
                                     <div className="table-responsive">
                                         <table className="table table-striped table-hover table-center mb-0">
                                             <thead>
                                                 <tr>
-                                                    <th>Full Name</th>
-                                                    <th>Username</th>
+                                                    <th>Họ và tên</th>
+                                                    <th>Tên đăng nhập</th>
                                                     <th>Email</th>
-                                                    <th>Phone</th>
-                                                    <th>Address</th>
-                                                    <th>Status</th>
-                                                    <th className="text-right">Actions</th>
+                                                    <th>Số điện thoại</th>
+                                                    <th>Địa chỉ</th>
+                                                    <th>Trạng thái</th>
+                                                    <th className="text-right">Hành động</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {visibleHosts.length === 0 ? (
                                                     <tr>
-                                                        <td colSpan="7" className="text-center">No hosts found</td>
+                                                        <td colSpan="7" className="text-center">
+                                                            <Alert variant="info">Không tìm thấy chủ nhà nào.</Alert>
+                                                        </td>
                                                     </tr>
                                                 ) : (
                                                     visibleHosts.map((h, index) => (
@@ -141,11 +164,11 @@ const AllHost = () => {
                                                             <td>
                                                                 {h.status ? (
                                                                     <span className="badge badge-success">
-                                                                        <i className="fas fa-check-circle mr-1"></i>Active
+                                                                        <i className="fas fa-check-circle mr-1"></i>Hoạt động
                                                                     </span>
                                                                 ) : (
                                                                     <span className="badge badge-danger">
-                                                                        <i className="fas fa-times-circle mr-1"></i>Inactive
+                                                                        <i className="fas fa-times-circle mr-1"></i>Không hoạt động
                                                                     </span>
                                                                 )}
                                                             </td>
@@ -161,10 +184,10 @@ const AllHost = () => {
                                                                         className={`dropdown-menu dropdown-menu-right ${openIndex === index ? 'show' : ''}`}
                                                                     >
                                                                         <a href={`/admin/edit-host/${h.id}`} className="dropdown-item">
-                                                                            <i className="fas fa-pencil-alt"></i> Edit
+                                                                            <i className="fas fa-pencil-alt"></i> Chỉnh sửa
                                                                         </a>
                                                                         <button className="dropdown-item" onClick={() => handleDelete(h.userId)}>
-                                                                            <i className="fas fa-trash-alt"></i> Delete
+                                                                            <i className="fas fa-trash-alt"></i> Xóa
                                                                         </button>
                                                                     </div>
                                                                 </div>
@@ -177,7 +200,7 @@ const AllHost = () => {
                                     </div>
 
                                     <div className="d-flex justify-content-between align-items-center mt-3">
-                                        <span>Page {currentPage} / {totalPages}</span>
+                                        <span>Trang {currentPage} / {totalPages}</span>
                                         <nav>
                                             <ul className="pagination mb-0">
                                                 <li className={`page-item ${currentPage === 1 && 'disabled'}`}>
@@ -205,4 +228,3 @@ const AllHost = () => {
 };
 
 export default AllHost;
-

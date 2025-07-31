@@ -1,101 +1,221 @@
-import React, { useState, useEffect } from 'react';
-import { resolveReport } from './reportApi';
+import React, { useEffect, useState } from 'react';
+import { fetchAdminReports } from './reportApi';
+import ReportDetailModal from './ReportDetailModal';
+import { Alert } from 'react-bootstrap';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
-const ACTIONS = ['Cảnh cáo', 'Phạt tiền', 'Đình chỉ', 'Cấm vĩnh viễn'];
+const PAGE_SIZE = 10;
 
-const ReportDetailModal = ({ report, onClose, onResolved }) => {
-    const [actionTaken, setActionTaken] = useState('');
-    const [resolutionNote, setResolutionNote] = useState('');
-    const isResolved = report.status === 'resolved';
+const ReportList = () => {
+    const [reports, setReports] = useState([]);
+    const [selectedReport, setSelectedReport] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [error, setError] = useState('');
 
     useEffect(() => {
-        if (isResolved) {
-            setActionTaken(report.actionTaken || '');
-            setResolutionNote(report.resolutionNote || '');
-        }
-    }, [report, isResolved]);
-
-    const handleSubmit = async () => {
-        if (!actionTaken) {
-            alert("Vui lòng chọn hành động xử lý!");
-            return;
-        }
-
-        try {
-            await resolveReport(report.id, {
-                actionTaken,
-                resolutionNote,
+        fetchAdminReports()
+            .then(res => {
+                setReports(res.data);
+                setError('');
+                if (res.data.length === 0) {
+                    setError('Không có báo cáo nào.');
+                }
+            })
+            .catch(err => {
+                console.error('Lỗi khi tải danh sách báo cáo:', err);
+                setError('Không thể tải danh sách báo cáo. Vui lòng thử lại.');
             });
-            alert("Xử lý báo cáo thành công!");
-            onResolved();
-        } catch (error) {
-            console.error("Lỗi xử lý báo cáo:", error);
-            alert("Đã xảy ra lỗi khi xử lý báo cáo");
-        }
+    }, []);
+
+    const totalPages = Math.ceil(reports.length / PAGE_SIZE);
+    const displayedReports = reports.slice(
+        (currentPage - 1) * PAGE_SIZE,
+        currentPage * PAGE_SIZE
+    );
+
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+    };
+
+    const getStatusDisplay = (status) => {
+        const statusConfig = {
+            'pending': {
+                class: 'badge badge-warning',
+                text: 'Chờ xử lý'
+            },
+            'resolved': {
+                class: 'badge badge-success',
+                text: 'Đã giải quyết'
+            }
+        };
+
+        return statusConfig[status] || {
+            class: 'badge badge-light',
+            text: status
+        };
     };
 
     return (
-        <div className="modal d-block" tabIndex="-1" role="dialog" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
-            <div className="modal-dialog modal-lg" role="document">
-                <div className="modal-content">
-                    <div className="modal-header">
-                        <h5 className="modal-title">Chi tiết báo cáo</h5>
-                        <button type="button" className="close" onClick={onClose}>
-                            <span>&times;</span>
-                        </button>
-                    </div>
+        <div className="main-wrapper">
+            <style jsx>{`
+                .status-pending {
+                    background-color: #ffc107;
+                    color: #212529;
+                }
+                .status-in_progress {
+                    background-color: #17a2b8;
+                    color: #fff;
+                }
+                .status-resolved {
+                    background-color: #28a745;
+                    color: #fff;
+                }
+                .status-closed {
+                    background-color: #6c757d;
+                    color: #fff;
+                }
+                .badge {
+                    display: inline-block;
+                    padding: 0.25em 0.4em;
+                    font-size: 75%;
+                    font-weight: 700;
+                    line-height: 1;
+                    text-align: center;
+                    white-space: nowrap;
+                    vertical-align: baseline;
+                    border-radius: 0.25rem;
+                }
+                .badge-warning {
+                    background-color: #ffc107;
+                    color: #212529;
+                }
+                .badge-info {
+                    background-color: #17a2b8;
+                    color: #fff;
+                }
+                .badge-success {
+                    background-color: #28a745;
+                    color: #fff;
+                }
+                .badge-secondary {
+                    background-color: #6c757d;
+                    color: #fff;
+                }
+                .badge-light {
+                    background-color: #f8f9fa;
+                    color: #495057;
+                }
+            `}</style>
 
-                    <div className="modal-body">
-                        <p><strong>Tiêu đề:</strong> {report.title}</p>
-                        <p><strong>Loại:</strong> {report.reportType}</p>
-                        <p><strong>Mô tả:</strong> {report.description}</p>
-
-                        {isResolved ? (
-                            <div className="alert alert-success mt-3">
-                                <p><strong>Đã xử lý:</strong> {report.actionTaken}</p>
-                                <p><strong>Ghi chú xử lý:</strong> {report.resolutionNote}</p>
+            <div className="page-wrapper">
+                <div className="content container-fluid">
+                    <div className="page-header">
+                        <div className="row align-items-center">
+                            <div className="col">
+                                <h4 className="card-title mt-2">
+                                    <i className="fas fa-flag text-danger mr-2"></i>
+                                    Báo cáo vi phạm
+                                </h4>
                             </div>
-                        ) : (
-                            <>
-                                <div className="form-group mt-3">
-                                    <label>Hành động xử lý:</label>
-                                    <select
-                                        className="form-control"
-                                        value={actionTaken}
-                                        onChange={(e) => setActionTaken(e.target.value)}
-                                    >
-                                        <option value="">-- Chọn hành động --</option>
-                                        {ACTIONS.map(a => (
-                                            <option key={a} value={a}>{a}</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="form-group mt-3">
-                                    <label>Ghi chú xử lý:</label>
-                                    <textarea
-                                        className="form-control"
-                                        rows="4"
-                                        value={resolutionNote}
-                                        onChange={(e) => setResolutionNote(e.target.value)}
-                                    />
-                                </div>
-                            </>
-                        )}
+                        </div>
                     </div>
 
-                    <div className="modal-footer">
-                        <button type="button" className="btn btn-secondary" onClick={onClose}>Đóng</button>
-                        {!isResolved && (
-                            <button type="button" className="btn btn-primary" onClick={handleSubmit}>
-                                Xác nhận xử lý
-                            </button>
-                        )}
+                    <div className="row">
+                        <div className="col-sm-12">
+                            <div className="card card-table">
+                                <div className="card-body">
+                                    {error && (
+                                        <Alert variant="info" onClose={() => setError('')} dismissible>
+                                            {error}
+                                        </Alert>
+                                    )}
+                                    <div className="table-responsive">
+                                        <table className="table table-striped table-hover table-center mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Tên homestay</th>
+                                                    <th>Tiêu đề</th>
+                                                    <th>Loại</th>
+                                                    <th>Trạng thái</th>
+                                                    <th>Ngày tạo</th>
+                                                    <th className="text-right">Hành động</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {displayedReports.length > 0 ? (
+                                                    displayedReports.map(report => {
+                                                        const statusDisplay = getStatusDisplay(report.status);
+                                                        return (
+                                                            <tr key={report.id}>
+                                                                <td>{report.homestayName || 'Không có'}</td>
+                                                                <td>{report.title}</td>
+                                                                <td>{report.reportType}</td>
+                                                                <td>
+                                                                    <span className={statusDisplay.class}>
+                                                                        {statusDisplay.text}
+                                                                    </span>
+                                                                </td>
+                                                                <td>{new Date(report.createdAt).toLocaleString()}</td>
+                                                                <td className="text-right">
+                                                                    <button
+                                                                        className="btn btn-sm btn-primary"
+                                                                        onClick={() => setSelectedReport(report)}
+                                                                    >
+                                                                        Xem
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })
+                                                ) : (
+                                                    <tr>
+                                                        <td colSpan="6" className="text-center">
+                                                            Không có báo cáo nào
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+
+                                        {totalPages > 1 && (
+                                            <nav className="mt-3">
+                                                <ul className="pagination justify-content-center">
+                                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                                        <li
+                                                            key={page}
+                                                            className={`page-item ${page === currentPage ? 'active' : ''}`}
+                                                        >
+                                                            <button
+                                                                className="page-link"
+                                                                onClick={() => handlePageChange(page)}
+                                                            >
+                                                                {page}
+                                                            </button>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </nav>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
+                    {selectedReport && (
+                        <ReportDetailModal
+                            report={selectedReport}
+                            onClose={() => setSelectedReport(null)}
+                            onResolved={() => {
+                                fetchAdminReports().then(res => setReports(res.data));
+                                setSelectedReport(null);
+                            }}
+                        />
+                    )}
                 </div>
             </div>
         </div>
     );
 };
 
-export default ReportDetailModal;
+export default ReportList;

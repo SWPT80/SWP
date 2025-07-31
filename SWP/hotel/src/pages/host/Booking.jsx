@@ -1,13 +1,14 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
-import { Container, Row, Col, Spinner, Card } from "react-bootstrap";
-import { BookingsTable } from "../../components/host/BookingsTable";
+import React, { useEffect, useState } from 'react';
+import axios from '../../utils/axiosConfig';
 import { useAuth } from "../../context/AuthContext";
-import "../../assets/css/Dashboard.css";
+import { Container, Row, Col, Spinner, Card, Alert } from "react-bootstrap";
+import { BookingsTable } from "../../components/host/BookingsTable";
+import "../../assets/styles/Dashboard.css";
 
 export default function BookingPage() {
   const { user } = useAuth();
   const hostId = user?.id;
+  const [error, setError] = useState('');
 
   const [metrics, setMetrics] = useState({
     totalBookings: 0,
@@ -20,7 +21,10 @@ export default function BookingPage() {
 
   useEffect(() => {
     const fetchMetrics = async () => {
-      if (!hostId) return;
+      if (!hostId) {
+        setError('Không tìm thấy Host ID. Vui lòng đăng nhập lại.');
+        return;
+      }
       try {
         const token = localStorage.getItem("token");
         const response = await axios.get(
@@ -33,8 +37,10 @@ export default function BookingPage() {
           revenue: response.data.revenue,
           rating: 4.5,
         });
+        setError('');
       } catch (error) {
-        console.error("Error fetching metrics:", error);
+        console.error("Lỗi khi tải số liệu:", error);
+        setError("Không thể tải số liệu thống kê.");
       } finally {
         setLoading((prev) => ({ ...prev, metrics: false }));
       }
@@ -54,37 +60,41 @@ export default function BookingPage() {
     <div className="main-wrapper">
       <div className="page-wrapper">
         <div className="content container-fluid">
+          {error && (
+            <Alert variant="danger" onClose={() => setError('')} dismissible>
+              {error}
+            </Alert>
+          )}
           <div className="page-header">
             <div className="row">
               <div className="col-sm-12 mt-5">
-                <h3 className="page-title mt-3">Booking Management</h3>
+                <h3 className="page-title mt-3">Quản lý đặt phòng</h3>
                 <ul className="breadcrumb">
-                  <li className="breadcrumb-item active">Bookings</li>
+                  <li className="breadcrumb-item active">Đặt phòng</li>
                 </ul>
               </div>
             </div>
           </div>
 
-          {/* Metrics Cards */}
           <Row className="mb-4">
             {[
               {
-                title: "Total Bookings",
+                title: "Tổng đơn đặt phòng",
                 value: loading.metrics ? "..." : metrics.totalBookings,
                 icon: "user-plus",
               },
               {
-                title: "Available Rooms",
+                title: "Phòng trống",
                 value: loading.metrics ? "..." : metrics.availableRooms,
                 icon: "home",
               },
               {
-                title: "Revenue",
+                title: "Doanh thu",
                 value: loading.metrics ? "..." : formatCurrency(metrics.revenue),
                 icon: "dollar-sign",
               },
               {
-                title: "Rating",
+                title: "Đánh giá",
                 value: metrics.rating,
                 icon: "star",
               },
@@ -107,9 +117,8 @@ export default function BookingPage() {
             ))}
           </Row>
 
-          {/* Bookings Table */}
           <Card className="cardDashboard">
-            <Card.Header as="h5">Bookings</Card.Header>
+            <Card.Header as="h5">Đặt phòng</Card.Header>
             <Card.Body>
               {loading.metrics ? (
                 <div className="text-center py-5">

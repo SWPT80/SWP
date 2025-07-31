@@ -113,7 +113,7 @@ export default function HostService() {
   );
 
   return (
-    <div className="min-vh-100 d-flex flex-column">
+    <div className="min-vh-100 d-flex flex-column pt-5">
       <Container className="my-4 flex-grow-1">
         {/* Stats cards */}
         <Row className="g-4 mb-4">

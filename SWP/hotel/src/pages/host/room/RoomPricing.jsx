@@ -392,7 +392,7 @@ export default function RoomPricing() {
   };
 
   return (
-    <div className="container mt-4">
+    <div className="container mt-5">
       <h3 className="mb-4">🛏️ Cài đặt giá phòng theo mùa</h3>
 
       <div className="row mb-3">

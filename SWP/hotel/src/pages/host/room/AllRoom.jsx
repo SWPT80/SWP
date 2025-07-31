@@ -8,64 +8,60 @@ import {
   Col,
   Container,
   Card,
-  Toast,
-  ToastContainer
+  Alert,
+  AlertContainer
 } from "react-bootstrap";
 import { useNavigate } from 'react-router-dom';
 import axios from "axios";
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 export default function AllRoom() {
   const api = 'http://localhost:8080/api/rooms';
   const navigate = useNavigate();
   const [hostId, setHostId] = useState(() => localStorage.getItem("hostId"));
+  const [alerts, setAlerts] = useState([]);
 
-  // Toast states
-  const [toasts, setToasts] = useState([]);
-
-  // Function to show toast
-  const showToast = (message, type = 'success', duration = 4000) => {
+  const showAlert = (message, variant = 'success', duration = 4000) => {
     const id = Date.now();
-    const newToast = {
+    const newAlert = {
       id,
       message,
-      type, // 'success', 'error', 'warning', 'info'
+      variant,
       show: true,
       duration,
       startTime: Date.now(),
       progress: 0
     };
-    setToasts(prev => [...prev, newToast]);
-    
-    // Update progress bar
+    setAlerts(prev => [...prev, newAlert]);
+
     const progressInterval = setInterval(() => {
-      setToasts(prev => prev.map(toast => {
-        if (toast.id === id) {
-          const elapsed = Date.now() - toast.startTime;
+      setAlerts(prev => prev.map(alert => {
+        if (alert.id === id) {
+          const elapsed = Date.now() - alert.startTime;
           const progress = Math.min((elapsed / duration) * 100, 100);
-          return { ...toast, progress };
+          return { ...alert, progress };
         }
-        return toast;
+        return alert;
       }));
     }, 50);
-    
-    // Auto hide after duration
+
     setTimeout(() => {
       clearInterval(progressInterval);
-      setToasts(prev => prev.filter(toast => toast.id !== id));
+      setAlerts(prev => prev.filter(alert => alert.id !== id));
     }, duration);
   };
 
-  const hideToast = (id) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
+  const hideAlert = (id) => {
+    setAlerts(prev => prev.filter(alert => alert.id !== id));
   };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
+      showAlert("Không tìm thấy token. Vui lòng đăng nhập lại.", "danger");
       navigate("/", { replace: true });
       return;
     }
-    // Nếu chưa có hostId => gọi /me
     if (!hostId) {
       axios.get("http://localhost:8080/api/auth/me", {
         headers: { Authorization: `Bearer ${token}` }
@@ -73,13 +69,18 @@ export default function AllRoom() {
         .then(res => {
           const user = res.data;
           if (user.role !== 'HOST') {
+            showAlert("Quyền truy cập bị từ chối. Yêu cầu vai trò chủ nhà.", "danger");
             navigate("/", { replace: true });
             return;
           }
           localStorage.setItem("hostId", user.id);
           setHostId(user.id);
+          showAlert(`Chào mừng quay lại, ${user.name || 'Chủ nhà'}!`, "success");
         })
-        .catch(() => navigate("/", { replace: true }));
+        .catch(() => {
+          showAlert("Xác thực thất bại.", "danger");
+          navigate("/", { replace: true });
+        });
     }
   }, [navigate, hostId]);
 
@@ -88,8 +89,9 @@ export default function AllRoom() {
       const res = await fetch(`${api}/host/${hostId}`);
       const data = await res.json();
       setRooms(data);
+      showAlert("Tải danh sách phòng thành công.", "success", 2000);
     } catch (error) {
-      showToast("Failed to load rooms", "error");
+      showAlert("Không thể tải danh sách phòng.", "danger");
     }
   };
 
@@ -109,18 +111,16 @@ export default function AllRoom() {
         method: 'DELETE',
       });
       if (res.ok) {
-        showToast("🗑️ Room deleted successfully!", "success");
+        showAlert("🗑️ Xóa phòng thành công!", "success");
         fetchRooms();
-
-        // Dispatch custom event để thông báo cho các component khác
         window.dispatchEvent(new CustomEvent('roomDeleted', {
           detail: { homestayId, roomId }
         }));
       } else {
-        showToast("Failed to delete room", "error");
+        showAlert("Không thể xóa phòng.", "danger");
       }
     } catch (error) {
-      showToast("An error occurred while deleting room", "error");
+      showAlert("Đã xảy ra lỗi khi xóa phòng.", "danger");
     }
   };
 
@@ -147,123 +147,158 @@ export default function AllRoom() {
       });
 
       if (!res.ok) {
-        showToast("❌ Update failed!", "error");
+        showAlert("❌ Cập nhật thất bại!", "danger");
         return;
       }
 
-      showToast("✅ Room updated successfully!", "success");
+      showAlert("✅ Cập nhật phòng thành công!", "success");
       setShowModal(false);
-      fetchRooms(); // reload danh sách
+      fetchRooms();
 
     } catch (err) {
-      console.error("Update error:", err);
-      showToast("An error occurred while updating room", "error");
-    }
-  };
-
-  const getToastVariant = (type) => {
-    switch (type) {
-      case 'success': return 'success';
-      case 'error': return 'danger';
-      case 'warning': return 'warning';
-      case 'info': return 'info';
-      default: return 'primary';
-    }
-  };
-
-  const getToastIcon = (type) => {
-    switch (type) {
-      case 'success': return '✅';
-      case 'error': return '❌';
-      case 'warning': return '⚠️';
-      case 'info': return 'ℹ️';
-      default: return '📢';
+      console.error("Lỗi khi cập nhật:", err);
+      showAlert("Đã xảy ra lỗi khi cập nhật phòng.", "danger");
     }
   };
 
   return (
     <Container className="mt-5">
+      {alerts.map((alert) => (
+        <div key={alert.id} className="position-relative">
+          <Alert
+            show={alert.show}
+            onClose={() => hideAlert(alert.id)}
+            variant={alert.variant}
+            className="text-white position-fixed"
+            style={{ minWidth: '300px', top: '20px', right: '20px', zIndex: 9999 }}
+          >
+            <Alert.Heading>
+              <span className="me-2">
+                {alert.variant === 'success' && '✅'}
+                {alert.variant === 'danger' && '❌'}
+                {alert.variant === 'warning' && '⚠️'}
+                {alert.variant === 'info' && 'ℹ️'}
+              </span>
+              <strong className="me-auto">
+                {alert.variant === 'success' && 'Thành công'}
+                {alert.variant === 'danger' && 'Lỗi'}
+                {alert.variant === 'warning' && 'Cảnh báo'}
+                {alert.variant === 'info' && 'Thông tin'}
+              </strong>
+            </Alert.Heading>
+            <div>{alert.message}</div>
+            <div className="mt-2">
+              <div
+                className="progress"
+                style={{
+                  height: '3px',
+                  backgroundColor: 'rgba(255,255,255,0.3)',
+                  borderRadius: '2px'
+                }}
+              >
+                <div
+                  className="progress-bar"
+                  role="progressbar"
+                  style={{
+                    width: `${alert.progress}%`,
+                    backgroundColor: 'rgba(255,255,255,0.8)',
+                    transition: 'width 0.05s linear',
+                    borderRadius: '2px'
+                  }}
+                />
+              </div>
+            </div>
+          </Alert>
+        </div>
+      ))}
       <Card className="shadow p-4">
         <div className="d-flex justify-content-between align-items-center mb-4">
-          <h2>🏠 Manage Your Rooms</h2>
-          <Button 
-            variant="success" 
+          <h2>🏠 Quản lý phòng</h2>
+          <Button
+            variant="success"
             size="lg"
             onClick={() => navigate('/host/rooms/add')}
             className="d-flex align-items-center gap-2"
           >
-            ➕ Add New Room
+            ➕ Thêm phòng mới
           </Button>
         </div>
         <Table responsive bordered hover className="align-middle text-center">
           <thead className="table-primary">
             <tr>
-              <th>Room ID</th>
-              <th>Type</th>
-              <th>Capacity</th>
-              <th>Price</th>
-              <th>Rating</th>
-              <th>Status</th>
-              <th>Actions</th>
+              <th>Mã phòng</th>
+              <th>Loại phòng</th>
+              <th>Sức chứa</th>
+              <th>Giá</th>
+              <th>Đánh giá</th>
+              <th>Trạng thái</th>
+              <th>Hành động</th>
             </tr>
           </thead>
           <tbody>
-            {rooms.map((room) => (
-              <tr
-                key={`${room.homestayId}-${room.roomId}`}
-                onClick={() => {
-                  setSelectedRoom(room);
-                  setShowModal(true);
-                }}
-                style={{ cursor: 'pointer' }}
-              >
-                <td>{room.roomId}</td>
-                <td>{room.roomType}</td>
-                <td>{room.roomCapacity}</td>
-                <td>${room.roomPrice.toLocaleString()}</td>
-                <td>{room.rating}</td>
-                <td>
-                  <span className={`badge ${room.status ? 'bg-success' : 'bg-secondary'}`}>
-                    {room.status ? 'Active' : 'Inactive'}
-                  </span>
-                </td>
-                <td onClick={(e) => e.stopPropagation()}>
-                  <Button
-                    size="sm"
-                    variant="warning"
-                    className="me-2"
-                    onClick={() => navigate(`/host/rooms/edit/${room.homestayId}_${room.roomId}`, { state: room })}
-                  >
-                    ✏️ Edit
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(room.homestayId, room.roomId);
-                    }}
-                  >
-                    🗑️ Delete
-                  </Button>
+            {rooms.length === 0 ? (
+              <tr>
+                <td colSpan="7" className="text-center">
+                  <Alert variant="info">Không tìm thấy phòng nào.</Alert>
                 </td>
               </tr>
-            ))}
+            ) : (
+              rooms.map((room) => (
+                <tr
+                  key={`${room.homestayId}-${room.roomId}`}
+                  onClick={() => {
+                    setSelectedRoom(room);
+                    setShowModal(true);
+                  }}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <td>{room.roomId}</td>
+                  <td>{room.roomType}</td>
+                  <td>{room.roomCapacity}</td>
+                  <td>{room.roomPrice.toLocaleString()} đ</td>
+                  <td>{room.rating}</td>
+                  <td>
+                    <span className={`badge ${room.status ? 'bg-success' : 'bg-secondary'}`}>
+                      {room.status ? 'Hoạt động' : 'Không hoạt động'}
+                    </span>
+                  </td>
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      size="sm"
+                      variant="warning"
+                      className="me-2"
+                      onClick={() => navigate(`/host/rooms/edit/${room.homestayId}_${room.roomId}`, { state: room })}
+                    >
+                      ✏️ Chỉnh sửa
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(room.homestayId, room.roomId);
+                      }}
+                    >
+                      🗑️ Xóa
+                    </Button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </Table>
       </Card>
 
-      {/* Modal */}
       <Modal show={showModal} onHide={() => setShowModal(false)} centered>
         <Modal.Header closeButton>
-          <Modal.Title>Edit Room #{selectedRoom?.roomId}</Modal.Title>
+          <Modal.Title>Chỉnh sửa phòng #{selectedRoom?.roomId}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form>
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Room Type</Form.Label>
+                  <Form.Label>Loại phòng</Form.Label>
                   <Form.Control
                     type="text"
                     value={selectedRoom?.roomType || ""}
@@ -273,7 +308,7 @@ export default function AllRoom() {
               </Col>
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Capacity</Form.Label>
+                  <Form.Label>Sức chứa</Form.Label>
                   <Form.Control
                     type="number"
                     value={selectedRoom?.roomCapacity || 0}
@@ -283,7 +318,7 @@ export default function AllRoom() {
               </Col>
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Price</Form.Label>
+                  <Form.Label>Giá</Form.Label>
                   <Form.Control
                     type="number"
                     value={selectedRoom?.roomPrice || 0}
@@ -293,7 +328,7 @@ export default function AllRoom() {
               </Col>
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Rating</Form.Label>
+                  <Form.Label>Đánh giá</Form.Label>
                   <Form.Control
                     type="number"
                     value={selectedRoom?.rating || 0}
@@ -303,13 +338,13 @@ export default function AllRoom() {
               </Col>
               <Col md={12}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Status</Form.Label>
+                  <Form.Label>Trạng thái</Form.Label>
                   <Form.Select
                     value={selectedRoom?.status}
                     onChange={(e) => updateField("status", e.target.value === 'true')}
                   >
-                    <option value={true}>Active</option>
-                    <option value={false}>Inactive</option>
+                    <option value={true}>Hoạt động</option>
+                    <option value={false}>Không hoạt động</option>
                   </Form.Select>
                 </Form.Group>
               </Col>
@@ -318,63 +353,13 @@ export default function AllRoom() {
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowModal(false)}>
-            Cancel
+            Hủy
           </Button>
           <Button variant="primary" onClick={handleSave}>
-            Save
+            Lưu
           </Button>
         </Modal.Footer>
       </Modal>
-
-      {/* Toast Container */}
-      <ToastContainer position="top-end" className="p-3" style={{ zIndex: 9999 }}>
-        {toasts.map((toast) => (
-          <div key={toast.id} className="position-relative">
-            <Toast
-              show={toast.show}
-              onClose={() => hideToast(toast.id)}
-              bg={getToastVariant(toast.type)}
-              className="text-white"
-              style={{ minWidth: '300px' }}
-            >
-              <Toast.Header>
-                <span className="me-2">{getToastIcon(toast.type)}</span>
-                <strong className="me-auto">
-                  {toast.type === 'success' && 'Success'}
-                  {toast.type === 'error' && 'Error'}
-                  {toast.type === 'warning' && 'Warning'}
-                  {toast.type === 'info' && 'Info'}
-                </strong>
-              </Toast.Header>
-              <Toast.Body>
-                {toast.message}
-                {/* Progress Bar */}
-                <div className="mt-2">
-                  <div 
-                    className="progress" 
-                    style={{ 
-                      height: '3px', 
-                      backgroundColor: 'rgba(255,255,255,0.3)',
-                      borderRadius: '2px'
-                    }}
-                  >
-                    <div
-                      className="progress-bar"
-                      role="progressbar"
-                      style={{
-                        width: `${toast.progress}%`,
-                        backgroundColor: 'rgba(255,255,255,0.8)',
-                        transition: 'width 0.05s linear',
-                        borderRadius: '2px'
-                      }}
-                    />
-                  </div>
-                </div>
-              </Toast.Body>
-            </Toast>
-          </div>
-        ))}
-      </ToastContainer>
     </Container>
   );
 }

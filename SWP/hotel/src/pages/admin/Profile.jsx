@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { Alert } from 'react-bootstrap';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const AdminAccountSettings = () => {
   const [admin, setAdmin] = useState(null);
-  const [updateStatus, setUpdateStatus] = useState("");
-  const [passwordStatus, setPasswordStatus] = useState("");
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [passwordData, setPasswordData] = useState({
     oldPassword: "",
     newPassword: "",
@@ -16,10 +18,13 @@ const AdminAccountSettings = () => {
       .get("http://localhost:8080/api/admin/account/me", {
         headers: { Authorization: `Bearer ${token}` },
       })
-      .then((res) => setAdmin(res.data))
+      .then((res) => {
+        setAdmin(res.data);
+        setError('');
+      })
       .catch((err) => {
-        console.error("Error getting admin info:", err);
-        setUpdateStatus("Unable to get admin information.");
+        console.error("Lỗi khi tải thông tin quản trị viên:", err);
+        setError("Không thể tải thông tin quản trị viên.");
       });
   }, []);
 
@@ -33,12 +38,13 @@ const AdminAccountSettings = () => {
       await axios.put("http://localhost:8080/api/admin/account/update-profile", admin, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setUpdateStatus("Profile updated successfully.");
-      setTimeout(() => setUpdateStatus(""), 3000);
+      setSuccess("Cập nhật hồ sơ thành công.");
+      setError('');
+      setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
-      console.error(err);
-      setUpdateStatus("Error updating profile.");
-      setTimeout(() => setUpdateStatus(""), 3000);
+      console.error("Lỗi khi cập nhật hồ sơ:", err);
+      setError("Lỗi khi cập nhật hồ sơ.");
+      setTimeout(() => setError(""), 3000);
     }
   };
 
@@ -52,13 +58,14 @@ const AdminAccountSettings = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      setPasswordStatus("Password changed successfully.");
+      setSuccess("Đổi mật khẩu thành công.");
       setPasswordData({ oldPassword: "", newPassword: "" });
-      setTimeout(() => setPasswordStatus(""), 3000);
+      setError('');
+      setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
-      console.error(err);
-      setPasswordStatus("Password change failed.");
-      setTimeout(() => setPasswordStatus(""), 3000);
+      console.error("Lỗi khi đổi mật khẩu:", err);
+      setError("Đổi mật khẩu thất bại.");
+      setTimeout(() => setError(""), 3000);
     }
   };
 
@@ -75,19 +82,33 @@ const AdminAccountSettings = () => {
     else return "/images/admin/avatars/default-admin.jpg";
   };
 
-  if (!admin) return <div>Loading information...</div>;
+  if (!admin) return (
+    <div className="container mt-4">
+      <Alert variant="info">Đang tải thông tin...</Alert>
+    </div>
+  );
 
   return (
     <div className="container mt-4">
-      <h3>Admin Account Settings</h3>
+      <h3>Cài đặt tài khoản quản trị viên</h3>
 
-      {/* Avatar for static display from public folder */}
+      {error && (
+        <Alert variant="danger" onClose={() => setError('')} dismissible>
+          {error}
+        </Alert>
+      )}
+      {success && (
+        <Alert variant="success" onClose={() => setSuccess('')} dismissible>
+          {success}
+        </Alert>
+      )}
+
       <div className="mb-3">
-        <label className="form-label">Profile Picture</label>
+        <label className="form-label">Ảnh đại diện</label>
         <div>
           <img
             src={getAvatarPath()}
-            alt="avatar"
+            alt="Ảnh đại diện"
             width={100}
             height={100}
             className="rounded-circle border"
@@ -95,9 +116,8 @@ const AdminAccountSettings = () => {
         </div>
       </div>
 
-      {/* Personal Info */}
       <div className="mb-3">
-        <label>Full Name</label>
+        <label>Họ và tên</label>
         <input
           type="text"
           name="fullName"
@@ -117,7 +137,7 @@ const AdminAccountSettings = () => {
         />
       </div>
       <div className="mb-3">
-        <label>Phone Number</label>
+        <label>Số điện thoại</label>
         <input
           type="text"
           name="phone"
@@ -127,7 +147,7 @@ const AdminAccountSettings = () => {
         />
       </div>
       <div className="mb-3">
-        <label>Address</label>
+        <label>Địa chỉ</label>
         <input
           type="text"
           name="address"
@@ -137,7 +157,7 @@ const AdminAccountSettings = () => {
         />
       </div>
       <div className="mb-3">
-        <label>Date of Birth</label>
+        <label>Ngày sinh</label>
         <input
           type="date"
           name="birthdate"
@@ -147,23 +167,13 @@ const AdminAccountSettings = () => {
         />
       </div>
       <button className="btn btn-success" onClick={handleSaveInfo}>
-        Save Changes
+        Lưu thay đổi
       </button>
 
-      {updateStatus && (
-        <div
-          className={`mt-3 alert ${updateStatus.includes("successfully") ? "alert-success" : "alert-danger"
-            }`}
-        >
-          {updateStatus}
-        </div>
-      )}
-
-      {/* Change Password Section - In a Frame */}
       <div className="mt-4 p-4 border rounded bg-light">
-        <h5 className="mb-3">Change Password</h5>
+        <h5 className="mb-3">Đổi mật khẩu</h5>
         <div className="mb-3">
-          <label>Current Password</label>
+          <label>Mật khẩu hiện tại</label>
           <input
             type="password"
             className="form-control"
@@ -174,7 +184,7 @@ const AdminAccountSettings = () => {
           />
         </div>
         <div className="mb-3">
-          <label>New Password</label>
+          <label>Mật khẩu mới</label>
           <input
             type="password"
             className="form-control"
@@ -185,17 +195,8 @@ const AdminAccountSettings = () => {
           />
         </div>
         <button className="btn btn-warning" onClick={handleChangePassword}>
-          Change Password
+          Đổi mật khẩu
         </button>
-
-        {passwordStatus && (
-          <div
-            className={`mt-3 alert ${passwordStatus.includes("successfully") ? "alert-success" : "alert-danger"
-              }`}
-          >
-            {passwordStatus}
-          </div>
-        )}
       </div>
     </div>
   );
