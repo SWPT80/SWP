@@ -202,51 +202,6 @@ const Header = () => {
 
               {user && <NotificationDropdown />}
 
-              {user && (
-                <Dropdown show={messageDropdownOpen} onToggle={() => setMessageDropdownOpen(!messageDropdownOpen)}>
-                  <Dropdown.Toggle
-                    as="div"
-                    style={{
-                      color: 'white',
-                      fontSize: '20px',
-                      cursor: 'pointer',
-                      padding: '10px',
-                      borderRadius: '50%',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      border: '1px solid rgba(255, 255, 255, 0.2)',
-                      marginRight: '10px',
-                      position: 'relative',
-                    }}
-                    ref={messageDropdownRef}
-                  >
-                    <i className="fas fa-envelope"></i>
-                    {unreadMessages > 0 && (
-                      <span className="badge bg-danger" style={{
-                        position: 'absolute',
-                        top: '-10px',
-                        right: '-10px',
-                        fontSize: '5px',
-                        borderRadius: '50%',
-                        padding: '2px 6px'
-                      }}>{unreadMessages}</span>
-                    )}
-                  </Dropdown.Toggle>
-                  <Dropdown.Menu align="end" style={{ minWidth: '300px' }}>
-                    <Dropdown.Header>Tin nhắn</Dropdown.Header>
-                    {unreadMessages === 0 ? (
-                      <Dropdown.Item disabled>Không có tin nhắn mới</Dropdown.Item>
-                    ) : (
-                      <Dropdown.Item as={Link} to="/messages" onClick={() => setMessageDropdownOpen(false)}>
-                        Tin nhắn mới
-                      </Dropdown.Item>
-                    )}
-                    <Dropdown.Item as={Link} to="/messages" onClick={() => setMessageDropdownOpen(false)}>
-                      Xem tất cả tin nhắn
-                    </Dropdown.Item>
-                  </Dropdown.Menu>
-                </Dropdown>
-              )}
-
               <Dropdown show={userDropdownOpen} onToggle={() => setUserDropdownOpen(!userDropdownOpen)}>
                 <Dropdown.Toggle
                   as="div"

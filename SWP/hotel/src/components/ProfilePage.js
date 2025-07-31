@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Tabs, Tab, Form, Button, Table, Alert, Spinner } from 'react-bootstrap';
 import axios from 'axios';
 import '../assets/styles/Profile.css';
+import Header from '../components/Header';
+import { Toast, ToastContainer } from 'react-bootstrap';
+
+
 
 const Profiles = () => {
   const navigate = useNavigate();
@@ -17,15 +21,15 @@ const Profiles = () => {
     address: '',
     role: 'user',
     status: 'active',
-    emailConfirmed: false,
-    invoices: [],
-    trips: [],
     bookings: [],
-    favorites: [],
+
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const [toastMessage, setToastMessage] = useState('');
+const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -35,6 +39,23 @@ const Profiles = () => {
       return;
     }
 
+    const fetchBookings = async (userId) => {
+      try {
+        const res = await axios.get(`http://localhost:8080/api/bookings/user/${userId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.data && Array.isArray(res.data)) {
+          setUserData((prev) => ({
+            ...prev,
+            bookings: res.data,
+          }));
+        }
+      } catch (err) {
+        console.error('Lỗi khi tải danh sách đặt chỗ:', err);
+        setError('Không thể tải danh sách đặt chỗ.');
+      }
+    };
+
     const fetchData = async () => {
       setLoading(true);
       setError('');
@@ -43,7 +64,7 @@ const Profiles = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response.data && typeof response.data === 'object') {
-          setUserData({
+          const userInfo = {
             userId: response.data.userId || '',
             userName: response.data.userName || '',
             fullName: response.data.fullName || '',
@@ -53,20 +74,23 @@ const Profiles = () => {
             address: response.data.address || '',
             role: response.data.role || 'user',
             status: response.data.status ? 'active' : 'inactive',
-            profilePhoto: response.data.profilePhoto || 'https://bootdey.com/img/Content/avatar/avatar1.png',
-            emailConfirmed: response.data.emailConfirmed || false,
+            emailConfirmed: response.data.emailConfirmed ?? false,
             invoices: response.data.invoices || [],
             trips: response.data.trips || [],
-            bookings: response.data.bookings || [],
+            bookings: [],
             favorites: response.data.favorites || [],
-          });
+          };
+          setUserData(userInfo);
+
+          // 🔥 Gọi API bookings sau khi đã có userId
+          await fetchBookings(userInfo.userId);
         } else {
           throw new Error('Dữ liệu trả về từ server không hợp lệ');
         }
       } catch (err) {
-        const errorMessage = err.response ?
-          `Mã lỗi ${err.response.status}: ${err.response.data.message || err.response.statusText}` :
-          err.message;
+        const errorMessage = err.response
+          ? `Mã lỗi ${err.response.status}: ${err.response.data.message || err.response.statusText}`
+          : err.message;
         setError(`Không thể tải thông tin profile: ${errorMessage}`);
         if (err.response?.status === 401) {
           alert('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại!');
@@ -83,51 +107,61 @@ const Profiles = () => {
     fetchData();
   }, [navigate]);
 
-  const validateEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
+  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const saveProfile = async () => {
     setError('');
     setSuccess('');
     setLoading(true);
-
+  
     if (!validateEmail(userData.email)) {
-      setError('Định dạng email không hợp lệ!');
+      setToastMessage('Định dạng email không hợp lệ!');
+      setShowToast(true);
       setLoading(false);
       return;
     }
-
+  
     try {
       const token = localStorage.getItem('token');
-      await axios.put('http://localhost:8080/api/users/me', {
+      const res = await axios.put('http://localhost:8080/api/users/me', {
         fullName: userData.fullName,
         email: userData.email,
         phone: userData.phone,
         birthdate: userData.birthdate,
-        address: userData.address
+        address: userData.address,
+        userName: userData.userName
       }, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      setSuccess('Cập nhật hồ sơ thành công!');
+  
+      if (res.data && typeof res.data === 'object') {
+        setUserData((prev) => ({
+          ...prev,
+          ...res.data
+        }));
+      }
+  
+      setToastMessage('Cập nhật hồ sơ thành công!');
+      setShowToast(true);
     } catch (err) {
-      setError(err.response?.data?.message || 'Lỗi khi cập nhật hồ sơ');
+      setToastMessage(err.response?.data?.message || 'Lỗi khi cập nhật hồ sơ');
+      setShowToast(true);
     } finally {
       setLoading(false);
     }
   };
-
+  
   const cancelEdit = () => {
     setError('');
     setSuccess('');
-    alert('Hủy bỏ các thay đổi!');
+    setToastMessage('Hủy bỏ các thay đổi!');
+    setShowToast(true);
   };
-
-  const totalSpent = userData.invoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
+  
 
   return (
+    <>
+    <Header />
     <Container className="light-style flex-grow-1 container-p-y" style={{ paddingTop: '143px' }}>
       <h4 className="font-weight-bold py-3 mb-4">Hồ Sơ Người Dùng</h4>
       {error && <Alert variant="danger">{error}</Alert>}
@@ -165,13 +199,6 @@ const Profiles = () => {
                         </Row>
                       </Card.Body>
                     </Card>
-                    <Card className="shadow-sm rounded-4">
-                      <Card.Body>
-                        <h5 className="mb-3 fw-semibold">Tổng Quan Đặt Chỗ</h5>
-                        <p className="mb-2">Số đơn đã đặt: <strong>{userData.invoices.length}</strong></p>
-                        <p>Tổng tiền đã chi: <strong>{totalSpent.toLocaleString()} VND</strong></p>
-                      </Card.Body>
-                    </Card>
                   </div>
                 </Tab>
                 <Tab eventKey="bookings" title="Đặt Chỗ">
@@ -182,7 +209,14 @@ const Profiles = () => {
                         userData.bookings.map((booking) => (
                           <Col key={booking.id}>
                             <Card className="h-100 shadow-sm">
-                              <Card.Img variant="top" src={booking.homestayPhoto || 'https://via.placeholder.com/300x200'} alt={booking.homestayName} />
+                            <Card.Img
+                                  variant="top"
+                                  src={
+                                    booking.homestayImages && booking.homestayImages.length > 0
+                                      ? booking.homestayImages[0]
+                                      : 'https://via.placeholder.com/300x200'
+                                  }
+                                />
                               <Card.Body>
                                 <Card.Title>{booking.homestayName}</Card.Title>
                                 <Card.Text>
@@ -211,6 +245,18 @@ const Profiles = () => {
         <Button variant="secondary" className="ms-2" onClick={cancelEdit} disabled={loading}>Hủy</Button>
       </div>
     </Container>
+
+
+    <ToastContainer
+        position="middle-center"
+        className="p-3"
+        style={{ zIndex: 9999 }}
+      >
+        <Toast show={showToast} onClose={() => setShowToast(false)} delay={3000} autohide bg="info">
+          <Toast.Body className="text-white text-center">{toastMessage}</Toast.Body>
+        </Toast>
+      </ToastContainer>
+    </>
   );
 };
 

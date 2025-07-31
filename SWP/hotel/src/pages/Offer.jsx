@@ -50,48 +50,59 @@ const RoutingMachine = ({ userPosition, homestayPosition }) => {
       return;
     }
 
-    if (routingControlRef.current) {
+    // Cleanup route trước khi vẽ lại
+    if (
+      routingControlRef.current &&
+      routingControlRef.current._map &&
+      typeof map.removeControl === 'function'
+    ) {
       try {
-        if (routingControlRef.current._map) {
-          map.removeControl(routingControlRef.current);
-        }
+        map.removeControl(routingControlRef.current);
       } catch (error) {
-        console.warn('Không thể removeControl:', error);
+        console.warn('Không thể removeControl (cleanup):', error);
       }
       routingControlRef.current = null;
     }
 
+    // Tạo routing sau một chút delay để tránh race conditions
     timeoutRef.current = setTimeout(() => {
-      const routingControl = L.Routing.control({
-        waypoints: [
-          L.latLng(userPosition[0], userPosition[1]),
-          L.latLng(homestayPosition[0], homestayPosition[1]),
-        ],
-        routeWhileDragging: false,
-        addWaypoints: false,
-        fitSelectedRoutes: true,
-        showAlternatives: false,
-        show: false,
-        lineOptions: {
-          styles: [{ color: '#007bff', weight: 4 }],
-        },
-        createMarker: () => null,
-        router: L.Routing.osrmv1({
-          serviceUrl: 'https://router.project-osrm.org/route/v1'
-        })
-      });
+      try {
+        const routingControl = L.Routing.control({
+          waypoints: [
+            L.latLng(userPosition[0], userPosition[1]),
+            L.latLng(homestayPosition[0], homestayPosition[1]),
+          ],
+          routeWhileDragging: false,
+          addWaypoints: false,
+          fitSelectedRoutes: true,
+          showAlternatives: false,
+          show: false,
+          lineOptions: {
+            styles: [{ color: '#007bff', weight: 4 }],
+          },
+          createMarker: () => null,
+          router: L.Routing.osrmv1({
+            serviceUrl: 'https://router.project-osrm.org/route/v1',
+          }),
+        });
 
-      routingControlRef.current = routingControl;
-      routingControl.addTo(map);
+        routingControlRef.current = routingControl;
+        routingControl.addTo(map);
+      } catch (error) {
+        console.warn('Không thể tạo routing:', error);
+      }
     }, 100);
 
+    // Cleanup khi unmount hoặc dependency đổi
     return () => {
       clearTimeout(timeoutRef.current);
-      if (routingControlRef.current) {
+      if (
+        routingControlRef.current &&
+        routingControlRef.current._map &&
+        typeof map.removeControl === 'function'
+      ) {
         try {
-          if (routingControlRef.current._map) {
-            map.removeControl(routingControlRef.current);
-          }
+          map.removeControl(routingControlRef.current);
         } catch (error) {
           console.warn('Cleanup lỗi:', error);
         }
@@ -819,13 +830,16 @@ const Offer = () => {
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 />
-                {userPosition && Array.isArray(userPosition) && selectedHomestay && selectedHomestay.coordinates &&
-                  Array.isArray(selectedHomestay.coordinates) && isValidCoordinate(selectedHomestay.coordinates[0], selectedHomestay.coordinates[1]) && (
+                {userPosition &&
+                  selectedHomestay?.coordinates &&
+                  isValidCoordinate(userPosition[0], userPosition[1]) &&
+                  isValidCoordinate(selectedHomestay.coordinates[0], selectedHomestay.coordinates[1]) && (
                     <RoutingMachine
                       userPosition={userPosition}
                       homestayPosition={selectedHomestay.coordinates}
                     />
                   )}
+
                 {displayHomestays.map((hs) => (
                   <Marker
                     key={hs.id}

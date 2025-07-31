@@ -10,33 +10,13 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    initAuth(); // gọi riêng initAuth thay vì lặp lại
+  }, []);
+
+  const initAuth = async () => {
     const token = localStorage.getItem('token');
     if (!token) {
       setIsLoading(false);
-      return;
-    }
-
-    axios.get('/api/auth/me')
-      .then((res) => {
-        setUser(res.data);
-        setIsLoggedIn(true);
-        setRole(res.data.role?.toUpperCase() || null);
-        localStorage.setItem('role', res.data.role?.toUpperCase() || '');
-      })
-      .catch(() => {
-        logout();
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  }, []);
-
-  const checkAuth = async () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      console.log('AuthContext - No token found');
-      setIsLoggedIn(false);
-      setUser(null);
       return;
     }
 
@@ -44,20 +24,42 @@ export const AuthProvider = ({ children }) => {
       const res = await axios.get('/api/auth/me', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log('AuthContext - API response:', res.data);
+      const fetchedRole = res.data.role?.toUpperCase() || null;
       setUser(res.data);
       setIsLoggedIn(true);
-    } catch (error) {
-      console.error('AuthContext - Error checking auth:', error);
-      setUser(null);
-      setIsLoggedIn(false);
-      localStorage.removeItem('token');
+      setRole(fetchedRole);
+      localStorage.setItem('role', fetchedRole);
+    } catch (err) {
+      logout();
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
+  // ✅ Gọi sau login thành công
+  const checkAuth = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.log('AuthContext - No token');
+      logout();
+      return;
+    }
+
+    try {
+      const res = await axios.get('/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const fetchedRole = res.data.role?.toUpperCase() || null;
+      setUser(res.data);
+      setIsLoggedIn(true);
+      setRole(fetchedRole);
+      localStorage.setItem('role', fetchedRole);
+      console.log('✅ AuthContext - checkAuth updated:', res.data);
+    } catch (err) {
+      console.error('❌ AuthContext - checkAuth failed:', err);
+      logout();
+    }
+  };
 
   const logout = () => {
     localStorage.removeItem('token');
@@ -68,7 +70,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoggedIn, role, logout, checkAuth, setIsLoggedIn, setUser}}>
+    <AuthContext.Provider
+      value={{ user, isLoggedIn, role, logout, checkAuth, setUser, setIsLoggedIn }}
+    >
       {children}
     </AuthContext.Provider>
   );

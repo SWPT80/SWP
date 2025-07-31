@@ -72,7 +72,6 @@ const ChatPopupManager = ({
       });
     } else {
       setEnhancedUserList([]);
-      setError("Danh sách người dùng trống.");
     }
   }, [listToChatWith]);
 

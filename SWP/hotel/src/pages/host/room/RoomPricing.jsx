@@ -5,13 +5,13 @@ import { useNavigate } from "react-router-dom";
 // Custom Toast Component
 const ToastContainer = ({ toasts, onClose }) => {
   return (
-    <div 
+    <div
       style={{
-        position: 'fixed',
-        top: '20px',
-        right: '20px',
+        position: "fixed",
+        top: "20px",
+        right: "20px",
         zIndex: 9999,
-        maxWidth: '400px'
+        maxWidth: "400px",
       }}
     >
       {toasts.map((toast, index) => (
@@ -20,33 +20,36 @@ const ToastContainer = ({ toasts, onClose }) => {
           className={`alert alert-${toast.type} alert-dismissible fade show mb-2`}
           role="alert"
           style={{
-            minWidth: '300px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            border: 'none',
-            marginTop: index > 0 ? '10px' : '0'
+            minWidth: "300px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            border: "none",
+            marginTop: index > 0 ? "10px" : "0",
           }}
         >
           <div className="d-flex align-items-center">
-            <span className="me-2" style={{ fontSize: '18px' }}>
-              {toast.type === 'success' && '✅'}
-              {toast.type === 'danger' && '❌'}
-              {toast.type === 'warning' && '⚠️'}
-              {toast.type === 'info' && 'ℹ️'}
+            <span className="me-2" style={{ fontSize: "18px" }}>
+              {toast.type === "success" && "✅"}
+              {toast.type === "danger" && "❌"}
+              {toast.type === "warning" && "⚠️"}
+              {toast.type === "info" && "ℹ️"}
             </span>
             <div className="flex-grow-1">
               {toast.message}
               {/* Progress bar */}
-              <div 
-                className="progress mt-2" 
-                style={{ height: '3px', backgroundColor: 'rgba(255,255,255,0.3)' }}
+              <div
+                className="progress mt-2"
+                style={{
+                  height: "3px",
+                  backgroundColor: "rgba(255,255,255,0.3)",
+                }}
               >
                 <div
                   className="progress-bar"
                   role="progressbar"
                   style={{
                     width: `${toast.progress}%`,
-                    backgroundColor: 'rgba(255,255,255,0.8)',
-                    transition: 'width 0.05s linear'
+                    backgroundColor: "rgba(255,255,255,0.8)",
+                    transition: "width 0.05s linear",
                   }}
                 />
               </div>
@@ -56,7 +59,7 @@ const ToastContainer = ({ toasts, onClose }) => {
             type="button"
             className="btn-close"
             onClick={() => onClose(toast.id)}
-            style={{ fontSize: '12px' }}
+            style={{ fontSize: "12px" }}
           />
         </div>
       ))}
@@ -78,21 +81,21 @@ export default function RoomPricing() {
   const [toasts, setToasts] = useState([]);
 
   // Add debounce function to prevent rapid duplicate calls
-  const [lastToastMessage, setLastToastMessage] = useState('');
+  const [lastToastMessage, setLastToastMessage] = useState("");
   const [lastToastTime, setLastToastTime] = useState(0);
 
-  const showToastDebounced = (message, type = 'success', duration = 4000) => {
+  const showToastDebounced = (message, type = "success", duration = 4000) => {
     const now = Date.now();
     // Prevent same message within 1 second
     if (message === lastToastMessage && now - lastToastTime < 1000) {
       return;
     }
-    
+
     setLastToastMessage(message);
     setLastToastTime(now);
     showToast(message, type, duration);
   };
-  const showToast = (message, type = 'success', duration = 4000) => {
+  const showToast = (message, type = "success", duration = 4000) => {
     // Create unique ID using timestamp + random number to avoid duplicates
     const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const newToast = {
@@ -101,39 +104,43 @@ export default function RoomPricing() {
       type, // 'success', 'danger', 'warning', 'info'
       progress: 0,
       startTime: Date.now(),
-      duration
+      duration,
     };
-    
+
     // Prevent duplicate messages - check if same message already exists
-    setToasts(prev => {
-      const existingToast = prev.find(toast => toast.message === message && toast.type === type);
+    setToasts((prev) => {
+      const existingToast = prev.find(
+        (toast) => toast.message === message && toast.type === type
+      );
       if (existingToast) {
         return prev; // Don't add duplicate
       }
       return [...prev, newToast];
     });
-    
+
     // Update progress bar - use the unique ID
     const progressInterval = setInterval(() => {
-      setToasts(prev => prev.map(toast => {
-        if (toast.id === id) {
-          const elapsed = Date.now() - toast.startTime;
-          const progress = Math.min((elapsed / duration) * 100, 100);
-          return { ...toast, progress };
-        }
-        return toast;
-      }));
+      setToasts((prev) =>
+        prev.map((toast) => {
+          if (toast.id === id) {
+            const elapsed = Date.now() - toast.startTime;
+            const progress = Math.min((elapsed / duration) * 100, 100);
+            return { ...toast, progress };
+          }
+          return toast;
+        })
+      );
     }, 50);
-    
+
     // Auto hide after duration - use the unique ID
     setTimeout(() => {
       clearInterval(progressInterval);
-      setToasts(prev => prev.filter(toast => toast.id !== id));
+      setToasts((prev) => prev.filter((toast) => toast.id !== id));
     }, duration);
   };
 
   const hideToast = (id) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
   };
 
   useEffect(() => {
@@ -144,12 +151,13 @@ export default function RoomPricing() {
     }
     // Nếu chưa có hostId => gọi /me
     if (!hostId) {
-      axios.get("http://localhost:8080/api/auth/me", {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-        .then(res => {
+      axios
+        .get("http://localhost:8080/api/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((res) => {
           const user = res.data;
-          if (user.role !== 'HOST') {
+          if (user.role !== "HOST") {
             navigate("/", { replace: true });
             return;
           }
@@ -181,7 +189,7 @@ export default function RoomPricing() {
   const [loadingStates, setLoadingStates] = useState({
     homestays: false,
     roomTypes: false,
-    allSeasons: false
+    allSeasons: false,
   });
 
   useEffect(() => {
@@ -189,7 +197,7 @@ export default function RoomPricing() {
 
     // Load homestays - only if not already loading/loaded
     if (!loadingStates.homestays && homestays.length === 0) {
-      setLoadingStates(prev => ({ ...prev, homestays: true }));
+      setLoadingStates((prev) => ({ ...prev, homestays: true }));
       axios
         .get(`http://localhost:8080/api/homestays/by-host/${hostId}`)
         .then((res) => {
@@ -203,15 +211,17 @@ export default function RoomPricing() {
           showToastDebounced("Failed to load homestays!", "danger");
         })
         .finally(() => {
-          setLoadingStates(prev => ({ ...prev, homestays: false }));
+          setLoadingStates((prev) => ({ ...prev, homestays: false }));
         });
     }
 
     // Load room types - only if not already loading/loaded
     if (!loadingStates.roomTypes && roomTypes.length === 0) {
-      setLoadingStates(prev => ({ ...prev, roomTypes: true }));
+      setLoadingStates((prev) => ({ ...prev, roomTypes: true }));
       axios
-        .get(`http://localhost:8080/api/seasonal-pricing/room-types?hostId=${hostId}`)
+        .get(
+          `http://localhost:8080/api/seasonal-pricing/room-types?hostId=${hostId}`
+        )
         .then((res) => {
           setRoomTypes(res.data);
           if (res.data.length > 0) {
@@ -223,13 +233,13 @@ export default function RoomPricing() {
           showToastDebounced("Failed to load room types!", "danger");
         })
         .finally(() => {
-          setLoadingStates(prev => ({ ...prev, roomTypes: false }));
+          setLoadingStates((prev) => ({ ...prev, roomTypes: false }));
         });
     }
 
     // Load all seasons - only if not already loading/loaded
     if (!loadingStates.allSeasons && allSeasons.length === 0) {
-      setLoadingStates(prev => ({ ...prev, allSeasons: true }));
+      setLoadingStates((prev) => ({ ...prev, allSeasons: true }));
       axios
         .get(`http://localhost:8080/api/seasonal-pricing/all`, {
           params: { hostId },
@@ -245,10 +255,16 @@ export default function RoomPricing() {
           showToastDebounced("Failed to load seasonal pricing!", "danger");
         })
         .finally(() => {
-          setLoadingStates(prev => ({ ...prev, allSeasons: false }));
+          setLoadingStates((prev) => ({ ...prev, allSeasons: false }));
         });
     }
-  }, [hostId, homestays.length, roomTypes.length, allSeasons.length, loadingStates]);
+  }, [
+    hostId,
+    homestays.length,
+    roomTypes.length,
+    allSeasons.length,
+    loadingStates,
+  ]);
 
   useEffect(() => {
     if (selectedHomestay && selectedRoomType && checkIn && checkOut) {
@@ -265,7 +281,11 @@ export default function RoomPricing() {
           setSeasonalPrices(res.data);
           // Only show toast if there are results, don't spam on every change
           if (res.data.length > 0) {
-            showToast(`Found ${res.data.length} seasonal prices!`, "info", 2000);
+            showToast(
+              `Found ${res.data.length} seasonal prices!`,
+              "info",
+              2000
+            );
           }
         })
         .catch((err) => {
@@ -285,7 +305,10 @@ export default function RoomPricing() {
       !newPricing.price ||
       parseFloat(newPricing.price) < 1
     ) {
-      showToast("Vui lòng nhập đầy đủ và hợp lệ. Hệ số tăng phải >= 1.", "warning");
+      showToast(
+        "Vui lòng nhập đầy đủ và hợp lệ. Hệ số tăng phải >= 1.",
+        "warning"
+      );
       return;
     }
     setPricingList((prev) => [...prev, { ...newPricing, id: Date.now() }]);
@@ -305,7 +328,10 @@ export default function RoomPricing() {
 
   const handleViewSeasonalPrices = () => {
     if (!selectedHomestay || !selectedRoomType) {
-      showToast("Vui lòng chọn đầy đủ Homestay và loại phòng trước khi xem giá.", "warning");
+      showToast(
+        "Vui lòng chọn đầy đủ Homestay và loại phòng trước khi xem giá.",
+        "warning"
+      );
       return;
     }
 
@@ -334,7 +360,10 @@ export default function RoomPricing() {
 
   const handleSavePricing = async () => {
     if (!selectedHomestay || !selectedRoomType) {
-      showToast("Vui lòng chọn Homestay và loại phòng trước khi lưu.", "warning");
+      showToast(
+        "Vui lòng chọn Homestay và loại phòng trước khi lưu.",
+        "warning"
+      );
       return;
     }
 
@@ -359,7 +388,10 @@ export default function RoomPricing() {
       };
 
       try {
-        const res = await axios.post("http://localhost:8080/api/seasonal-pricing", dto);
+        const res = await axios.post(
+          "http://localhost:8080/api/seasonal-pricing",
+          dto
+        );
         console.log("Đã lưu:", res.data);
         successCount++;
       } catch (err) {
@@ -371,7 +403,10 @@ export default function RoomPricing() {
     if (errorCount === 0) {
       showToast(`✅ Đã lưu thành công ${successCount} bảng giá!`, "success");
     } else if (successCount > 0) {
-      showToast(`⚠️ Lưu thành công ${successCount}, thất bại ${errorCount} bảng giá!`, "warning");
+      showToast(
+        `⚠️ Lưu thành công ${successCount}, thất bại ${errorCount} bảng giá!`,
+        "warning"
+      );
     } else {
       showToast(`❌ Không thể lưu bảng giá!`, "danger");
     }
@@ -380,9 +415,12 @@ export default function RoomPricing() {
 
     // Reload all seasons
     try {
-      const res = await axios.get(`http://localhost:8080/api/seasonal-pricing/all`, {
-        params: { hostId },
-      });
+      const res = await axios.get(
+        `http://localhost:8080/api/seasonal-pricing/all`,
+        {
+          params: { hostId },
+        }
+      );
       setAllSeasons(res.data);
       showToast("Danh sách giá theo mùa đã được cập nhật!", "info");
     } catch (err) {
@@ -437,6 +475,7 @@ export default function RoomPricing() {
             value={checkIn}
             onChange={(e) => setCheckIn(e.target.value)}
             max={checkOut || ""}
+            min={new Date().toISOString().slice(0, 10)} // thêm dòng này
           />
         </div>
         <div className="col-md-4">
@@ -446,7 +485,7 @@ export default function RoomPricing() {
             className="form-control"
             value={checkOut}
             onChange={(e) => setCheckOut(e.target.value)}
-            min={checkIn || ""}
+            min={checkIn || new Date().toISOString().slice(0, 10)} // thêm min
           />
         </div>
         <div className="col-md-4">
@@ -483,6 +522,7 @@ export default function RoomPricing() {
             value={newPricing.startDate}
             onChange={handleChange}
             max={newPricing.endDate || ""}
+            min={new Date().toISOString().slice(0, 10)} // thêm min
           />
         </div>
         <div className="col-md-3">
@@ -492,7 +532,7 @@ export default function RoomPricing() {
             className="form-control"
             value={newPricing.endDate}
             onChange={handleChange}
-            min={newPricing.startDate || ""}
+            min={newPricing.startDate || new Date().toISOString().slice(0, 10)} // thêm min
           />
         </div>
         <div className="col-md-2">
@@ -541,10 +581,7 @@ export default function RoomPricing() {
       ))}
 
       <div className="mt-3">
-        <button
-          className="btn btn-primary"
-          onClick={handleSavePricing}
-        >
+        <button className="btn btn-primary" onClick={handleSavePricing}>
           💾 Lưu bảng giá
         </button>
       </div>
@@ -552,16 +589,17 @@ export default function RoomPricing() {
       <h5 className="mt-5">📋 Danh sách toàn bộ giá theo mùa</h5>
       {allSeasons.map((s, i) => (
         <div key={i} className="alert alert-light border">
-          <strong>Homestay:</strong> {s.homestayName} |{" "}
-          <strong>Phòng:</strong> {s.roomName}
+          <strong>Homestay:</strong> {s.homestayName} | <strong>Phòng:</strong>{" "}
+          {s.roomName}
           <br />
-          <strong>Mùa:</strong> {s.seasonName} |{" "}
-          <strong>Hệ số:</strong> x{s.price}
+          <strong>Mùa:</strong> {s.seasonName} | <strong>Hệ số:</strong> x
+          {s.price}
           <br />
           <strong>Thời gian:</strong> {s.startDate} → {s.endDate}
           <br />
           <strong>Giá gốc:</strong> {Number(s.basePrice).toLocaleString()} ₫ →{" "}
-          <strong>Giá sau khi tăng:</strong> {Number(s.finalPrice).toLocaleString()} ₫
+          <strong>Giá sau khi tăng:</strong>{" "}
+          {Number(s.finalPrice).toLocaleString()} ₫
         </div>
       ))}
 

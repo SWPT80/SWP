@@ -4,13 +4,12 @@ import { FaHeart, FaRegHeart } from 'react-icons/fa';
 import FavoriteListModal from './FavoriteListModal';
 import AuthModal from './LoginSignupForm';
 import LoginRequiredModal from './LoginRequiredModal';
-import { useAuth } from '../context/AuthContext';
-import CreateFavoriteListModal from './CreateFavoriteListModal';
-import { Alert } from 'react-bootstrap';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import { useAuth } from '../context/AuthContext'; // 🔥 import context
+import CreateFavoriteListModal from './CreateFavoriteListModal'; // 🧩 nhớ import
+
 
 const FavoriteHeart = ({ targetId, targetType, size = 20, onToggle }) => {
-  const { user, isLoggedIn, checkAuth } = useAuth();
+  const { user, isLoggedIn, checkAuth } = useAuth(); // 🔥 lấy từ context
   const userId = user?.id || null;
 
   const [favorited, setFavorited] = useState(false);
@@ -19,11 +18,16 @@ const FavoriteHeart = ({ targetId, targetType, size = 20, onToggle }) => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showSelectList, setShowSelectList] = useState(false);
   const [showCreateList, setShowCreateList] = useState(false);
-  const [error, setError] = useState('');
+
 
   useEffect(() => {
+    console.log('👤 FavoriteHeart - user:', user);
+    console.log('🔑 FavoriteHeart - userId:', userId);
+  }, [user]);
+  // ✅ Check trạng thái yêu thích mỗi khi userId thay đổi
+  useEffect(() => {
     if (!userId) {
-      setFavorited(false);
+      setFavorited(false); // Đăng xuất thì reset icon
       return;
     }
 
@@ -33,23 +37,22 @@ const FavoriteHeart = ({ targetId, targetType, size = 20, onToggle }) => {
           params: { userId, targetId, targetType }
         });
         setFavorited(res.data === true);
-        setError('');
       } catch (err) {
-        console.error('Lỗi khi kiểm tra trạng thái yêu thích:', err);
-        setError('Không thể kiểm tra trạng thái yêu thích.');
+        console.error('Check favorite failed:', err);
       }
     };
 
     checkFavorite();
   }, [userId, targetId, targetType]);
 
+  // ✅ Xử lý nhấn trái tim
   const toggle = (e) => {
     e.preventDefault();
     e.stopPropagation();
     e.nativeEvent?.stopImmediatePropagation();
 
     if (!userId) {
-      setShowWarningModal(true);
+      setShowWarningModal(true); // chưa login thì cảnh báo
       return;
     }
 
@@ -64,10 +67,8 @@ const FavoriteHeart = ({ targetId, targetType, size = 20, onToggle }) => {
       }).then(() => {
         setFavorited(false);
         onToggle?.(false);
-        setError('');
       }).catch(err => {
-        console.error('Lỗi khi bỏ yêu thích:', err);
-        setError('Không thể bỏ yêu thích. Vui lòng thử lại.');
+        console.error('Toggle failed:', err);
       }).finally(() => {
         setLoading(false);
       });
@@ -87,10 +88,8 @@ const FavoriteHeart = ({ targetId, targetType, size = 20, onToggle }) => {
       });
       setFavorited(true);
       onToggle?.(true);
-      setError('');
     } catch (err) {
-      console.error('Lỗi khi thêm vào danh sách:', err);
-      setError('Không thể thêm vào danh sách yêu thích.');
+      console.error('Add to list failed:', err);
     } finally {
       setLoading(false);
     }
@@ -103,18 +102,17 @@ const FavoriteHeart = ({ targetId, targetType, size = 20, onToggle }) => {
   };
 
   const handleLoginSuccess = async () => {
-    await checkAuth();
+    await checkAuth();                     // cập nhật AuthContext
     setShowAuthModal(false);
-    setShowSelectList(true);
+  
+    // 🔁 Delay để đảm bảo context đã cập nhật kịp
+    setTimeout(() => {
+      setShowSelectList(true);
+    }, 200);
   };
 
   return (
     <>
-      {error && (
-        <Alert variant="danger" onClose={() => setError(null)} dismissible style={{ position: 'absolute', top: '50px', left: '50%', transform: 'translateX(-50%)', zIndex: 10000, maxWidth: '500px' }}>
-          {error}
-        </Alert>
-      )}
       <div
         onClick={toggle}
         style={{
@@ -168,9 +166,9 @@ const FavoriteHeart = ({ targetId, targetType, size = 20, onToggle }) => {
         onClose={() => setShowCreateList(false)}
         userId={userId}
         onCreated={(newList) => {
-          handleAddToList(newList.id);
-          setShowCreateList(false);
-          setFavorited(true);
+          handleAddToList(newList.id);     // Thêm luôn mục vào danh sách vừa tạo
+          setShowCreateList(false);        // Ẩn modal
+          setFavorited(true);              // Đánh dấu đã yêu thích
           onToggle?.(true);
         }}
       />

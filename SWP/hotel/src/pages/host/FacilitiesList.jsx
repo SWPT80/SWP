@@ -10,7 +10,7 @@ import {
   Card,
   Modal,
   Alert,
-  Spinner
+  Spinner,
 } from "react-bootstrap";
 import { Edit, Trash2, Plus } from "lucide-react";
 import axios from "axios";
@@ -38,7 +38,7 @@ export default function FacilitiesList() {
   const [homestays, setHomestays] = useState([]);
   const [alerts, setAlerts] = useState([]);
 
-  const showAlert = (message, variant = 'success', duration = 4000) => {
+  const showAlert = (message, variant = "success", duration = 4000) => {
     const id = Date.now();
     const newAlert = {
       id,
@@ -47,45 +47,48 @@ export default function FacilitiesList() {
       show: true,
       duration,
       startTime: Date.now(),
-      progress: 0
+      progress: 0,
     };
-    setAlerts(prev => [...prev, newAlert]);
+    setAlerts((prev) => [...prev, newAlert]);
 
     const progressInterval = setInterval(() => {
-      setAlerts(prev => prev.map(alert => {
-        if (alert.id === id) {
-          const elapsed = Date.now() - alert.startTime;
-          const progress = Math.min((elapsed / duration) * 100, 100);
-          return { ...alert, progress };
-        }
-        return alert;
-      }));
+      setAlerts((prev) =>
+        prev.map((alert) => {
+          if (alert.id === id) {
+            const elapsed = Date.now() - alert.startTime;
+            const progress = Math.min((elapsed / duration) * 100, 100);
+            return { ...alert, progress };
+          }
+          return alert;
+        })
+      );
     }, 50);
 
     setTimeout(() => {
       clearInterval(progressInterval);
-      setAlerts(prev => prev.filter(alert => alert.id !== id));
+      setAlerts((prev) => prev.filter((alert) => alert.id !== id));
     }, duration);
   };
 
   const hideAlert = (id) => {
-    setAlerts(prev => prev.filter(alert => alert.id !== id));
+    setAlerts((prev) => prev.filter((alert) => alert.id !== id));
   };
 
   useEffect(() => {
     if (hostId) {
-      axios.get(`http://localhost:8080/api/homestays/by-host/${hostId}`)
-        .then(res => {
+      axios
+        .get(`http://localhost:8080/api/homestays/by-host/${hostId}`)
+        .then((res) => {
           console.log("Danh sách homestay đã tải:", res.data);
           setHomestays(res.data);
           if (res.data.length === 1) {
             const hId = res.data[0].id;
-            setFormData(prev => ({ ...prev, homestayId: hId }));
+            setFormData((prev) => ({ ...prev, homestayId: hId }));
             console.log("Đặt homestayId:", hId);
           }
           showAlert("Tải danh sách homestay thành công.", "success", 2000);
         })
-        .catch(err => {
+        .catch((err) => {
           console.error("Lỗi khi tải homestay:", err);
           showAlert("Không thể tải danh sách homestay.", "danger");
         });
@@ -100,19 +103,26 @@ export default function FacilitiesList() {
       return;
     }
     if (!hostId) {
-      axios.get("http://localhost:8080/api/auth/me", {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-        .then(res => {
+      axios
+        .get("http://localhost:8080/api/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((res) => {
           const user = res.data;
-          if (user.role !== 'HOST') {
-            showAlert("Quyền truy cập bị từ chối. Yêu cầu vai trò chủ nhà.", "danger");
+          if (user.role !== "HOST") {
+            showAlert(
+              "Quyền truy cập bị từ chối. Yêu cầu vai trò chủ nhà.",
+              "danger"
+            );
             navigate("/", { replace: true });
             return;
           }
           localStorage.setItem("hostId", user.id);
           setHostId(user.id);
-          showAlert(`Chào mừng quay lại, ${user.name || 'Chủ nhà'}!`, "success");
+          showAlert(
+            `Chào mừng quay lại, ${user.name || "Chủ nhà"}!`,
+            "success"
+          );
         })
         .catch(() => {
           showAlert("Xác thực thất bại.", "danger");
@@ -153,33 +163,61 @@ export default function FacilitiesList() {
   }, [formData.homestayId]);
 
   const handleAddFacility = () => {
-    setFormData({ typeId: "", typeName: "", iconClass: "", homestayId: formData.homestayId });
+    setFormData({
+      typeId: "",
+      typeName: "",
+      iconClass: "",
+      homestayId: formData.homestayId,
+    });
     setShowAddModal(true);
   };
 
   const handleEdit = (facility) => {
     setCurrentFacility(facility);
     setFormData({
-      typeId: facility.typeId,
+      typeId: facility.typeId, // ✅ phải có dòng này
       typeName: facility.typeName,
       iconClass: facility.iconClass,
       homestayId: formData.homestayId,
     });
     setShowEditModal(true);
   };
+  
 
   const handleDelete = (facility) => {
     setCurrentFacility(facility);
     setShowDeleteAlert(true);
   };
+  const fetchFacilitiesByHomestay = async (homestayId) => {
+    try {
+      const response = await axios.get(
+        `http://localhost:8080/api/amenities/homestay/${homestayId}`
+      );
+      setFacilities(response.data);
+      showAlert("Tải danh sách tiện nghi thành công.", "success", 2000);
+    } catch (error) {
+      console.error("Lỗi khi tải tiện nghi:", error);
+      showAlert("Không thể tải danh sách tiện nghi.", "danger");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSave = async () => {
+    if (!formData.homestayId) {
+      showAlert("Vui lòng chọn Homestay trước khi lưu tiện nghi.", "warning");
+      return;
+    }
+
     try {
-      await axios.post("http://localhost:8080/api/amenities", {
+      const res = await axios.post("http://localhost:8080/api/amenities", {
         ...formData,
-        homestayId: parseInt(formData.homestayId, 10)
+        homestayId: parseInt(formData.homestayId, 10),
       });
-      fetchFacilities();
+
+      console.log("Tiện nghi mới thêm:", res.data);
+
+      await fetchFacilitiesByHomestay(formData.homestayId); // dùng hàm mới
       setShowAddModal(false);
       showAlert("Thêm tiện nghi thành công!", "success");
     } catch (error) {
@@ -190,11 +228,21 @@ export default function FacilitiesList() {
 
   const handleUpdate = async () => {
     try {
-      await axios.put(`http://localhost:8080/api/amenities/${currentFacility.typeId}`, {
-        ...formData,
-        homestayId: parseInt(formData.homestayId, 10)
+      const id = currentFacility?.typeId;
+      console.log("Đang gửi cập nhật tiện nghi ID:", id);
+  
+      const res = await axios.put(`http://localhost:8080/api/amenities/${id}`, {
+        typeId: formData.typeId, // ✅ thêm dòng này!
+        typeName: formData.typeName,
+        iconClass: formData.iconClass,
+        homestayId: parseInt(formData.homestayId, 10),
       });
-      fetchFacilities();
+      
+  
+      console.log("Phản hồi cập nhật:", res.data);
+  
+      await fetchFacilitiesByHomestay(formData.homestayId); // cập nhật UI
+  
       setShowEditModal(false);
       setCurrentFacility(null);
       showAlert("Cập nhật tiện nghi thành công!", "success");
@@ -203,10 +251,13 @@ export default function FacilitiesList() {
       showAlert("Không thể cập nhật tiện nghi.", "danger");
     }
   };
+  
 
   const confirmDelete = async () => {
     try {
-      await axios.delete(`http://localhost:8080/api/amenities/${currentFacility.typeId}`);
+      await axios.delete(
+        `http://localhost:8080/api/amenities/${currentFacility.typeId}`
+      );
       fetchFacilities();
       setShowDeleteAlert(false);
       setCurrentFacility(null);
@@ -239,7 +290,10 @@ export default function FacilitiesList() {
 
   const indexOfLastEntry = currentPage * entriesPerPage;
   const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
-  const currentFacilities = filteredFacilities.slice(indexOfFirstEntry, indexOfLastEntry);
+  const currentFacilities = filteredFacilities.slice(
+    indexOfFirstEntry,
+    indexOfLastEntry
+  );
   const totalEntries = filteredFacilities.length;
   const startEntry = (currentPage - 1) * entriesPerPage + 1;
   const endEntry = Math.min(currentPage * entriesPerPage, totalEntries);
@@ -253,30 +307,35 @@ export default function FacilitiesList() {
             onClose={() => hideAlert(alert.id)}
             variant={alert.variant}
             className="text-white position-fixed"
-            style={{ minWidth: '300px', top: '20px', right: '20px', zIndex: 9999 }}
+            style={{
+              minWidth: "300px",
+              top: "20px",
+              right: "20px",
+              zIndex: 9999,
+            }}
           >
             <Alert.Heading>
               <span className="me-2">
-                {alert.variant === 'success' && '✅'}
-                {alert.variant === 'danger' && '❌'}
-                {alert.variant === 'warning' && '⚠️'}
-                {alert.variant === 'info' && 'ℹ️'}
+                {alert.variant === "success" && "✅"}
+                {alert.variant === "danger" && "❌"}
+                {alert.variant === "warning" && "⚠️"}
+                {alert.variant === "info" && "ℹ️"}
               </span>
               <strong className="me-auto">
-                {alert.variant === 'success' && 'Thành công'}
-                {alert.variant === 'danger' && 'Lỗi'}
-                {alert.variant === 'warning' && 'Cảnh báo'}
-                {alert.variant === 'info' && 'Thông tin'}
+                {alert.variant === "success" && "Thành công"}
+                {alert.variant === "danger" && "Lỗi"}
+                {alert.variant === "warning" && "Cảnh báo"}
+                {alert.variant === "info" && "Thông tin"}
               </strong>
             </Alert.Heading>
             <div>{alert.message}</div>
             <div className="mt-2">
-              <div 
-                className="progress" 
-                style={{ 
-                  height: '3px', 
-                  backgroundColor: 'rgba(255,255,255,0.3)',
-                  borderRadius: '2px'
+              <div
+                className="progress"
+                style={{
+                  height: "3px",
+                  backgroundColor: "rgba(255,255,255,0.3)",
+                  borderRadius: "2px",
                 }}
               >
                 <div
@@ -284,9 +343,9 @@ export default function FacilitiesList() {
                   role="progressbar"
                   style={{
                     width: `${alert.progress}%`,
-                    backgroundColor: 'rgba(255,255,255,0.8)',
-                    transition: 'width 0.05s linear',
-                    borderRadius: '2px'
+                    backgroundColor: "rgba(255,255,255,0.8)",
+                    transition: "width 0.05s linear",
+                    borderRadius: "2px",
                   }}
                 />
               </div>
@@ -301,7 +360,11 @@ export default function FacilitiesList() {
               <h4 className="mb-0 fw-bold">Danh sách tiện nghi</h4>
             </Col>
             <Col xs="auto">
-              <Button variant="dark" onClick={handleAddFacility} className="d-flex align-items-center gap-2">
+              <Button
+                variant="dark"
+                onClick={handleAddFacility}
+                className="d-flex align-items-center gap-2"
+              >
                 <Plus size={16} /> Thêm tiện nghi
               </Button>
             </Col>
@@ -359,7 +422,9 @@ export default function FacilitiesList() {
                 {currentFacilities.length === 0 ? (
                   <tr>
                     <td colSpan="5" className="text-center">
-                      <Alert variant="info">Không tìm thấy tiện nghi nào.</Alert>
+                      <Alert variant="info">
+                        Không tìm thấy tiện nghi nào.
+                      </Alert>
                     </td>
                   </tr>
                 ) : (
@@ -369,14 +434,24 @@ export default function FacilitiesList() {
                       <td>{facility.iconClass}</td>
                       <td>{facility.typeName}</td>
                       <td>
-                        <i className={`${facility.iconClass} fa-2x text-dark`} />
+                        <i
+                          className={`${facility.iconClass} fa-2x text-dark`}
+                        />
                       </td>
                       <td>
                         <div className="d-flex gap-2">
-                          <Button variant="outline-primary" size="sm" onClick={() => handleEdit(facility)}>
+                          <Button
+                            variant="outline-primary"
+                            size="sm"
+                            onClick={() => handleEdit(facility)}
+                          >
                             <Edit size={14} />
                           </Button>
-                          <Button variant="outline-danger" size="sm" onClick={() => handleDelete(facility)}>
+                          <Button
+                            variant="outline-danger"
+                            size="sm"
+                            onClick={() => handleDelete(facility)}
+                          >
                             <Trash2 size={14} />
                           </Button>
                         </div>
@@ -398,26 +473,37 @@ export default function FacilitiesList() {
               <Pagination className="mb-0">
                 <Pagination.Prev
                   disabled={currentPage === 1}
-                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
                 >
                   Trước
                 </Pagination.Prev>
 
-                {Array.from({ length: Math.ceil(totalEntries / entriesPerPage) }, (_, i) => i + 1)
-                  .map((page) => (
-                    <Pagination.Item
-                      key={page}
-                      active={page === currentPage}
-                      onClick={() => setCurrentPage(page)}
-                    >
-                      {page}
-                    </Pagination.Item>
-                  ))}
+                {Array.from(
+                  { length: Math.ceil(totalEntries / entriesPerPage) },
+                  (_, i) => i + 1
+                ).map((page) => (
+                  <Pagination.Item
+                    key={page}
+                    active={page === currentPage}
+                    onClick={() => setCurrentPage(page)}
+                  >
+                    {page}
+                  </Pagination.Item>
+                ))}
 
                 <Pagination.Next
-                  disabled={currentPage === Math.ceil(totalEntries / entriesPerPage)}
+                  disabled={
+                    currentPage === Math.ceil(totalEntries / entriesPerPage)
+                  }
                   onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, Math.ceil(totalEntries / entriesPerPage)))
+                    setCurrentPage((prev) =>
+                      Math.min(
+                        prev + 1,
+                        Math.ceil(totalEntries / entriesPerPage)
+                      )
+                    )
                   }
                 >
                   Sau
@@ -454,7 +540,9 @@ export default function FacilitiesList() {
               <Form.Label>Homestay</Form.Label>
               <Form.Select
                 value={formData.homestayId}
-                onChange={(e) => handleInputChange("homestayId", e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("homestayId", e.target.value)
+                }
               >
                 <option value="">-- Chọn Homestay --</option>
                 {homestays.map((h) => (
@@ -476,7 +564,11 @@ export default function FacilitiesList() {
         </Modal.Footer>
       </Modal>
 
-      <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered>
+      <Modal
+        show={showEditModal}
+        onHide={() => setShowEditModal(false)}
+        centered
+      >
         <Modal.Header closeButton>
           <Modal.Title>Chỉnh sửa tiện nghi</Modal.Title>
         </Modal.Header>
@@ -502,7 +594,9 @@ export default function FacilitiesList() {
               <Form.Label>Homestay</Form.Label>
               <Form.Select
                 value={formData.homestayId}
-                onChange={(e) => handleInputChange("homestayId", e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("homestayId", e.target.value)
+                }
               >
                 <option value="">-- Chọn Homestay --</option>
                 {homestays.map((h) => (
@@ -524,7 +618,11 @@ export default function FacilitiesList() {
         </Modal.Footer>
       </Modal>
 
-      <Modal show={showDeleteAlert} onHide={() => setShowDeleteAlert(false)} centered>
+      <Modal
+        show={showDeleteAlert}
+        onHide={() => setShowDeleteAlert(false)}
+        centered
+      >
         <Modal.Header closeButton>
           <Modal.Title>Xác nhận xóa</Modal.Title>
         </Modal.Header>
@@ -532,7 +630,8 @@ export default function FacilitiesList() {
           <p>Bạn có chắc chắn muốn xóa tiện nghi này?</p>
           {currentFacility && (
             <Alert variant="warning">
-              <strong>Tiện nghi:</strong> {currentFacility.typeName} - {currentFacility.iconClass}
+              <strong>Tiện nghi:</strong> {currentFacility.typeName} -{" "}
+              {currentFacility.iconClass}
             </Alert>
           )}
         </Modal.Body>
